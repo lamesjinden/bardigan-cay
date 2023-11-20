@@ -1,0 +1,7 @@
+{:deps     {:aliases [:shadow :client :dev]}
+ :builds   {:app
+            {:target   :browser
+             :output-dir "resources/public/js"
+             :modules  {:main {:entries [clj-ts.client]
+                               :init-fn clj-ts.client/init}}
+             :devtools {:preloads [devtools.preload]}}}}

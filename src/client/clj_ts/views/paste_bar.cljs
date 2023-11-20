@@ -55,7 +55,7 @@
 ----
 ")
 
-(defn- insert-text-at-cursor! [editor s]
+(defn- insert-text-at-cursor! [^js editor s]
   (when s
     (when editor
       (.insert editor s))))

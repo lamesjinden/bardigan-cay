@@ -3,17 +3,15 @@
          clean-client        {:requires ([babashka.fs :as fs])
                               :task     (let [resources-out "resources/out"
                                               resources-public-js "resources/public/js"
-                                              target "target"
-                                              dirs [resources-out resources-public-js target]
-                                              main-js "resources/public/main.js"
-                                              files [main-js]]
+                                              dirs [resources-out resources-public-js]
+                                              files []]
                                           (println "Cleaning (client)")
                                           (println "  " (clojure.string/join ", " dirs))
                                           (doseq [dir dirs]
                                             (fs/delete-tree dir))
                                           (println "  " (clojure.string/join ", " files))
                                           (doseq [file files]
-                                            (fs/delete-if-exists "resources/public/main.js")))}
+                                            (fs/delete-if-exists file)))}
 
          clean-server        {:requires ([babashka.fs :as fs])
                               :task     (let [target-dir "target"]
@@ -21,21 +19,17 @@
                                           (println "  " target-dir)
                                           (fs/delete-tree target-dir))}
 
-         clean               {:requires ([babashka.fs :as fs])
-                              :task     (do
-                                          (run 'clean-client)
-                                          (run 'clean-server))}
+         clean               (do
+                               (run 'clean-client)
+                               (run 'clean-server))
 
-         build-client        {:requires ([babashka.fs :as fs])
-                              :task     (do
-                                          (println "Compiling ClojureScript")
-                                          (let [out-file "resources/public/main.js"
-                                                out-dir "resources/public/js/compiled/out"
-                                                clj-arg (format "-M:client -m cljs.main -co '{:infer-externs true}' --output-dir %s --optimizations advanced --output-to %s --compile 'clj-ts.client"
-                                                          out-dir
-                                                          out-file)]
-                                            (clojure clj-arg)
-                                            (fs/delete-tree out-dir)))}
+         build-dev-client    (do
+                               (println "Compiling ClojureScript development build")
+                               (shell "npx shadow-cljs compile app"))
+
+         build-client        (do
+                               (println "Compiling ClojureScript release build")
+                               (shell "npx shadow-cljs release app"))
 
          build-server        (do
                                (println "Compiling Clojure")
@@ -46,14 +40,13 @@
                                  (run 'clean-server)
                                  (run 'build-server))
 
-         run-dev-client      (clojure "-M:figwheel-main:client:dev")
-         run-dev-client-repl (clojure "-M:rebel-main:client:dev")
+         run-dev-client      (shell "npx shadow-cljs watch app")
+         run-dev-client-repl (run 'run-dev-client)          ;; shadow provides nrepl
          run-dev-server      (clojure "-M:run-dev-server:dev-server:server:dev --directory '../../Documents/wiki/bedrock/' --export-dir '../../Documents/wiki/bedrock/exported/'")
          run-dev-server-repl (clojure "-M:nrepl-main:dev-server:server:dev")
-         run-minimal         (do (run 'build-client)
+         run-minimal         (do (run 'build-dev-client)
                                  (run 'run-dev-server))
 
-         lint                (do (clojure "-M:eastwood"))
          test                (do (clojure "-M:test:server"))}
  }
 

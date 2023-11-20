@@ -1,7 +1,6 @@
 (ns clj-ts.common
   (:require [clojure.string :as string]
-            [hasch.core :refer [uuid5 edn-hash]]
-            [clj-ts.command-line :as command-line]))
+            [hasch.core :refer [uuid5 edn-hash]]))
 
 (defn split-by-hyphens [input]
   (->> (string/split input #"-{4,}")
@@ -55,10 +54,12 @@
   (= (.toString (:hash card))
      (.toString hash)))
 
-(defn neh [card hash]                                       ;; Not equal hash
+(defn neh
+  "Not equal hash"
+  [card hash]
   (not (match-hash card hash)))
 
-;; Cards in card list
+;; region Cards in card list
 
 (defn find-card-by-hash
   "Take a list of cards and return the one that matches hash or nil"
@@ -121,7 +122,9 @@
        (string/join "----")
        (string/trim)))
 
-;; Rendering / special Markup
+;; endregion
+
+;; region Rendering / special Markup
 
 ;; note - auto-links _probably_ never has an effect
 (defn auto-links [text]
@@ -159,25 +162,9 @@
             (recur (rest lines) false (conj build "</table></div>" line))
             (recur (rest lines) false (conj build line))))))))
 
-;; Cards with commands
+;; endregion
 
-(defn contains-commands? [card]
-  (let [{:keys [source_type source_data]} (raw-card-text->card-map card)
-        lines (string/split-lines source_data)]
-    (if
-      (some command-line/command-line? lines) true false)))
-
-(defn gather-all-commands [card]
-  (let [{:keys [source_type source_data]} (raw-card-text->card-map card)
-        lines (string/split-lines source_data)
-        pseq (command-line/parsed-seq lines)]
-    (conj pseq
-          {:type     source_type
-           :stripped (string/join "\n" (:non-commands pseq))})))
-
-;;;
-
-;;; BOILERPLATE
+;; region BOILERPLATE
 
 (defn embed-boilerplate [type]
   (condp = type
@@ -326,3 +313,5 @@ NO BOILERPLATE FOR EMBED TYPE " type
          "
 ----
 ")))
+
+;; endregion

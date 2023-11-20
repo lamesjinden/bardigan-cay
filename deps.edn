@@ -1,7 +1,6 @@
 {:paths ["resources" "src/common"]
  :deps  {org.clojure/core.async        {:mvn/version "1.6.673"}
          markdown-clj/markdown-clj     {:mvn/version "1.11.4"}
-         instaparse/instaparse         {:mvn/version "1.4.12"}
          io.replikativ/hasch           {:mvn/version "0.3.94"}
          com.alchemyislands/patterning {:mvn/version "0.5.4-SNAPSHOT"}
          org.babashka/sci              {:mvn/version "0.7.38"}
@@ -10,56 +9,29 @@
  :aliases
  {
 
-  :eastwood
-  {:extra-deps {jonase/eastwood {:mvn/version "RELEASE"}}
-   :main-opts  ["-m" "eastwood.lint" {:source-paths ["src/client" "src/common" "src/server"]}]}
-
-  :clj-kondo
-  {:extra-deps {clj-kondo/clj-kondo {:mvn/version "RELEASE"}}
-   :main-opts  ["-m" "clj-kondo.main"]}
-
   :dev
   {:extra-paths ["dev"]
-   :extra-deps  {expound/expound {:mvn/version "0.9.0"}}}
+   :extra-deps  {expound/expound { :mvn/version "0.9.0"}}}
 
   :client
   {:extra-deps  {org.clojure/clojurescript                     {:mvn/version "1.11.60"}
                  reagent/reagent                               {:mvn/version "1.2.0"}
-                 cljsjs/highlight                              {:mvn/version "11.7.0-0"}
-                 cljsjs/react                                  {:mvn/version "17.0.2-0"}
-                 cljsjs/react-dom                              {:mvn/version "17.0.2-0"}
-                 cljs-react-material-ui/cljs-react-material-ui {:mvn/version "0.2.50"}
-                 cljsjs/ace                                    {:mvn/version "1.4.2-0"}
                  cljfmt/cljfmt                                 {:mvn/version "0.9.2"}}
    :extra-paths ["src/client"]}
 
-  :rebel-main
-  {:main-opts  ["-m" "rebel-readline.main"]
-   :extra-deps {com.bhauman/figwheel-main       {:mvn/version "0.2.18"}
-                com.bhauman/rebel-readline      {:mvn/version "0.1.4"}
-                com.bhauman/rebel-readline-cljs {:mvn/version "0.1.4"}
-                org.clojure/tools.nrepl         {:mvn/version "0.2.13"}
-                ; careful updating cider-nrepl and piggieback
-                ; verify nrepl setup still works after updates
-                cider/cider-nrepl               {:mvn/version "0.17.0"}
-                cider/piggieback                {:mvn/version "0.3.8"}}}
-
-  :figwheel-main
-  {:extra-deps {com.bhauman/rebel-readline {:mvn/version "0.1.4"}
-                com.bhauman/figwheel-main  {:mvn/version "0.2.18"}}
-   :main-opts  ["-m" "figwheel.main" "--build" "dev/dev_client"]}
+  :shadow
+  {:extra-deps {thheller/shadow-cljs {:mvn/version "2.25.8"}
+                binaryage/devtools {:mvn/version "1.0.7"}}}
 
   :server
   {:extra-deps  {org.clojure/clojure      {:mvn/version "1.11.1"}
                  org.clojure/core.logic   {:mvn/version "1.0.1"}
                  org.clojure/data.json    {:mvn/version "2.4.0"}
-                 org.clojure/tools.reader {:mvn/version "1.3.6"}
                  ring/ring-core           {:mvn/version "1.9.6"}
                  ring/ring-json           {:mvn/version "0.5.1"}
                  hiccup/hiccup            {:mvn/version "1.0.5"}
                  http-kit/http-kit        {:mvn/version "2.6.0"}
                  org.clojure/tools.cli    {:mvn/version "1.0.214"}
-                 cljstache/cljstache      {:mvn/version "2.0.6"}
                  org.clojure/core.memoize {:mvn/version "1.0.257"}
                  clj-rss/clj-rss          {:mvn/version "0.4.0"}
                  remus/remus              {:mvn/version "0.2.4"}

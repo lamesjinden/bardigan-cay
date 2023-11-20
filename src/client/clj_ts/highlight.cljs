@@ -1,7 +1,4 @@
-(ns clj-ts.highlight
-  (:require [cljsjs.highlight]
-            [cljsjs.highlight.langs.clojure]
-            [cljsjs.highlight.langs.bash]))
+(ns clj-ts.highlight)
 
 (defn highlight-all []
   (.highlightAll js/hljs))

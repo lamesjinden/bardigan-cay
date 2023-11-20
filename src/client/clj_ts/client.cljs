@@ -18,16 +18,16 @@
 ;; region top-level ratom
 
 (defonce db (r/atom
-              {:current-page        "HelloWorld"
-               :raw                 ""
-               :transcript          ""
-               :cards               []
-               :wiki-name           "Wiki Name"
-               :site-url            "Site URL"
-               :initialized?        false
-               :mode                :viewing
-               :theme               (theme/get-initial-theme :light)
-               :env-port            4545}))
+              {:current-page "HelloWorld"
+               :raw          ""
+               :transcript   ""
+               :cards        []
+               :wiki-name    "Wiki Name"
+               :site-url     "Site URL"
+               :initialized? false
+               :mode         :viewing
+               :theme        (theme/get-initial-theme :light)
+               :env-port     4545}))
 
 ;; endregion
 
@@ -52,24 +52,28 @@
 
     (dom/render [app db confirmation-request$ progress$] (.-body js/document))))
 
-(let [render$ (cond
-                (:initialized? @db)
-                (doto (a/promise-chan) (a/put! 0))
+(defn ^:dev/after-load start []
+  (render-app))
 
-                :else (let [init-config (first (.-init js/window))
-                            init-body$ (if (object? init-config)
-                                         (doto (a/promise-chan) (a/put! init-config))
-                                         (nav/<get-init))]
-                        (a/go
-                          (let [init (a/<! init-body$)]
-                            (nav/load-page! db init)
-                            (mode/set-view-mode! db)
-                            (swap! db assoc :initialized? true)
-                            (nav/hook-pop-state db)
-                            (nav/replace-state-initial)
-                            (js/window.scroll 0 0)))))]
-  (a/go
-    (let [_ (a/<! render$)]
-      (render-app))))
+(defn ^:export init []
+  (let [render$ (cond
+                  (:initialized? @db)
+                  (doto (a/promise-chan) (a/put! 0))
+
+                  :else (let [init-config (first (.-init js/window))
+                              init-body$ (if (object? init-config)
+                                           (doto (a/promise-chan) (a/put! init-config))
+                                           (nav/<get-init))]
+                          (a/go
+                            (let [init (a/<! init-body$)]
+                              (nav/load-page! db init)
+                              (mode/set-view-mode! db)
+                              (swap! db assoc :initialized? true)
+                              (nav/hook-pop-state db)
+                              (nav/replace-state-initial)
+                              (js/window.scroll 0 0)))))]
+    (a/go
+      (let [_ (a/<! render$)]
+        (render-app)))))
 
 ;; endregion

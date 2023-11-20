@@ -1,5 +1,5 @@
 (ns clj-ts.cards.cards
-  (:require [clojure.tools.reader.edn :as edn]
+  (:require [clojure.edn :as edn]
             [clj-ts.cards.embed :as embed]
             [clj-ts.cards.system :as system]
             [clj-ts.common :as common]

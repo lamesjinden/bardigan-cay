@@ -26,8 +26,7 @@
         inner-component (condp = render-type
 
                           "markdown"
-                          (r/create-class {:reagent-render      (fn [] (inner-html (view/card->html card)))
-                                           :component-did-mount highlight/highlight-all})
+                          [inner-html (view/card->html card)]
 
                           "manual-copy"
                           [inner-html
@@ -45,8 +44,7 @@
                           [workspace db card]
 
                           "html"
-                          (r/create-class {:reagent-render      (fn [] (inner-html data))
-                                           :component-did-mount highlight/highlight-all})
+                          [inner-html data]
 
                           "hiccup"
                           [data]
@@ -68,7 +66,8 @@
                        cards (->> @db-cards (mapv set-key))
                        system-cards (->> @db-system-cards (mapv set-key))]
                    (swap! db assoc :cards cards)
-                   (swap! db assoc :system-cards system-cards)))
+                   (swap! db assoc :system-cards system-cards)
+                   (highlight/highlight-all)))
 
      :reagent-render
      (fn [_this]

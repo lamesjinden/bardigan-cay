@@ -9,7 +9,8 @@
             [clj-ts.common :as common]
             [clj-ts.cards.cards :as cards]
             [clj-ts.card-server :as card-server]
-            [cljstache.core :refer [render]]
+            [selmer.parser :refer [render]]
+            [selmer.util :refer [without-escaping]]
             [clj-ts.export.page-exporter :as page-exporter])
   (:import (java.io FileOutputStream)
            (java.nio.file Files)
@@ -244,12 +245,12 @@ USING DEFAULT"))))
                         rendered]
                        [:div {:class "system"}
                         (card->html (system/backlinks server-snapshot page-name) exporter)]])
-        page (render template
-                     {:page-title        page-name
-                      :page-main-content insert-page
-                      :time              (LocalDateTime/now)
-                      :last-modified     page-last-modified
-                      :wiki-name         (.wiki-name server-snapshot)})]
+        page (without-escaping (render template
+                                       {:page-title        page-name
+                                        :page-main-content insert-page
+                                        :time              (LocalDateTime/now)
+                                        :last-modified     page-last-modified
+                                        :wiki-name         (.wiki-name server-snapshot)}))]
     (io/make-parents file-name)
     (spit file-name page)))
 

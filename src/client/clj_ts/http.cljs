@@ -3,9 +3,6 @@
             [clj-ts.events.progression :as e-progress])
   (:import [goog.net XhrIo]))
 
-(goog-define env "production")
-(goog-define env-port "")
-
 (defn- ->progress-id [url method]
   (str url method))
 
@@ -19,13 +16,9 @@
   (when (not method)
     (throw (js/error "method was not defined")))
 
-  (let [hostname (.-hostname js/location)
-        url (if (= env "dev")
-              (str "//" hostname ":" env-port url)
-              url)
-        progress-id (->progress-id url method)
+  (let [progress-id (->progress-id url method)
         chan (a/promise-chan)
-        callback (fn [e]
+        callback (fn [^js e]
                    (if (.isSuccess (.-target e))
                      (do
                        (e-progress/notify-progress-end progress-id)

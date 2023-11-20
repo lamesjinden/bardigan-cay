@@ -1,5 +1,4 @@
-(ns clj-ts.ace
-  (:require [cljsjs.ace]))
+(ns clj-ts.ace)
 
 (def default-ace-options {:fontSize                 "1.2rem"
                           :minLines                 5
@@ -13,13 +12,13 @@
 (defn configure-ace-instance!
   ([ace-instance mode]
    (configure-ace-instance! ace-instance mode ace-theme default-ace-options))
-  ([ace-instance mode theme options]
-   (let [ace-session (.getSession ace-instance)]
+  ([^js ace-instance mode theme options]
+   (let [^js ace-session (.getSession ace-instance)]
      (.setTheme ace-instance theme)
      (.setOptions ace-instance (clj->js options))
      (.setShowInvisibles ace-instance false)
      (.setMode ace-session mode))))
 
-(defn set-theme! [ace-instance theme]
+(defn set-theme! [^js ace-instance theme]
   (when ace-instance
     (.setTheme ace-instance theme)))

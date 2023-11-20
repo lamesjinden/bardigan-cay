@@ -1,0 +1,22 @@
+{
+  "name": "cb",
+  "version": "1.0.0",
+  "description": "![How it looks](https://github-production-user-asset-6210df.s3.amazonaws.com/7298563/251646162-117b5389-a9d5-4621-8b0f-d055a2578bf0.png)",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "shadow-cljs": "^2.26.0"
+  },
+  "dependencies": {
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2"
+  }
+}
