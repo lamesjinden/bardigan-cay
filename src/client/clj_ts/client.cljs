@@ -50,7 +50,7 @@
         confirmation-request$ (e-confirm/create-confirmation-request$)
         progress$ (e-progress/create-progress$)]
 
-    (dom/render [app db confirmation-request$ progress$] (.-body js/document))))
+    (dom/render [app db confirmation-request$ progress$] (js/document.getElementById "app"))))
 
 (defn ^:dev/after-load start []
   (render-app))

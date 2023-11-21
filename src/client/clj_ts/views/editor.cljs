@@ -53,7 +53,7 @@
 
 (defn setup-editor [db !editor-element]
   (let [editor-element @!editor-element
-        ace-instance (.edit js/ace editor-element)
+        ace-instance (ace/create-edit editor-element)
         ace-options (assoc ace/default-ace-options :maxLines "Infinity")
         theme (if (theme/light-theme? db) ace/ace-theme ace/ace-theme-dark)]
     (ace/configure-ace-instance! ace-instance ace/ace-mode-markdown theme ace-options)

@@ -90,7 +90,7 @@
 
 (defn- setup-editor [db local-db !editor-element]
   (let [editor-element @!editor-element
-        ace-instance (.edit js/ace editor-element)
+        ace-instance (ace/create-edit editor-element)
         max-lines (->> (:code-editor-size @local-db)
                        (get size->editor-max-lines))
         editor-options (assoc ace/default-ace-options :maxLines max-lines)

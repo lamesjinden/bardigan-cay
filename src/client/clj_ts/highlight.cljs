@@ -8,6 +8,5 @@
 (.registerLanguage hljs "bash" bash)
 (.registerLanguage hljs "clojure" clojure)
 
-
 (defn highlight-all []
   (.highlightAll hljs))
