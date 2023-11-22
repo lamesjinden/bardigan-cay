@@ -24,4 +24,4 @@
       (b/uber {:class-dir class-dir
                :uber-file uber-file
                :basis     basis
-               :main      'clj-ts.server}))
+               :main      'clj-ts.app}))
