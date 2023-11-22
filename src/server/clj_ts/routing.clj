@@ -113,15 +113,18 @@
   (-> (get-page-body card-server page-name)
       (util/->json-response)))
 
+(def api-pages-request-pattern #"/api/page/(.+)")
+
 (defn handle-api-page [{:keys [card-server] :as request}]
-  (let [body (:body request)
-        page-name (:page_name body)]
+  (let [uri (:uri request)
+        match (re-matches api-pages-request-pattern uri)
+        page-name (codec/url-decode (get match 1))]
     (get-page-response card-server page-name)))
 
 (defn handle-api-search [{:keys [card-server] :as request}]
-  (let [body (:body request)
+  (let [{{query :q} :params} request
         server-snapshot @card-server]
-    (-> (clj-ts.card-server/resolve-text-search server-snapshot nil body nil)
+    (-> (clj-ts.card-server/resolve-text-search server-snapshot nil {:query_string query} nil)
         (json/write-str)
         (util/->json-response))))
 
@@ -182,10 +185,10 @@
 
 (def routes {:root                   {:get handle-root-request}
              :api-init               {:get handle-api-init}
-             :api-page               {:post handle-api-page} ;; implement as a get
+             :api-page               {:get handle-api-page}
              :pages                  {:get handle-pages-request}
              :api-system-db          {:get handle-api-system-db}
-             :api-search             {:post handle-api-search} ;; implement as a get
+             :api-search             {:get handle-api-search}
              :api-save               {:post handle-api-save}
              :api-move-card          {:post handle-api-move-card}
              :api-reorder-card       {:post handle-api-reorder-card}
@@ -200,7 +203,7 @@
   (cond
     (= uri "/") :root
     (= uri "/api/init") :api-init
-    (= uri "/api/page") :api-page
+    (re-matches api-pages-request-pattern uri) :api-page
     (re-matches pages-request-pattern uri) :pages
     (= uri "/api/system/db") :api-system-db
     (= uri "/api/search") :api-search

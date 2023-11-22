@@ -10,11 +10,7 @@
 
 (defn <create-nav-process [navigating$ editing$]
   (let [do-post (fn [page-name]
-                  (http/<http-post "/api/page"
-                                   (->> {:page_name page-name}
-                                        (clj->js)
-                                        (.stringify js/JSON))
-                                   {:headers {"Content-Type" "application/json"}}))]
+                  (http/<http-get (str "/api/page/" (js/encodeURI page-name))))]
     (a/go-loop [editing #{}]
                (let [[value channel] (a/alts! [navigating$ editing$])]
                  (condp = channel

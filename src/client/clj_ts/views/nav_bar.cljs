@@ -50,17 +50,14 @@
   (let [cleaned-query (-> (or query-text "")
                           (str/replace "\"" "")
                           (str/replace "'" "")
-                          (str/trim))]
+                          (str/trim)
+                          (js/encodeURI))]
     (when (not (str/blank? cleaned-query))
-      (let [query (->> {:query_string cleaned-query}
-                       (clj->js)
-                       (.stringify js/JSON))
-            options {:headers {"Content-Type" "application/json"}}]
-        (a/go
-          (when-let [result (a/<! (http/<http-post "/api/search" query options))]
-            (let [{body-text :body} result
-                  body (.parse js/JSON body-text)]
-              (load-search-results! db cleaned-query body))))))))
+      (a/go
+        (when-let [result (a/<! (http/<http-get (str "/api/search?q=" cleaned-query)))]
+          (let [{body-text :body} result
+                body (.parse js/JSON body-text)]
+            (load-search-results! db cleaned-query body)))))))
 
 (defn- on-search-clicked [db query-text]
   (let [query-text (-> (or query-text "")
