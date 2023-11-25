@@ -11,7 +11,8 @@
 
   :dev
   {:extra-paths ["dev"]
-   :extra-deps  {expound/expound {:mvn/version "0.9.0"}}}
+   :extra-deps  {expound/expound   {:mvn/version "0.9.0"}
+                 cider/cider-nrepl {:mvn/version "0.44.0"}}}
 
   :client
   {:extra-deps  {org.clojure/clojurescript {:mvn/version "1.11.60"}
@@ -36,7 +37,7 @@
                  clj-rss/clj-rss          {:mvn/version "0.4.0"}
                  remus/remus              {:mvn/version "0.2.4"}
                  selmer/selmer            {:mvn/version "1.12.58"}
-                 com.taoensso/timbre        {:mvn/version "6.3.1"}}
+                 com.taoensso/timbre      {:mvn/version "6.3.1"}}
    :extra-paths ["src/server"]}
 
   :dev-server
@@ -50,8 +51,7 @@
   {:main-opts ["-m" "clj-ts.app"]}
 
   :nrepl-main
-  {:extra-deps {nrepl/nrepl {:mvn/version "1.0.0"}}
-   :main-opts  ["-m" "nrepl.cmdline"]}
+  {:main-opts ["-m" "nrepl.cmdline" "--middleware" "[cider.nrepl/cider-middleware]"]}
 
   :test
   {:extra-paths ["test"]

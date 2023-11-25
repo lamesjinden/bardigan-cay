@@ -1,7 +1,6 @@
 (ns dev-server
   (:require
     [clojure.pprint]
-    [org.httpkit.server :as http]
     [ring.middleware.reload :as reload]
     [ring.middleware.cors :as cors]
     [clj-ts.server :as server]
@@ -21,7 +20,7 @@
 
 (defn create-server [& args]
   (println)
-  (println "creating dev server:")
+  (println "== creating dev server ==")
 
   (let [{:keys [options]} (app/args->opts args)
         application-settings (app/gather-application-settings options)]
@@ -38,9 +37,7 @@
                                (reload/wrap-reload)
                                (cors/wrap-cors :access-control-allow-origin [#".*"]
                                                :access-control-allow-methods [:get :put :post :delete]))]
-      (reset! server (http/run-server
-                       request-pipeline
-                       (server/gather-server-settings application-settings))))))
+      (reset! server (server/create-server application-settings request-pipeline)))))
 
 (defn -main [& args]
   (apply create-server args))
