@@ -1,13 +1,15 @@
 (ns clj-ts.ace
   (:require ["ace-builds/src-min-noconflict/ace" :default ace]
-            ["ace-builds/src-min-noconflict/theme-cloud9_day"]
-            ["ace-builds/src-min-noconflict/theme-cloud9_night"]
+            ["ace-builds/src-min-noconflict/ext-language_tools"]
             ["ace-builds/src-min-noconflict/mode-clojure" :as mode-clojure]
-            ["ace-builds/src-min-noconflict/mode-markdown" :as mode-markdown]))
+            ["ace-builds/src-min-noconflict/mode-markdown" :as mode-markdown]
+            ["ace-builds/src-min-noconflict/theme-cloud9_day"]
+            ["ace-builds/src-min-noconflict/theme-cloud9_night"]))
 
 (def default-ace-options {:fontSize                 "1.2rem"
                           :minLines                 5
-                          :autoScrollEditorIntoView true})
+                          :autoScrollEditorIntoView true
+                          :enableLiveAutocompletion true})
 
 (def ace-theme "ace/theme/cloud9_day")
 (def ace-theme-dark "ace/theme/cloud9_night")
