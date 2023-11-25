@@ -51,6 +51,7 @@
   --progress-bar-opacity-animation-duration: 25ms;
   --progress-bar-completed-animation-duration: 200ms;
   --progress-bar-failed-animation-duration: 500ms;
+  --blockquote-inset-color: var(--primary-accent-color);
 }
 
 .theme-dark {
@@ -200,6 +201,12 @@ img {
 main {
   padding: var(--main-padding-top) var(--main-padding-right) var(--main-padding-bottom) var(--main-padding-left);
   margin: calc(-1*var(--material-icon-size)) 5px 5px 5px;
+}
+
+blockquote {
+  padding: 0 0 0 1em;
+  margin: 0 0 0 0.1em;
+  box-shadow: inset 5px 0 var(--blockquote-inset-color);
 }
 
 /*#region input */
