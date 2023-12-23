@@ -9,6 +9,7 @@
     [clj-ts.common :as common]
     [clj-ts.cards.system :as system]
     [clj-ts.cards.cards :as cards]
+    [clj-ts.cards.card-data :as card-data]
     [clj-ts.search :as search]
     [clj-ts.export.page-exporter]
     [clj-rss.core :as rss]]
@@ -109,7 +110,7 @@ If you would *like* to create a page with this name, simply click the [Edit] but
        :system_cards    (let [sim-names (map #(str "\n- [[" % "]]") (.similar-page-names ps page_name))]
                           (if (empty? sim-names)
                             []
-                            [(common/package-card
+                            [(card-data/package-card
                                :similarly_name_pages :system :markdown ""
                                (str "Here are some similarly named pages :"
                                     (apply str sim-names)) false)]))})))
@@ -182,7 +183,7 @@ If you would *like* to create a page with this name, simply click the [Edit] but
             new-body (if (and (= source-type :markdown) source-type-implicit?)
                        new-body
                        (str source-type "\n" new-body))
-            new-card (common/raw-card-text->card-map new-body)
+            new-card (card-data/raw-card-text->card-map new-body)
             new-cards (common/replace-card
                         cards
                         #(common/match-hash % hash)

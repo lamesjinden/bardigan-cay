@@ -8,6 +8,10 @@
             [clj-ts.views.card-bar :refer [card-bar]]
             [clj-ts.views.editor-single :refer [single-editor]]))
 
+(def expanded-states #{:expanded :collapsed})
+
+(def default-initial-expanded-state :expanded)
+
 (defn expanded? [local-db]
   (= :expanded (:expanded-state @local-db)))
 
@@ -41,8 +45,14 @@
     (true? (:editable? @local-db))
     (enter-edit-mode! local-db)))
 
+(defn- ->initial-expanded-state [card-configuration]
+  (or (-> (get card-configuration :display)
+          (expanded-states))
+      default-initial-expanded-state))
+
 (defn card-shell [db card component]
-  (let [local-db (r/atom {:expanded-state :expanded
+  (let [card-configuration (or (cards/->card-configuration card) {})
+        local-db (r/atom {:expanded-state (->initial-expanded-state card-configuration)
                           :mode           :viewing
                           :card           card
                           :hash           (get card "hash")

@@ -1,6 +1,5 @@
 (ns clj-ts.views.workspace-card
   (:require [clojure.string :as str]
-            [clojure.edn :as edn]
             [cljs.pprint :refer [pprint]]
             [reagent.core :as r]
             [sci.core :as sci]
@@ -102,32 +101,18 @@
   (when-let [editor (:editor @local-db)]
     (.destroy editor)))
 
-(defn ->card-configuration
-  "the card configuration is a map literal read from server_prepared_data.
-   if the first form is not a map, returns nil."
-  [server-prepared-data]
-  (try
-    (let [edn (-> server-prepared-data
-                  (str/trim)
-                  (edn/read-string))]
-      (when (map? edn)
-        edn))
-    (catch :default _e
-      nil)))
-
-(defn workspace [db card]
-  (let [server-prepared-data (get card "server_prepared_data")
-        card-configuration (or (->card-configuration server-prepared-data) {})
+(defn workspace [db {:strs [hash source_type source_data] :as card}]
+  (let [card-configuration (or (cards/->card-configuration card) {})
         local-db (r/atom {:calc             []
                           :calc-toggle      (get card-configuration :calc-visibility false)
-                          :code             server-prepared-data
+                          :code             source_data
                           :code-editor-size :small
                           :code-toggle      (get card-configuration :code-visibility true)
                           :editor           nil
-                          :hash             (get card "hash")
+                          :hash             hash
                           :result           ""
                           :result-toggle    (get card-configuration :result-visibility false)
-                          :source_type      (get card "source_type")})
+                          :source_type      source_type})
         !editor-element (clojure.core/atom nil)
         track-theme (r/track! (partial theme-tracker db local-db))]
 

@@ -1,14 +1,14 @@
 (ns clj-ts.cards.system
-  (:require [clj-ts.common :as common]
+  (:require [clojure.edn :as edn]
+            [clj-ts.cards.card-data :as card-data]
             [clj-ts.render :as render]
-            [clj-ts.search :as search]
-            [clojure.edn :as edn]))
+            [clj-ts.search :as search]))
 
 (defn- ldb-query->mdlist-card [i source_data title result _qname f render-context]
   (let [items (apply str (map f result))
         body (str "*" title "* " "*(" (count result) " items)*\n\n" items)
         html (render/md->html body)]
-    (common/package-card i :system :html source_data html render-context)))
+    (card-data/package-card i :system :html source_data html render-context)))
 
 (defn- item1 [s] (str "* [[" s "]]\n"))
 
@@ -43,13 +43,13 @@
       :recentchanges
       (let [src (.read-recent-changes page-store)
             html (render/md->html src)]
-        (common/package-card "recentchanges" :system :html src html render-context))
+        (card-data/package-card "recentchanges" :system :html src html render-context))
 
       :search
       ;; note/todo - if this path is used, then the first arg needs to be made case-insensitive (see resolve-text-search below)
       (let [res (search/search server-snapshot (:query info) (:query info))
             html (render/md->html res)]
-        (common/package-card "search" :system :html data html render-context))
+        (card-data/package-card "search" :system :html data html render-context))
 
       :about
       (let [sr (str "### System Information\n
@@ -59,7 +59,7 @@
 **Site Url Root** ,, " (:site-url server-snapshot) "
 **Export Dir** ,, " (.export-path page-store) "
 **Number of Pages** ,, " (count (.all-pages facts-db)))]
-        (common/package-card i :system :markdown data sr render-context))
+        (card-data/package-card i :system :markdown data sr render-context))
 
       :filelist
       (let [file-names (-> (.page-store server-snapshot)
@@ -70,25 +70,25 @@
                              (map #(str "<li> <a href='/media/" % "'>" % "</a></li>\n")
                                   file-names))
                            "</ul>")]
-        (common/package-card i :system :html data file-list render-context))
+        (card-data/package-card i :system :html data file-list render-context))
 
       ;; not recognised
       (let [d (str "Not recognised system command in " data " -- cmd " command)]
-        (common/package-card i :system :raw data d render-context)))))
+        (card-data/package-card i :system :raw data d render-context)))))
 
 (defn backlinks
   [server-snapshot page-name]
   (let [bl (.links-to server-snapshot page-name)]
     (cond
       (= bl :not-available)
-      (common/package-card
+      (card-data/package-card
         :backlinks :system :markdown
         "Backlinks Not Available"
         "Backlinks Not Available"
         false)
 
       (= bl '())
-      (common/package-card
+      (card-data/package-card
         :backlinks :system :markdown
         "No Backlinks"
         "No Backlinks"

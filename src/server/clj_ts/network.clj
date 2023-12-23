@@ -1,7 +1,7 @@
 (ns clj-ts.network
   (:require [clojure.edn :as edn]
             [hiccup.core :refer [html]]
-            [clj-ts.common :as common]))
+            [clj-ts.cards.card-data :as card-data]))
 
 (defn calculate-node-size [label {:keys [font-size padding]}]
   (let [text-width (* (count label) font-size 0.6)          ; Assuming each character has a width of 0.6 * font-size
@@ -69,6 +69,6 @@
 
 (defn network-card [i data render-context]
   (let [svg (html (network->svg (edn/read-string data)))]
-    (common/package-card
+    (card-data/package-card
       i :network :markdown data
       svg render-context)))

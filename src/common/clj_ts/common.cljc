@@ -1,46 +1,5 @@
 (ns clj-ts.common
-  (:require [clojure.string :as string]
-            [hasch.core :refer [uuid5 edn-hash]]))
-
-(defn split-by-hyphens [input]
-  (->> (string/split input #"-{4,}")
-       (map string/trim)
-       (remove string/blank?)))
-
-(defn hash-it [card-data]
-  (-> card-data
-      (edn-hash)
-      (uuid5)))
-
-(defn raw-card-text->card-map [raw-card-text]
-  (let [regex #"^:(\S+)"
-        card-text (-> raw-card-text
-                      (string/trim))
-        card-body (-> (string/replace-first card-text regex "")
-                      (string/trim))
-        card-hash (hash-it card-body)]
-    (if (not (re-find regex card-text))
-      {:source_type           :markdown
-       :source_type_implicit? true
-       :source_data           card-text
-       :hash                  card-hash}
-      {:source_type (->> raw-card-text (re-find regex) second keyword)
-       :source_data card-body
-       :hash        card-hash})))
-
-(defn raw-text->card-maps [raw]
-  (->> raw
-       (split-by-hyphens)
-       (map raw-card-text->card-map)))
-
-(defn package-card [id source-type render-type source-data server-prepared-data render-context]
-  {:source_type          source-type
-   :render_type          render-type
-   :source_data          source-data
-   :server_prepared_data server-prepared-data
-   :id                   id
-   :hash                 (hash-it source-data)
-   :user_authored?       (:user-authored? render-context)})
+  (:require [clojure.string :as string]))
 
 (defn card->raw [{:keys [source_type source_type_implicit? source_data]}]
   (if (and (= source_type :markdown) source_type_implicit?)

@@ -78,17 +78,17 @@
        (let [server-snapshot @card-server
              page-config (get-page-data server-snapshot {:page_name page-name})
              workspace-card? (as-> (get-in page-config [:server_prepared_page :cards]) $
-                                   (some (fn [card] (= :workspace (:source_type card))) $)
-                                   (if $ "" "defer"))
+                               (some (fn [card] (= :workspace (:source_type card))) $)
+                               (if $ "" "defer"))
              page-config-str (json/write-str page-config)
              rendered (selmer.util/without-escaping
-                        (-> (selmer.parser/render
-                              subject-content
-                              {:page-config page-config-str}
-                              {:tag-open   \[
-                               :tag-close  \]
-                               :tag-second \"})
-                            (selmer.parser/render {:has-workspace? workspace-card?})))]
+                       (-> (selmer.parser/render
+                            subject-content
+                            {:page-config page-config-str}
+                            {:tag-open   \[
+                             :tag-close  \]
+                             :tag-second \"})
+                           (selmer.parser/render {:has-workspace? workspace-card?})))]
          rendered)
        subject-content))))
 
@@ -159,11 +159,11 @@
 (defn handle-api-rss-recent-changes [{:keys [card-server] :as _request}]
   (let [server-snapshot @card-server]
     (-> (card-server/rss-recent-changes
-          server-snapshot
-          (fn [page-name]
-            (str (-> server-snapshot
-                     :page-exporter
-                     (.page-name->exported-link page-name)))))
+         server-snapshot
+         (fn [page-name]
+           (str (-> server-snapshot
+                    :page-exporter
+                    (.page-name->exported-link page-name)))))
         (resp/response)
         (resp/content-type "application/rss+xml"))))
 
@@ -196,8 +196,7 @@
              :api-rss-recent-changes {:get handle-api-rss-recent-changes}
              :api-export-page        {:get export-page-handler}
              :api-export-all-ages    {:get export-all-pages-handler}
-             :media                  {:get handle-media}
-             :not-found              nil})                  ;; todo/note - how to return something that is get'able where any key maps to a single thing?
+             :media                  {:get handle-media}})
 
 (defn router [uri]
   (cond
@@ -221,6 +220,6 @@
   (let [uri (:uri request)
         method (:request-method request)
         handler (as-> (router uri) $
-                      (get routes $ {})
-                      (get $ method handle-not-found))]
+                  (get routes $ {})
+                  (get $ method handle-not-found))]
     (handler request)))
