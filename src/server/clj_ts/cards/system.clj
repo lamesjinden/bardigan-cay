@@ -76,6 +76,8 @@
       (let [d (str "Not recognised system command in " data " -- cmd " command)]
         (parsing/package-card i :system :raw data d render-context)))))
 
+(def backlinks-card-default-configuration {:display :collapsed})
+
 (defn backlinks
   [server-snapshot page-name]
   (let [bl (.links-to server-snapshot page-name)]
@@ -97,7 +99,7 @@
       :else
       (ldb-query->mdlist-card
        "backlinks"
-       (str  "backlinks")
+       (str backlinks-card-default-configuration "\n\n" "backlinks")
        "Backlinks" bl
        :calculated
        (fn [[a b]] (str "* [[" a "]] \n"))
