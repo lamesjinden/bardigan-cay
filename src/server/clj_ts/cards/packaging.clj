@@ -1,11 +1,12 @@
-(ns clj-ts.cards.cards
+(ns clj-ts.cards.packaging
   (:require [clojure.edn :as edn]
             [clojure.java.io :as io]
-            [clj-ts.cards.card-data :as card-data]
+            [clj-ts.cards.bookmark :as bookmark]
+            [clj-ts.cards.parsing :as parsing]
             [clj-ts.cards.embed :as embed]
+            [clj-ts.cards.network :as network]
             [clj-ts.cards.system :as system]
-            [clj-ts.patterning :as patterning]
-            [clj-ts.network :as network]
+            [clj-ts.cards.patterning :as patterning]
             [clj-ts.render :as render]
             [clj-ts.util :as util])
   (:import (java.io PushbackReader)))
@@ -33,14 +34,7 @@
     (catch Exception _e
       source_data)))
 
-(defn- bookmark-card [data]
-  (let [{:keys [url timestamp title]} (edn/read-string data)
-        url (util/nonblank url "url missing")
-        title (util/nonblank title url)
-        timestamp' (if timestamp
-                     (format " \n\n_saved: %s_" timestamp)
-                     "")]
-    (format "\n[%s](%s)%s\n" title url timestamp')))
+
 
 ;; todo - Q: why does process-card-map return a vector of 1 element?
 ;;        A: b/c transclude returns a header card and the subject card, and the array unifies the result type (??)
@@ -50,58 +44,58 @@
     [(condp = source_type
 
        :markdown
-       (card-data/package-card i source_type :html
-                               source_data (render/md->html (remove-card-configuration source_data))
-                               render-context)
+       (parsing/package-card i source_type :html
+                             source_data (render/md->html (remove-card-configuration source_data))
+                             render-context)
 
        :manual-copy
-       (card-data/package-card i source_type :manual-copy source_data source_data render-context)
+       (parsing/package-card i source_type :manual-copy source_data source_data render-context)
 
        :raw
-       (card-data/package-card i source_type :raw source_data source_data render-context)
+       (parsing/package-card i source_type :raw source_data source_data render-context)
 
        :code
-       (card-data/package-card i :code :code source_data source_data render-context)
+       (parsing/package-card i :code :code source_data source_data render-context)
 
        :evalraw
-       (card-data/package-card i :evalraw :raw source_data (util/server-eval source_data) render-context)
+       (parsing/package-card i :evalraw :raw source_data (util/server-eval source_data) render-context)
 
        :evalmd
-       (card-data/package-card i :evalmd :markdown source_data (util/server-eval source_data) render-context)
+       (parsing/package-card i :evalmd :markdown source_data (util/server-eval source_data) render-context)
 
        :workspace
-       (card-data/package-card i source_type :workspace source_data source_data render-context)
+       (parsing/package-card i source_type :workspace source_data source_data render-context)
 
        :system
        (system/system-card server-snapshot i source_data render-context)
 
        :embed
-       (card-data/package-card i source_type :html
-                               source_data (embed/process source_data
+       (parsing/package-card i source_type :html
+                             source_data (embed/process source_data
                                                           render-context
                                                           (if (:for-export? render-context)
                                                             (:link-renderer render-context)
                                                             (fn [s] (render/md->html s)))
                                                           server-snapshot)
-                               render-context)
+                             render-context)
 
        :bookmark
-       (card-data/package-card i :bookmark :markdown source_data (bookmark-card source_data) render-context)
+       (parsing/package-card i :bookmark :markdown source_data (bookmark/bookmark-card source_data) render-context)
 
        :network
        (network/network-card i source_data render-context)
 
        :patterning
-       (card-data/package-card i :patterning :html source_data (patterning/one-pattern source_data) render-context)
+       (parsing/package-card i :patterning :html source_data (patterning/one-pattern source_data) render-context)
 
        :filelink
-       (card-data/package-card i :filelink :html source_data (render/file-link source_data) render-context)
+       (parsing/package-card i :filelink :html source_data (render/file-link source_data) render-context)
 
        ;; not recognised
-       (card-data/package-card i source_type source_type source_data source_data render-context))]
+       (parsing/package-card i source_type source_type source_data source_data render-context))]
     (catch
       Exception e
-      [(card-data/package-card i :raw :raw source_data (render/process-card-error source_type source_data e) render-context)])))
+      [(parsing/package-card i :raw :raw source_data (render/process-card-error source_type source_data e) render-context)])))
 
 (defn- transclude
   [server-snapshot i source-data render-context]
@@ -117,7 +111,7 @@
         ;; todo - may have broken transclusion here while attempting to avoid forward declaring card-maps->processed
         cards (card-maps->processed (* 100 i) matched-cards render-context)
         body (str "### Transcluded from [[" from "]]")]
-    (concat [(card-data/package-card i :transclude :markdown body body render-context)] cards)))
+    (concat [(parsing/package-card i :transclude :markdown body body render-context)] cards)))
 
 (defn- process-card [server-snapshot i {:keys [source_type source_data] :as card-maps} render-context]
   (if (= source_type :transclude)
@@ -125,7 +119,7 @@
     (process-card-map server-snapshot i card-maps render-context)))
 
 (defn raw->cards [server-snapshot raw render-context]
-  (let [card-maps (card-data/raw-text->card-maps raw)]
+  (let [card-maps (parsing/raw-text->card-maps raw)]
     (mapcat (fn [i card-maps render-context]
               (process-card server-snapshot i card-maps render-context))
             (iterate inc 0)

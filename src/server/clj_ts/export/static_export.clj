@@ -1,16 +1,15 @@
 (ns clj-ts.export.static-export
-  (:require [clj-ts.cards.system :as system]
-            [clj-ts.util :as util]
-            [clojure.string :as str]
-            [clojure.string :as string]
+  (:require [clojure.string :as str]
             [clojure.java.io :as io]
             [hiccup.core :as hiccup]
             [markdown.core :as md]
-            [clj-ts.common :as common]
-            [clj-ts.cards.cards :as cards]
-            [clj-ts.card-server :as card-server]
             [selmer.parser :refer [render]]
             [selmer.util :refer [without-escaping]]
+            [clj-ts.cards.system :as system]
+            [clj-ts.util :as util]
+            [clj-ts.common :as common]
+            [clj-ts.cards.packaging :as packaging]
+            [clj-ts.card-server :as card-server]
             [clj-ts.export.page-exporter :as page-exporter])
   (:import (java.io FileOutputStream)
            (java.nio.file Files)
@@ -28,20 +27,20 @@
                  (.page-name->exported-link pe m) "\">"
                  m "</a>")
             (str "<em>" m "</em>")))]
-    (string/replace text
-                    #"\[\[(.+?)\]\]"
-                    replace-link)))
+    (str/replace text
+                 #"\[\[(.+?)\]\]"
+                 replace-link)))
 
 (defn process-script [s]
-  (if (string/includes? s ";;;;PUBLIC")
-    (let [broken (string/split s #";;;;PUBLIC")
+  (if (str/includes? s ";;;;PUBLIC")
+    (let [broken (str/split s #";;;;PUBLIC")
           private (first broken)
           public (second broken)]
       [private public])
     ["" s]))
 
 (defn exported-workspace [card]
-  (let [id (-> (hash card) (string/replace "-" ""))
+  (let [id (-> (hash card) (str/replace "-" ""))
         fn-name (str "run" id)
         src-name (str "id" id)
         src-name-private (str "idp" id)
@@ -224,9 +223,9 @@ USING DEFAULT"))))
   (as-> server-snapshot $
         (.page-store $)
         (.load-page $ page-name)
-        (cards/raw->cards server-snapshot $ {:user-authored? true
-                                             :for-export?    true
-                                             :link-renderer  link-renderer})))
+        (packaging/raw->cards server-snapshot $ {:user-authored? true
+                                                 :for-export?    true
+                                                 :link-renderer  link-renderer})))
 
 (defn- export-page [server-snapshot page-name template working-directory]
   (let [page-store (:page-store server-snapshot)
@@ -234,7 +233,7 @@ USING DEFAULT"))))
         cards (load->cards-for-export server-snapshot page-name (fn [s] (double-bracket-links s exporter)))
         page-last-modified (.last-modified page-store page-name)
         file-name (-> (.page-name->export-file-path exporter page-name working-directory) .toString)
-        rendered (string/join
+        rendered (str/join
                    "\n"
                    (->> cards
                         (filter #(not (common/card-is-blank? %)))

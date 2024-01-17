@@ -1,13 +1,11 @@
 (ns clj-ts.cards.embed
   (:require [clojure.edn :as edn]
+            [clojure.data.json :as json]
+            [clojure.string :as string]
             [org.httpkit.client :as http]
             [org.httpkit.sni-client :as sni]
-            [clojure.string :as string]
-            [remus :refer [parse-url parse-file parse-stream]]
-            [clj-ts.common :as common]
-            [clojure.data.json :as json]
-            [hiccup.core :refer [html]]))
-
+            [remus :refer [parse-url]]
+            [clj-ts.common :as common]))
 
 (alter-var-root #'org.httpkit.client/*default-client* (fn [_] sni/default-client))
 

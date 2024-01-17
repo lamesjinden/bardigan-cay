@@ -3,7 +3,7 @@
     [clojure.java.io :as io]
     [clojure.string :as string]
     [clojure.core.memoize :refer [memo memo-clear!]]
-    [clj-ts.cards.card-data :as card-data]
+    [clj-ts.cards.parsing :as parsing]
     [clj-ts.common :refer [find-card-by-hash]]
     [clj-ts.storage.page-storage :as page-storage])
   (:import (java.nio.file Files Path Paths)))
@@ -46,7 +46,7 @@
     (->> page-name
          (.page-name->path this)
          (.load-page this)
-         (card-data/raw-text->card-maps)))
+         (parsing/raw-text->card-maps)))
 
   (get-card [this page-name hash]
     (-> (.get-page-as-card-maps this page-name)

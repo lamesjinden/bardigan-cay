@@ -8,8 +8,8 @@
     [clj-ts.query.card-server-record :as server-record]
     [clj-ts.common :as common]
     [clj-ts.cards.system :as system]
-    [clj-ts.cards.cards :as cards]
-    [clj-ts.cards.card-data :as card-data]
+    [clj-ts.cards.packaging :as packaging]
+    [clj-ts.cards.parsing :as parsing]
     [clj-ts.search :as search]
     [clj-ts.export.page-exporter]
     [clj-rss.core :as rss]]
@@ -62,7 +62,7 @@
   (as-> server-snapshot $
         (.page-store $)
         (.load-page $ page-name)
-        (cards/raw->cards server-snapshot $ {:user-authored? true :for-export? false})))
+        (packaging/raw->cards server-snapshot $ {:user-authored? true :for-export? false})))
 
 (defn resolve-text-search [server-snapshot _context arguments _value]
   (let [{:keys [query_string]} arguments
@@ -106,11 +106,11 @@ If you would *like* to create a page with this name, simply click the [Edit] but
        :start_page_name start-page-name
        :public_root     (str site-url "/view/")
        :nav-links       nav-links
-       :cards           (cards/raw->cards server-snapshot (render/missing-page page_name) {:user-authored? false :for-export? false})
+       :cards           (packaging/raw->cards server-snapshot (render/missing-page page_name) {:user-authored? false :for-export? false})
        :system_cards    (let [sim-names (map #(str "\n- [[" % "]]") (.similar-page-names ps page_name))]
                           (if (empty? sim-names)
                             []
-                            [(card-data/package-card
+                            [(parsing/package-card
                                :similarly_name_pages :system :markdown ""
                                (str "Here are some similarly named pages :"
                                     (apply str sim-names)) false)]))})))
@@ -183,14 +183,14 @@ If you would *like* to create a page with this name, simply click the [Edit] but
             new-body (if (and (= source-type :markdown) source-type-implicit?)
                        new-body
                        (str source-type "\n" new-body))
-            new-card (card-data/raw-card-text->card-map new-body)
+            new-card (parsing/raw-card-text->card-map new-body)
             new-cards (common/replace-card
                         cards
                         #(common/match-hash % hash)
                         new-card)]
         (write-page-to-file! card-server page-name (common/cards->raw new-cards))
         (let [render-context {:user-authored? true :for-export? false}
-              packaged-card (-> (cards/process-card-map server-snapshot -1 new-card render-context)
+              packaged-card (-> (packaging/process-card-map server-snapshot -1 new-card render-context)
                                 (first)
                                 (dissoc :id))]
           packaged-card)))))
