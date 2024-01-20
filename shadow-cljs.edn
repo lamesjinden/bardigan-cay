@@ -4,4 +4,5 @@
              :output-dir "resources/public/js"
              :modules  {:main {:entries [clj-ts.client]
                                :init-fn clj-ts.client/init}}
-             :devtools {:preloads [devtools.preload]}}}}
+             :devtools {:preloads [devtools.preload]
+                        :watch-dir "resources/public"}}}}
