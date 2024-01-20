@@ -57,6 +57,12 @@
 (defn toggle-result! [state]
   (swap! state #(conj % {:result-toggle (-> @state :result-toggle not)})))
 
+(def layout-transitions {:vertical   :horizontal
+                         :horizontal :vertical})
+
+(defn toggle-layout! [state]
+  (swap! state update :layout layout-transitions))
+
 (defn format-workspace [state]
   (let [editor (:editor @state)
         code (.getValue editor)
@@ -110,6 +116,7 @@
                           :code-toggle      (get card-configuration :code-visibility true)
                           :editor           nil
                           :hash             hash
+                          :layout           (get card-configuration :layout :vertical)
                           :result           ""
                           :result-toggle    (get card-configuration :result-visibility false)
                           :source_type      source_type})
@@ -131,21 +138,30 @@
                                   [:div.workspace-header-container
                                    [:div.visibility-buttons
                                     [:button.big-btn.big-btn-left {:class    (when (-> @local-db :code-toggle) "pressed")
-                                                                   :on-click (fn [] (toggle-code! local-db))}
-                                     "SOURCE"]
+                                                                   :on-click (fn [] (toggle-code! local-db))
+                                                                   :on-double-click (fn [e] (.stopPropagation e))}
+                                     "CODE"]
                                     [:button.big-btn.big-btn-middle {:class    (when (-> @local-db :result-toggle) "pressed")
-                                                                     :on-click (fn [] (toggle-result! local-db))}
+                                                                     :on-click (fn [] (toggle-result! local-db))
+                                                                     :on-double-click (fn [e] (.stopPropagation e))}
                                      "RESULT"]
                                     [:button.big-btn.big-btn-right {:class    (when (-> @local-db :calc-toggle) "pressed")
-                                                                    :on-click (fn [] (toggle-calc! local-db))}
-                                     "CALCULATED"]]
-                                   [:div]]
+                                                                    :on-click (fn [] (toggle-calc! local-db))
+                                                                    :on-double-click (fn [e] (.stopPropagation e))}
+                                     "RAW"]]
 
-                                  [:div.code.workspace-padding
+                                   [:button.big-btn {:on-click (fn [] (toggle-layout! local-db))
+                                                     :on-double-click (fn [e] (.stopPropagation e))}
+                                    [:span {:class [:material-symbols-sharp :clickable]} (if (= :vertical (:layout @local-db))
+                                                                                           "vertical_split"
+                                                                                           "horizontal_split")]]]
+                                  [:div.workspace-section-container {:class (if (= :vertical (:layout @local-db))
+                                                                              "vertical"
+                                                                              "horizontal")}
                                    ;; visibility controlled by style.display instead of 'when because the editor control needs to be initialized when (re)created
-                                   [:div.code-section {:style {:display (->display (-> @local-db :code-toggle))}}
+                                   [:div.code-section.workspace-padding {:style {:display (->display (-> @local-db :code-toggle))}}
                                     [:div.code-section-header-container
-                                     [:h4 "Source"]
+                                     [:h4 "Code"]
                                      [:div.workspace-buttons
                                       [:button.big-btn.big-btn-left.lambda-button {:on-click (fn [] (eval-from-editor local-db))}
                                        [:span {:class [:material-symbols-sharp :clickable]} "λ"]]
@@ -158,31 +174,30 @@
                                     [:div.workspace-editor {:ref             (fn [element] (reset! !editor-element element))
                                                             :on-key-down     (fn [e] (workspace-editor-on-key-down db local-db e))
                                                             :on-double-click (fn [e] (.stopPropagation e))}
-                                     (str/trim (-> @local-db :code))]]]
+                                     (str/trim (-> @local-db :code))]]
 
+                                   (when (:result-toggle @local-db)
+                                     [:div.result-section {:on-double-click (fn [e] (.stopPropagation e))}
+                                      [:h4 "Result"]
+                                      [:output
+                                       (let [result (-> @local-db :result)]
+                                         (cond
+
+                                           (number? result)
+                                           (str result)
+
+                                           (string? result)
+                                           (if (= (first result) \<)
+                                             [:div {:dangerouslySetInnerHTML {:__html result}}]
+                                             result)
+
+                                           (= (first result) :div)
+                                           result
+
+                                           :else
+                                           (str result)))]])]
                                   (when (:calc-toggle @local-db)
                                     [:div.calculated-section
-                                     [:h4 "Calculated"]
+                                     [:h4 "RAW"]
                                      [:pre {:style {:white-space "pre-wrap"}}
-                                      (with-out-str (pprint (str (-> @local-db :calc))))]])
-
-                                  (when (:result-toggle @local-db)
-                                    [:div.result-section {:on-double-click (fn [e] (.stopPropagation e))}
-                                     [:h4 "Result"]
-                                     [:output
-                                      (let [result (-> @local-db :result)]
-                                        (cond
-
-                                          (number? result)
-                                          (str result)
-
-                                          (string? result)
-                                          (if (= (first result) \<)
-                                            [:div {:dangerouslySetInnerHTML {:__html result}}]
-                                            result)
-
-                                          (= (first result) :div)
-                                          result
-
-                                          :else
-                                          (str result)))]])])})))
+                                      (with-out-str (pprint (str (-> @local-db :calc))))]])])})))
