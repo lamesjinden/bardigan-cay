@@ -16,7 +16,7 @@
     (a/<! (<timeout 1000))
     (e-progress/notify-progress-update id completed)))
 
-(defn app-progress-bar [db progress$]
+(defn app-progress-bar [_db progress$]
   (let [local-db (r/atom {:width   0
                           :opacity 0})]
     (a/go-loop [tasks {}]
@@ -44,7 +44,7 @@
                      {})
              tasks)))))
 
-    (fn [db progress$]
+    (fn [_db _progress$]
       (let [completed? (:completed? @local-db)
             failed? (:failed? @local-db)]
 

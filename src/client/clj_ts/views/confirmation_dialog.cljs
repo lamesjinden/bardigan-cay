@@ -6,17 +6,17 @@
         modal-closed$ (a/chan)]
 
     (a/go-loop [current-request nil]
-               (when-some [[value channel] (a/alts! [confirmation-request$ modal-closed$])]
-                 (condp = channel
-                   confirmation-request$ (let [dialog-element @!dialog]
-                                           (.showModal dialog-element)
-                                           (recur value))
-                   modal-closed$ (do
-                                   (let [out-chan (:out-chan current-request)]
-                                     (a/>! out-chan value))
-                                   (recur nil)))))
+      (when-some [[value channel] (a/alts! [confirmation-request$ modal-closed$])]
+        (condp = channel
+          confirmation-request$ (let [dialog-element @!dialog]
+                                  (.showModal dialog-element)
+                                  (recur value))
+          modal-closed$ (do
+                          (let [out-chan (:out-chan current-request)]
+                            (a/>! out-chan value))
+                          (recur nil)))))
 
-    (fn [confirmation-request$]
+    (fn [_confirmation-request$]
       [:dialog#confirmation-dialog {:ref      (fn [element] (reset! !dialog element))
                                     :on-close (fn []
                                                 (let [dialog-element @!dialog

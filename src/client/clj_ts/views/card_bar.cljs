@@ -8,7 +8,7 @@
 
 (defn clip-hash [from-page hash]
   (view/send-to-clipboard
-    (str "----
+   (str "----
 :transclude
 
 {:from \"" from-page "\"
@@ -64,7 +64,7 @@
      {:on-click (fn [] (on-navigate-clicked db @value hash))}
      [:span {:class [:material-symbols-sharp :clickable]} "navigate_next"]]]])
 
-(defn card-bar [db card]
+(defn card-bar [_db _card]
   (let [state (r/atom {:toggle "none"})
         input-value (r/atom nil)]
     (fn [db card]

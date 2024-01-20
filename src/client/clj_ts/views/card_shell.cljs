@@ -50,7 +50,7 @@
           (expanded-states))
       default-initial-expanded-state))
 
-(defn card-shell [db card component]
+(defn card-shell [db card _component]
   (let [card-configuration (or (cards/->card-configuration card) {})
         local-db (r/atom {:expanded-state (->initial-expanded-state card-configuration)
                           :mode           :viewing
@@ -63,9 +63,9 @@
         expanded$ (e-expansion/create-expansion$)]
 
     (a/go-loop []
-               (when-some [expanded-state (a/<! expanded$)]
-                 (swap! local-db assoc :expanded-state expanded-state))
-               (recur))
+      (when-some [expanded-state (a/<! expanded$)]
+        (swap! local-db assoc :expanded-state expanded-state))
+      (recur))
 
     (fn [db card component]
       [:div.card-shell

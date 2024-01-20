@@ -7,18 +7,18 @@
             [clj-ts.views.workspace-card :refer [workspace]]))
 
 (defn error-boundary
-  [& children]
+  [& _children]
   (let [err-state (r/atom nil)]
     (r/create-class
-      {:display-name        "ErrorBoundary"
-       :component-did-catch (fn [err info]
-                              (reset! err-state [err info]))
-       :reagent-render      (fn [& children]
-                              (if (nil? @err-state)
-                                (into [:<>] children)
-                                (let [[_ info] @err-state]
-                                  [:pre.error-boundary
-                                   [:code (pr-str info)]])))})))
+     {:display-name        "ErrorBoundary"
+      :component-did-catch (fn [err info]
+                             (reset! err-state [err info]))
+      :reagent-render      (fn [& children]
+                             (if (nil? @err-state)
+                               (into [:<>] children)
+                               (let [[_ info] @err-state]
+                                 [:pre.error-boundary
+                                  [:code (pr-str info)]])))})))
 
 (defn card->component [db card]
   (let [render-type (get card "render_type")
@@ -61,41 +61,41 @@
 
 (defn card-list [db db-cards db-system-cards]
   (r/create-class
-    {:component-did-mount
-     (fn [_this] (let [set-key (fn [card] (assoc card :key (random-uuid)))
-                       cards (->> @db-cards (mapv set-key))
-                       system-cards (->> @db-system-cards (mapv set-key))]
-                   (swap! db assoc :cards cards)
-                   (swap! db assoc :system-cards system-cards)
-                   (highlight/highlight-all)))
+   {:component-did-mount
+    (fn [_this] (let [set-key (fn [card] (assoc card :key (random-uuid)))
+                      cards (->> @db-cards (mapv set-key))
+                      system-cards (->> @db-system-cards (mapv set-key))]
+                  (swap! db assoc :cards cards)
+                  (swap! db assoc :system-cards system-cards)
+                  (highlight/highlight-all)))
 
-     :reagent-render
-     (fn [_this]
-       (let [key-fn (fn [card] (or (get card "hash") (:key card)))]
-         [:<>
-          [:div.user-card-list
-           (let [cards @db-cards]
-             (for [card (filter view/not-blank? cards)]
-               [:div.user-card-list-item {:key (key-fn card)}
-                (try
-                  [card-shell db card
-                   [error-boundary
-                    [card->component db card]]]
-                  (catch :default e
-                    (let [error-card (error-card e)]
-                      [card-shell db error-card
-                       [error-boundary
-                        [card->component db error-card]]])))]))]
-          [:div.system-card-list
-           (try
-             (let [system-cards @db-system-cards]
-               (for [system-card system-cards]
-                 [:div.system-card-list-item {:key (key-fn system-card)}
-                  [card-shell db system-card
-                   [error-boundary
-                    [card->component db system-card]]]]))
-             (catch :default e
-               (let [error-card (error-card e)]
-                 [card-shell db error-card
+    :reagent-render
+    (fn [_this]
+      (let [key-fn (fn [card] (or (get card "hash") (:key card)))]
+        [:<>
+         [:div.user-card-list
+          (let [cards @db-cards]
+            (for [card (filter view/not-blank? cards)]
+              [:div.user-card-list-item {:key (key-fn card)}
+               (try
+                 [card-shell db card
                   [error-boundary
-                   [card->component db error-card]]])))]]))}))
+                   [card->component db card]]]
+                 (catch :default e
+                   (let [error-card (error-card e)]
+                     [card-shell db error-card
+                      [error-boundary
+                       [card->component db error-card]]])))]))]
+         [:div.system-card-list
+          (try
+            (let [system-cards @db-system-cards]
+              (for [system-card system-cards]
+                [:div.system-card-list-item {:key (key-fn system-card)}
+                 [card-shell db system-card
+                  [error-boundary
+                   [card->component db system-card]]]]))
+            (catch :default e
+              (let [error-card (error-card e)]
+                [card-shell db error-card
+                 [error-boundary
+                  [card->component db error-card]]])))]]))}))

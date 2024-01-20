@@ -8,7 +8,7 @@
 (defn collapse-all-cards []
   (e-expansion/notify-expansion :collapsed))
 
-(defn app-page-controls [db db-mode]
+(defn app-page-controls [_db db-mode]
   (when (mode/viewing? db-mode)
     [:div.page-controls-container
      [:span {:class    [:material-symbols-sharp :clickable :left]

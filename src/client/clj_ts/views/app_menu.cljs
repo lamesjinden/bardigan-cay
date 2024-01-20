@@ -2,7 +2,7 @@
   (:require [reagent.core :as r]
             [clj-ts.theme :as theme]))
 
-(defn app-menu [db db-theme]
+(defn app-menu [_db _db-theme]
   (let [local-db (r/atom {:expanded? false})
         expand! (fn [] (swap! local-db assoc :expanded? true))
         collapse! (fn [] (swap! local-db assoc :expanded? false))
