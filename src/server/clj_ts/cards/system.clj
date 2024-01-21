@@ -85,14 +85,15 @@
       (= bl :not-available)
       (parsing/package-card
        :backlinks :system :markdown
-       "Backlinks Not Available"
+       (str backlinks-card-default-configuration "\n\n" "Backlinks Not Available")
+
        "Backlinks Not Available"
        false)
 
       (= bl '())
       (parsing/package-card
        :backlinks :system :markdown
-       "No Backlinks"
+       (str backlinks-card-default-configuration "\n\n" "No Backlinks")
        "No Backlinks"
        false)
 

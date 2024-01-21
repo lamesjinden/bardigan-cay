@@ -96,3 +96,10 @@
   (if (not (str/blank? x))
     x
     (some (fn [arg] (and (not (str/blank? arg)) arg)) args)))
+
+(defn html-escape [s]
+  (str/escape s {\< "&lt;"
+               \> "&gt;"
+               \& "&amp;"
+               \' "&apos;"
+               \" "&quot;"}))
