@@ -10,3 +10,6 @@
 
 (defn highlight-all []
   (.highlightAll hljs))
+
+(defn highlight-element [element]
+  (.highlightElement hljs element))

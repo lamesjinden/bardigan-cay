@@ -3,6 +3,7 @@
             [reagent.core :as r]
             [clj-ts.card :as cards]
             [clj-ts.events.expansion :as e-expansion]
+            [clj-ts.highlight :as highlight]
             [clj-ts.navigation :as nav]
             [clj-ts.view :refer [->display]]
             [clj-ts.views.card-bar :refer [card-bar]]
@@ -59,31 +60,46 @@
                           :editor         nil
                           :editable?      (get card "user_authored?")})
         !editor-element (clojure.core/atom nil)
+        !root-element (clojure.core/atom nil)
         rx-theme (r/cursor db [:theme])
         expanded$ (e-expansion/create-expansion$)]
 
     (a/go-loop []
-      (when-some [expanded-state (a/<! expanded$)]
-        (swap! local-db assoc :expanded-state expanded-state))
-      (recur))
+               (when-some [expanded-state (a/<! expanded$)]
+                 (swap! local-db assoc :expanded-state expanded-state))
+               (recur))
 
-    (fn [db card component]
-      [:div.card-shell
-       (if (viewing? local-db)
-         [:article.card-outer {:on-double-click (fn [] (on-card-double-clicked local-db))}
-          [:div.card-meta-parent
-           [:div.card-meta
-            [:span.toggle-container {:on-click (fn [e] (toggle-local-expanded-state! local-db e))}
-             (if (collapsed? local-db)
-               [:span {:class [:material-symbols-sharp :clickable]} "unfold_more"]
-               [:span {:class [:material-symbols-sharp :clickable]} "unfold_less"])]]]
-          [:div.card
-           {:on-click     (fn [e] (on-link-clicked db e false))
-            :on-aux-click (fn [e] (on-link-clicked db e true))}
-           [:div.card-parent {:class (when (collapsed? local-db) :collapsed)}
-            [:div.card-child.container
-             component]
-            [:div.card-child.overlay {:style {:display (->display (collapsed? local-db))}}]]]
-          [card-bar db card]]
-         [:div.editor-container
-          [single-editor db rx-theme local-db !editor-element]])])))
+    (r/create-class
+      {:component-did-mount
+       (fn [_this]
+         (let [child-selector "pre code"
+               selecteds (-> @!root-element
+                             (.querySelectorAll child-selector)
+                             (js/Array.from)
+                             (array-seq))]
+           (doseq [selected selecteds]
+             ;; carefully apply highlighting to children; avoids extra calls to highlightAll, which writes warnings to console
+             (highlight/highlight-element selected))))
+
+       :reagent-render
+       (fn [_this]
+         (fn [db card component]
+           [:div.card-shell {:ref (fn [element] (reset! !root-element element))}
+            (if (viewing? local-db)
+              [:article.card-outer {:on-double-click (fn [] (on-card-double-clicked local-db))}
+               [:div.card-meta-parent
+                [:div.card-meta
+                 [:span.toggle-container {:on-click (fn [e] (toggle-local-expanded-state! local-db e))}
+                  (if (collapsed? local-db)
+                    [:span {:class [:material-symbols-sharp :clickable]} "unfold_more"]
+                    [:span {:class [:material-symbols-sharp :clickable]} "unfold_less"])]]]
+               [:div.card
+                {:on-click     (fn [e] (on-link-clicked db e false))
+                 :on-aux-click (fn [e] (on-link-clicked db e true))}
+                [:div.card-parent {:class (when (collapsed? local-db) :collapsed)}
+                 [:div.card-child.container
+                  component]
+                 [:div.card-child.overlay {:style {:display (->display (collapsed? local-db))}}]]]
+               [card-bar db card]]
+              [:div.editor-container
+               [single-editor db rx-theme local-db !editor-element]])]))})))

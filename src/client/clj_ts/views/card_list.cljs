@@ -1,6 +1,5 @@
 (ns clj-ts.views.card-list
   (:require [reagent.core :as r]
-            [clj-ts.highlight :as highlight]
             [clj-ts.view :as view]
             [clj-ts.views.inner-html-card :refer [inner-html]]
             [clj-ts.views.card-shell :refer [card-shell]]
@@ -66,8 +65,7 @@
                       cards (->> @db-cards (mapv set-key))
                       system-cards (->> @db-system-cards (mapv set-key))]
                   (swap! db assoc :cards cards)
-                  (swap! db assoc :system-cards system-cards)
-                  (highlight/highlight-all)))
+                  (swap! db assoc :system-cards system-cards)))
 
     :reagent-render
     (fn [_this]
