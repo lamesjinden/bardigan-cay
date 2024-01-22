@@ -1,18 +1,18 @@
 (ns clj-ts.card-server
-  [:require
-    [clj-ts.render :as render]
-    [clojure.string :as str]
-    [clj-ts.query.logic :as ldb]
-    [clj-ts.storage.page_store :as pagestore]
-    [clj-ts.query.facts-db :as facts]
-    [clj-ts.query.card-server-record :as server-record]
-    [clj-ts.common :as common]
-    [clj-ts.cards.system :as system]
-    [clj-ts.cards.packaging :as packaging]
-    [clj-ts.cards.parsing :as parsing]
-    [clj-ts.search :as search]
-    [clj-ts.export.page-exporter]
-    [clj-rss.core :as rss]]
+  [:require [clojure.string :as str]
+            [clj-ts.cards.packaging :as packaging]
+            [clj-ts.cards.parsing :as parsing]
+            [clj-ts.cards.system :as system]
+            [clj-ts.common :as common]
+            [clj-ts.export.page-exporter]
+            [clj-ts.query.card-server-record :as server-record]
+            [clj-ts.query.facts-db :as facts]
+            [clj-ts.query.logic :as ldb]
+            [clj-ts.render :as render]
+            [clj-rss.core :as rss]
+            [clj-ts.search :as search]
+            [clj-ts.storage.page_store :as pagestore]
+            [clj-ts.util :as util]]
   (:import (clojure.lang Atom)
            (java.util.regex Pattern)))
 
@@ -66,7 +66,7 @@
 
 (defn resolve-text-search [server-snapshot _context arguments _value]
   (let [{:keys [query_string]} arguments
-        query-pattern-str (str "(?i)" (Pattern/quote query_string))
+        query-pattern-str (util/string->pattern-string query_string)
         out (search/search server-snapshot query-pattern-str query_string)]
     {:result_text out}))
 
@@ -110,7 +110,7 @@ If you would *like* to create a page with this name, simply click the [Edit] but
        :system_cards    (let [sim-names (map #(str "\n- [[" % "]]") (.similar-page-names ps page_name))]
                           (if (empty? sim-names)
                             []
-                            [(parsing/package-card
+                            [(util/package-card
                                :similarly_name_pages :system :markdown ""
                                (str "Here are some similarly named pages :"
                                     (apply str sim-names)) false)]))})))

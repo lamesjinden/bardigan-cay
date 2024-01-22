@@ -35,7 +35,8 @@
                                (println "Compiling Clojure")
                                (clojure "-T:uberjar uber"))
 
-         all                 (do (run 'clean-client)
+         all                 (do (run 'test)
+                                 (run 'clean-client)
                                  (run 'build-client)
                                  (run 'clean-server)
                                  (run 'build-server))
@@ -52,5 +53,9 @@
          run-minimal         (do (run 'build-dev-client)
                                  (run 'run-dev-server))
 
-         test                (do (clojure "-M:test:server"))}}
+         ;; todo
+         #_test-client       #_(do)
+         test-server         (clojure "-M:test-server:server")
+         test                (do
+                               (run 'test-server))}}
 
