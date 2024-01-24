@@ -1,9 +1,10 @@
-{:tasks {:init               (do (def global "global"))
+{:tasks {:init               (do (def global "global")
+                                 (def client-test-out-dir "out"))
 
          clean-client        {:requires ([babashka.fs :as fs])
                               :task     (let [resources-out "resources/out"
                                               resources-public-js "resources/public/js"
-                                              dirs [resources-out resources-public-js]
+                                              dirs [resources-out resources-public-js client-test-out-dir]
                                               files []]
                                           (println "Cleaning (client)")
                                           (println "  " (clojure.string/join ", " dirs))
@@ -35,11 +36,12 @@
                                (println "Compiling Clojure")
                                (clojure "-T:uberjar uber"))
 
-         all                 (do (run 'test)
-                                 (run 'clean-client)
-                                 (run 'build-client)
-                                 (run 'clean-server)
-                                 (run 'build-server))
+         all                 (do
+                               (run 'test)
+                               (run 'clean-client)
+                               (run 'build-client)
+                               (run 'clean-server)
+                               (run 'build-server))
 
          run-dev-client      (shell "npx shadow-cljs watch app")
          run-dev-client-repl (run 'run-dev-client)          ;; shadow provides nrepl
@@ -53,9 +55,12 @@
          run-minimal         (do (run 'build-dev-client)
                                  (run 'run-dev-server))
 
-         ;; todo
-         #_test-client       #_(do)
-         test-server         (clojure "-M:test-server:server")
+         test-client         (do
+                               (shell "npx shadow-cljs compile tests")
+                               (let [client-tests-path (format "%s/node-tests.js" client-test-out-dir)]
+                                 (shell "node out/node-tests.js")))
+         test-server         (clojure "-M:test-server:server:server-tests")
          test                (do
+                               (run 'test-client)
                                (run 'test-server))}}
 

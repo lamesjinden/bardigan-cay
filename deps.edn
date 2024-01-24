@@ -20,6 +20,9 @@
                  rewrite-clj/rewrite-clj   {:mvn/version "1.1.47"}}
    :extra-paths ["src/client"]}
 
+  :client-tests
+  {:extra-paths ["test/client"]}
+
   :shadow
   {:extra-deps {thheller/shadow-cljs {:mvn/version "2.25.8"}
                 binaryage/devtools   {:mvn/version "1.0.7"}}}
@@ -34,12 +37,15 @@
                  ring/ring-json           {:mvn/version "0.5.1"}
                  hiccup/hiccup            {:mvn/version "1.0.5"}
                  http-kit/http-kit        {:mvn/version "2.6.0"}
-                 better-cond/better-cond {:mvn/version "2.1.5"}
+                 better-cond/better-cond  {:mvn/version "2.1.5"}
                  clj-rss/clj-rss          {:mvn/version "0.4.0"}
                  remus/remus              {:mvn/version "0.2.4"}
                  selmer/selmer            {:mvn/version "1.12.58"}
                  com.taoensso/timbre      {:mvn/version "6.3.1"}}
    :extra-paths ["src/server"]}
+
+  :server-tests
+  {:extra-paths ["test/server"]}
 
   :dev-server
   {:extra-deps {ring/ring-devel     {:mvn/version "1.9.6"}
@@ -54,11 +60,10 @@
   :nrepl-main
   {:main-opts ["-m" "nrepl.cmdline" "--middleware" "[cider.nrepl/cider-middleware]"]}
 
-  :test-server {:extra-paths ["test/server"]
-                :extra-deps  {io.github.cognitect-labs/test-runner {:git/tag "v0.5.1"
-                                                                    :git/sha "dfb30dd"}}
-                :main-opts   ["-m" "cognitect.test-runner" "-d" "test/server"]
-                :exec-fn     cognitect.test-runner.api/test}
+  :test-server {:extra-deps {io.github.cognitect-labs/test-runner {:git/tag "v0.5.1"
+                                                                   :git/sha "dfb30dd"}}
+                :main-opts  ["-m" "cognitect.test-runner" "-d" "test/server"]
+                :exec-fn    cognitect.test-runner.api/test}
 
   :uberjar
   {:deps        {io.github.clojure/tools.build {:mvn/version "0.9.3"}}
