@@ -10,11 +10,45 @@
             [clj-ts.theme :as theme]
             [clj-ts.view :refer [->display]]))
 
+;; region workspace sandbox
+
+(defn pad2 [x] (-> x (.toString) (.padStart 2 "0")))
+(defn pad3 [x] (-> x (.toString) (.padStart 3 "0")))
+(defn pad4 [x] (-> x (.toString) (.padStart 4 "0")))
+
+(defn round1 [x] (/ (js/Math.round (* 10 x)) 10))
+(defn round2 [x] (/ (js/Math.round (* 100 x)) 100))
+(defn round3 [x] (/ (js/Math.round (* 1000 x)) 1000))
+
+(defn set-inner-html [element value] (set! (.-innerHTML element) value))
+(defn set-display [element display]
+  (-> element
+      (.-style)
+      (.-display)
+      (set! display)))
+(defn set-display-none [element] (set-display element "none"))
+(defn set-display-block [element] (set-display element "block"))
+
+;; endregion
+
 (defn eval-string [s]
   (try
     (let [opts {:classes    {'js js/globalThis :allow :all}
                 :namespaces {'sci.core {'eval-string sci/eval-string}
-                             'cb       {'get-element-by-id (fn [id] (js/document.getElementById id))}}}]
+                             'cb       {'get-element-by-id (fn [id] (js/document.getElementById id))}
+                             'util     {'parse-long parse-long
+                                        'parse-double parse-double
+                                        'parse-boolean parse-boolean
+                                        'pad2 pad2
+                                        'pad3 pad3
+                                        'pad4 pad4
+                                        'round1 round1
+                                        'round2 round2
+                                        'round3 round3
+                                        'set-inner-html set-inner-html
+                                        'set-display set-display
+                                        'set-display-block set-display-block
+                                        'set-display-none set-display-none}}}]
       (sci/eval-string s opts))
     (catch :default e
       (js/console.error e)
@@ -128,76 +162,76 @@
 
     (reagent.core/create-class
 
-      {:component-did-mount    (fn []
-                                 (setup-editor db local-db !editor-element))
-       :component-will-unmount (fn []
-                                 (destroy-editor local-db)
-                                 (r/dispose! track-theme))
-       :reagent-render         (fn []
-                                 [:div.workspace
-                                  [:div.workspace-header-container
-                                   [:div.visibility-buttons
-                                    [:button.big-btn.big-btn-left {:class    (when (-> @local-db :code-toggle) "pressed")
-                                                                   :on-click (fn [] (toggle-code! local-db))
-                                                                   :on-double-click (fn [e] (.stopPropagation e))}
-                                     "CODE"]
-                                    [:button.big-btn.big-btn-middle {:class    (when (-> @local-db :result-toggle) "pressed")
-                                                                     :on-click (fn [] (toggle-result! local-db))
-                                                                     :on-double-click (fn [e] (.stopPropagation e))}
-                                     "RESULT"]
-                                    [:button.big-btn.big-btn-right {:class    (when (-> @local-db :calc-toggle) "pressed")
-                                                                    :on-click (fn [] (toggle-calc! local-db))
+     {:component-did-mount    (fn []
+                                (setup-editor db local-db !editor-element))
+      :component-will-unmount (fn []
+                                (destroy-editor local-db)
+                                (r/dispose! track-theme))
+      :reagent-render         (fn []
+                                [:div.workspace
+                                 [:div.workspace-header-container
+                                  [:div.visibility-buttons
+                                   [:button.big-btn.big-btn-left {:class    (when (-> @local-db :code-toggle) "pressed")
+                                                                  :on-click (fn [] (toggle-code! local-db))
+                                                                  :on-double-click (fn [e] (.stopPropagation e))}
+                                    "CODE"]
+                                   [:button.big-btn.big-btn-middle {:class    (when (-> @local-db :result-toggle) "pressed")
+                                                                    :on-click (fn [] (toggle-result! local-db))
                                                                     :on-double-click (fn [e] (.stopPropagation e))}
-                                     "RAW"]]
+                                    "RESULT"]
+                                   [:button.big-btn.big-btn-right {:class    (when (-> @local-db :calc-toggle) "pressed")
+                                                                   :on-click (fn [] (toggle-calc! local-db))
+                                                                   :on-double-click (fn [e] (.stopPropagation e))}
+                                    "RAW"]]
 
-                                   [:button.big-btn {:on-click (fn [] (toggle-layout! local-db))
-                                                     :on-double-click (fn [e] (.stopPropagation e))}
-                                    [:span {:class [:material-symbols-sharp :clickable]} (if (= :vertical (:layout @local-db))
-                                                                                           "vertical_split"
-                                                                                           "horizontal_split")]]]
-                                  [:div.workspace-section-container {:class (if (= :vertical (:layout @local-db))
-                                                                              "vertical"
-                                                                              "horizontal")}
+                                  [:button.big-btn {:on-click (fn [] (toggle-layout! local-db))
+                                                    :on-double-click (fn [e] (.stopPropagation e))}
+                                   [:span {:class [:material-symbols-sharp :clickable]} (if (= :vertical (:layout @local-db))
+                                                                                          "vertical_split"
+                                                                                          "horizontal_split")]]]
+                                 [:div.workspace-section-container {:class (if (= :vertical (:layout @local-db))
+                                                                             "vertical"
+                                                                             "horizontal")}
                                    ;; visibility controlled by style.display instead of 'when because the editor control needs to be initialized when (re)created
-                                   [:div.code-section.workspace-padding {:style {:display (->display (-> @local-db :code-toggle))}}
-                                    [:div.code-section-header-container
-                                     [:h4 "Code"]
-                                     [:div.workspace-buttons
-                                      [:button.big-btn.big-btn-left.lambda-button {:on-click (fn [] (eval-from-editor local-db))}
-                                       [:span {:class [:material-symbols-sharp :clickable]} "λ"]]
-                                      [:button.big-btn.big-btn-middle {:on-click (fn [] (on-save-clicked db local-db))}
-                                       [:span {:class [:material-symbols-sharp :clickable]} "save"]]
-                                      [:button.big-btn.big-btn-right {:on-click (fn [] (format-workspace local-db))}
-                                       [:span {:class [:material-symbols-sharp :clickable]} "format_align_justify"]]
-                                      [:button.big-btn {:on-click (fn [] (resize-editor! db local-db))}
-                                       [:span {:class [:material-symbols-sharp :clickable]} "expand"]]]]
-                                    [:div.workspace-editor {:ref             (fn [element] (reset! !editor-element element))
-                                                            :on-key-down     (fn [e] (workspace-editor-on-key-down db local-db e))
-                                                            :on-double-click (fn [e] (.stopPropagation e))}
-                                     (str/trim (-> @local-db :code))]]
+                                  [:div.code-section.workspace-padding {:style {:display (->display (-> @local-db :code-toggle))}}
+                                   [:div.code-section-header-container
+                                    [:h4 "Code"]
+                                    [:div.workspace-buttons
+                                     [:button.big-btn.big-btn-left.lambda-button {:on-click (fn [] (eval-from-editor local-db))}
+                                      [:span {:class [:material-symbols-sharp :clickable]} "λ"]]
+                                     [:button.big-btn.big-btn-middle {:on-click (fn [] (on-save-clicked db local-db))}
+                                      [:span {:class [:material-symbols-sharp :clickable]} "save"]]
+                                     [:button.big-btn.big-btn-right {:on-click (fn [] (format-workspace local-db))}
+                                      [:span {:class [:material-symbols-sharp :clickable]} "format_align_justify"]]
+                                     [:button.big-btn {:on-click (fn [] (resize-editor! db local-db))}
+                                      [:span {:class [:material-symbols-sharp :clickable]} "expand"]]]]
+                                   [:div.workspace-editor {:ref             (fn [element] (reset! !editor-element element))
+                                                           :on-key-down     (fn [e] (workspace-editor-on-key-down db local-db e))
+                                                           :on-double-click (fn [e] (.stopPropagation e))}
+                                    (str/trim (-> @local-db :code))]]
 
-                                   (when (:result-toggle @local-db)
-                                     [:div.result-section {:on-double-click (fn [e] (.stopPropagation e))}
-                                      [:h4 "Result"]
-                                      [:output
-                                       (let [result (-> @local-db :result)]
-                                         (cond
+                                  (when (:result-toggle @local-db)
+                                    [:div.result-section {:on-double-click (fn [e] (.stopPropagation e))}
+                                     [:h4 "Result"]
+                                     [:output
+                                      (let [result (-> @local-db :result)]
+                                        (cond
 
-                                           (number? result)
-                                           (str result)
+                                          (number? result)
+                                          (str result)
 
-                                           (string? result)
-                                           (if (= (first result) \<)
-                                             [:div {:dangerouslySetInnerHTML {:__html result}}]
-                                             result)
+                                          (string? result)
+                                          (if (= (first result) \<)
+                                            [:div {:dangerouslySetInnerHTML {:__html result}}]
+                                            result)
 
-                                           (= (first result) :div)
-                                           result
+                                          (= (first result) :div)
+                                          result
 
-                                           :else
-                                           (str result)))]])]
-                                  (when (:calc-toggle @local-db)
-                                    [:div.calculated-section
-                                     [:h4 "RAW"]
-                                     [:pre {:style {:white-space "pre-wrap"}}
-                                      (with-out-str (pprint (str (-> @local-db :calc))))]])])})))
+                                          :else
+                                          (str result)))]])]
+                                 (when (:calc-toggle @local-db)
+                                   [:div.calculated-section
+                                    [:h4 "RAW"]
+                                    [:pre {:style {:white-space "pre-wrap"}}
+                                     (with-out-str (pprint (str (-> @local-db :calc))))]])])})))
