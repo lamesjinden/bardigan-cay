@@ -16,6 +16,7 @@
       (common/double-bracket-links)))
 
 (defn file-link [data]
+  ;; todo/change - accound for non-desctructive card parsing
   (let [{:keys [file-name label]} (-> data edn/read-string)]
     (str "<a href='" "/media/" file-name "'>"
          (if label label file-name)

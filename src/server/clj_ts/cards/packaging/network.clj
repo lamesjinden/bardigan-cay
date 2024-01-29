@@ -6,6 +6,7 @@
 
 (defn package [id source-data render-context]
   (let [svg (-> source-data
+                ;; todo/note - change to account for non-destructive card parsing
                 (edn/read-string)
                 (network->svg)
                 (html))]

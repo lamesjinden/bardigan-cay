@@ -192,8 +192,9 @@ seamless><a href='" url "'>" description "</a></iframe></div></div>")
     (generic-oembed "https://codepen.io/api/oembed" (:url data) :get)
     caption-renderer))
 
-(defn process [s render-context caption-renderer server-state]
-  (let [data (edn/read-string s)]
+(defn process [card-text render-context caption-renderer server-state]
+  ;; todo/note - change to account for non-destructive card parsing
+  (let [data (edn/read-string card-text)]
     (try
       (condp = (:type data)
         :media-img

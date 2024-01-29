@@ -23,7 +23,7 @@
 ;; in the rendering pipeline. Particularly to track whether we're
 ;; doing something in a normal rendering context or an export context
 ;; And whether a card is system generated or human generated.
-
+;;
 ;; We'll call it render-context
 ;; {:for-export false :user-authored? true}
 
@@ -87,6 +87,7 @@
 
 (defn- transclude
   [server-snapshot i source-data render-context]
+  ;; todo/note - change to account for non-desctructive card parsing
   (let [{:keys [from _process ids]} (edn/read-string source-data)
         page-store (.page-store server-snapshot)
         matched-cards (.get-cards-from-page page-store from ids)

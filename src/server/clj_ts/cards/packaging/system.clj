@@ -8,6 +8,7 @@
 (defn- item1 [s] (str "* [[" s "]]\n"))
 
 (defn package [id source-data render-context server-snapshot]
+  ;; todo/note - change to account for non-desctructive card parsing
   (let [info (edn/read-string source-data)
         command (:command info)
         facts-db (-> server-snapshot :facts-db)

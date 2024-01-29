@@ -1,5 +1,7 @@
 (ns clj-ts.card-server
+  {:clj-kondo/config '{:linters {:unresolved-symbol {:exclude [(better-cond.core/cond)]}}}}
   [:require [clojure.string :as str]
+            [better-cond.core :as b]
             [clj-ts.cards.packaging :as packaging]
             [clj-ts.cards.parsing :as parsing]
             [clj-ts.cards.system :as system]
@@ -13,8 +15,7 @@
             [clj-ts.search :as search]
             [clj-ts.storage.page_store :as pagestore]
             [clj-ts.util :as util]]
-  (:import (clojure.lang Atom)
-           (java.util.regex Pattern)))
+  (:import (clojure.lang Atom)))
 
 ;; Card Server state is just a defrecord.
 ;; But two components : the page-store and page-exporter are
@@ -141,6 +142,7 @@ If you would *like* to create a page with this name, simply click the [Edit] but
         page-body (try
                     (pagestore/read-page server-snapshot page-name)
                     (catch Exception _ (str "Automatically created a new page : " page-name "\n\n")))
+        ;; todo - change to account for non-destructive card parsing
         new-body (if (and (= source_type :markdown) source_type_implicit?)
                    (str page-body "\n\n" "----" "\n\n" (str/trim source_data) "\n\n")
                    (str page-body "\n\n" "----" "\n" source_type "\n\n" (str/trim source_data) "\n\n"))]
@@ -170,6 +172,7 @@ If you would *like* to create a page with this name, simply click the [Edit] but
                     (common/move-card-down cards hash))]
     (write-page-to-file! card-server page-name (common/cards->raw new-cards))))
 
+;; todo - move forward with using source-type-hint? or introduce a non-destructive partitioning scheme
 (defn replace-card!
   [^Atom card-server page-name hash new-body]
   (let [server-snapshot @card-server
@@ -178,12 +181,7 @@ If you would *like* to create a page with this name, simply click the [Edit] but
         match (common/find-card-by-hash cards hash)]
     (if (not match)
       :not-found
-      (let [source-type (:source_type match)
-            source-type-implicit? (:source_type_implicit? match)
-            new-body (if (and (= source-type :markdown) source-type-implicit?)
-                       new-body
-                       (str source-type "\n" new-body))
-            new-card (parsing/raw-card-text->card-map new-body)
+      (let [new-card (parsing/raw-card-text->card-map new-body)
             new-cards (common/replace-card
                         cards
                         #(common/match-hash % hash)
