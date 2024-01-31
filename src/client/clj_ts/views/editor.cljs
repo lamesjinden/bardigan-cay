@@ -51,19 +51,26 @@
                     ace/ace-theme
                     ace/ace-theme-dark)))
 
-(defn setup-editor [db !editor-element]
-  (let [editor-element @!editor-element
-        ace-instance (ace/create-edit editor-element)
-        ace-options (assoc ace/default-ace-options :maxLines "Infinity")
-        theme (if (theme/light-theme? db) ace/ace-theme ace/ace-theme-dark)]
-    (ace/configure-ace-instance! ace-instance ace/ace-mode-markdown theme ace-options)
-    (.focus ace-instance)
-    (swap! db assoc :editor ace-instance)
-    (let [!notify (atom false)]
-      (.on ace-instance "change" (fn [_delta]
-                                   (when-not @!notify
-                                     (reset! !notify true)
-                                     (editing-events/notify-global-editing-start)))))))
+(defn setup-editor [db local-db !editor-element]
+  (let [channel (js/MessageChannel.)
+        port1 (.-port1 channel)
+        port2 (.-port2 channel)]
+    (set! (.-onmessage port1)
+          (fn [] (when-let [editor-element @!editor-element]
+                   (let [ace-instance (ace/create-edit editor-element)
+                         ace-options (assoc ace/default-ace-options :maxLines "Infinity")
+                         theme (if (theme/light-theme? db) ace/ace-theme ace/ace-theme-dark)]
+                     (ace/configure-ace-instance! ace-instance ace/ace-mode-markdown theme ace-options)
+                     (.focus ace-instance)
+                     (swap! db assoc :editor ace-instance)
+                     (swap! local-db assoc :editor-configured? true)
+                     (let [!notify (atom false)]
+                       (.on ace-instance "change" (fn [_delta]
+                                                    (when-not @!notify
+                                                      (reset! !notify true)
+                                                      (editing-events/notify-global-editing-start)))))))))
+
+    (js/requestAnimationFrame (fn [] (.postMessage port2 js/undefined)))))
 
 (defn destroy-editor [db]
   (let [editor (:editor @db)]
@@ -72,18 +79,19 @@
 
 (defn editor [db db-raw]
   (let [!editor-element (clojure.core/atom nil)
-        track-theme (r/track! (partial theme-tracker db))]
+        track-theme (r/track! (partial theme-tracker db))
+        local-db (r/atom {:editor-configured? false})]
     (reagent.core/create-class
-      {:component-did-mount    (fn []
-                                 (setup-editor db !editor-element))
-       :component-will-unmount (fn []
-                                 (destroy-editor db)
-                                 (r/dispose! track-theme)
-                                 (editing-events/notify-global-editing-end))
-       :reagent-render         (fn [] [:div.edit-box-container
-                                       [paste-bar db]
-                                       [:div.edit-box
-                                        {:ref         (fn [element] (reset! !editor-element element))
-                                         :on-key-down (fn [e] (editor-on-key-down db e))
-                                         :on-key-up   (fn [e] (editor-on-key-up db e))}
-                                        @db-raw]])})))
+     {:component-did-mount    (fn []
+                                (setup-editor db local-db !editor-element))
+      :component-will-unmount (fn []
+                                (destroy-editor db)
+                                (r/dispose! track-theme)
+                                (editing-events/notify-global-editing-end))
+      :reagent-render         (fn [] [:div.edit-box-container {:class (when (:editor-configured? @local-db) "configured")}
+                                      [paste-bar db]
+                                      [:div.edit-box
+                                       {:ref         (fn [element] (reset! !editor-element element))
+                                        :on-key-down (fn [e] (editor-on-key-down db e))
+                                        :on-key-up   (fn [e] (editor-on-key-up db e))}
+                                       @db-raw]])})))
