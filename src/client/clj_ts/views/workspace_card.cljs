@@ -31,11 +31,11 @@
 
 ;; endregion
 
-(defn eval-string [s]
+(defn eval-string [s !root-element]
   (try
     (let [opts {:classes    {'js js/globalThis :allow :all}
                 :namespaces {'sci.core {'eval-string sci/eval-string}
-                             'cb       {'get-element-by-id (fn [id] (js/document.getElementById id))}
+                             'cb       {'get-element-by-id (fn [id] (.querySelector @!root-element (str "#" id)))}
                              'util     {'parse-long parse-long
                                         'parse-double parse-double
                                         'parse-boolean parse-boolean
@@ -54,14 +54,14 @@
       (js/console.error e)
       (pr-str s))))
 
-(defn eval-from-editor [state]
+(defn eval-from-editor [state !root-element]
   (let [code (.getValue (:editor @state))
-        result (eval-string code)]
+        result (eval-string code !root-element)]
     (swap! state #(conj % {:calc result :result result}))))
 
-(defn eval-on-load [state]
+(defn eval-on-load [state !root-element]
   (let [code (:code @state)
-        result (eval-string code)]
+        result (eval-string code !root-element)]
     (swap! state #(conj % {:calc result :result result}))))
 
 (defn toggle-code! [state]
@@ -154,11 +154,12 @@
                           :result           ""
                           :result-toggle    (get card-configuration :result-visibility false)
                           :source_type      source_type})
+        !root-element (clojure.core/atom nil)
         !editor-element (clojure.core/atom nil)
         track-theme (r/track! (partial theme-tracker db local-db))]
 
     (when (get card-configuration :eval-on-load)
-      (eval-on-load local-db))
+      (eval-on-load local-db !root-element))
 
     (reagent.core/create-class
 
@@ -168,7 +169,7 @@
                                 (destroy-editor local-db)
                                 (r/dispose! track-theme))
       :reagent-render         (fn []
-                                [:div.workspace
+                                [:div.workspace {:ref             (fn [element] (reset! !root-element element))}
                                  [:div.workspace-header-container
                                   [:div.visibility-buttons
                                    [:button.big-btn.big-btn-left {:class    (when (-> @local-db :code-toggle) "pressed")
@@ -197,7 +198,7 @@
                                    [:div.code-section-header-container
                                     [:h4 "Code"]
                                     [:div.workspace-buttons
-                                     [:button.big-btn.big-btn-left.lambda-button {:on-click (fn [] (eval-from-editor local-db))}
+                                     [:button.big-btn.big-btn-left.lambda-button {:on-click (fn [] (eval-from-editor local-db !root-element))}
                                       [:span {:class [:material-symbols-sharp :clickable]} "λ"]]
                                      [:button.big-btn.big-btn-middle {:on-click (fn [] (on-save-clicked db local-db))}
                                       [:span {:class [:material-symbols-sharp :clickable]} "save"]]
