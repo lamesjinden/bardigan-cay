@@ -42,11 +42,15 @@
 
          run-dev-client      (shell "npx shadow-cljs watch app")
          run-dev-client-repl (run 'run-dev-client)          ;; shadow provides nrepl
-         run-dev-server      (clojure "-M:run-dev-server:dev-server:server:dev --directory '../../Documents/wiki/bedrock/' --export-dir '../../Documents/wiki/bedrock/exported/'")
+         run-dev-server      (let [cli-args (clojure.string/join " " *command-line-args*)
+                                   default-args ["--directory" "'../../Documents/wiki/bedrock/'" "--export-dir" "'../../Documents/wiki/bedrock/exported/'"]
+                                   args (concat default-args *command-line-args*)
+                                   base-command "-M:run-dev-server:dev-server:server:dev"
+                                   command (format "%s %s" base-command (clojure.string/join " " args))]
+                               (clojure command))
          run-dev-server-repl (clojure "-M:nrepl-main:dev-server:server:dev")
          run-minimal         (do (run 'build-dev-client)
                                  (run 'run-dev-server))
 
-         test                (do (clojure "-M:test:server"))}
- }
+         test                (do (clojure "-M:test:server"))}}
 
