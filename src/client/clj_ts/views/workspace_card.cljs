@@ -1,14 +1,41 @@
 (ns clj-ts.views.workspace-card
   (:require [clojure.string :as str]
             [cljs.pprint :refer [pprint]]
+            [cljfmt.core :as format]
             [reagent.core :as r]
             [sci.core :as sci]
-            [cljfmt.core :as format]
+            [rewrite-clj.zip :as z]
             [clj-ts.ace :as ace]
             [clj-ts.card :as cards]
             [clj-ts.keyboard :as keyboard]
             [clj-ts.theme :as theme]
             [clj-ts.view :refer [->display]]))
+
+;; region eval/rewrite
+
+(defn eval-string [s sci-opts]
+  (try
+    (sci/eval-string* sci-opts s)
+    (catch :default e
+      (js/console.error e)
+      (pr-str s))))
+
+(defn rewrite-src-1 [src symbol-id value]
+  (let [zloc (z/of-string src)
+        zloc (z/right (z/find-value zloc z/next (symbol symbol-id)))
+        zloc-value (z/sexpr zloc)
+        next-value (if (and (nil? zloc-value) (z/end? zloc))
+                     :not-found
+                     value)]
+    (if (= next-value :not-found)
+      src
+      (-> zloc (z/replace value) z/root-string))))
+
+(defn rewrite-src [src replacements]
+  (reduce (fn [acc [symbol-id value]]
+            (rewrite-src-1 acc symbol-id value)) src replacements))
+
+;; endregion
 
 ;; region workspace sandbox
 
@@ -29,39 +56,46 @@
 (defn set-display-none [element] (set-display element "none"))
 (defn set-display-block [element] (set-display element "block"))
 
+(def base-sci-opts
+  {:classes    {'js js/globalThis :allow :all}
+   :namespaces {'sci.core {'eval-string sci/eval-string}
+                'util     {'println println
+                           'prn prn
+                           'parse-long parse-long
+                           'parse-double parse-double
+                           'parse-boolean parse-boolean
+                           'pad2 pad2
+                           'pad3 pad3
+                           'pad4 pad4
+                           'round1 round1
+                           'round2 round2
+                           'round3 round3
+                           'set-inner-html set-inner-html
+                           'set-display set-display
+                           'set-display-block set-display-block
+                           'set-display-none set-display-none}}})
+
+(defn create-sci-opts [state !root-element]
+  (-> base-sci-opts
+      (assoc-in [:namespaces 'cb] {})
+      (assoc-in [:namespaces 'cb 'get-element-by-id] (fn [id] (.querySelector @!root-element (str "#" id))))
+      (assoc-in [:namespaces 'cb 'update-card] (fn [replacements]
+                                                 (let [ace-editor (:editor @state)
+                                                       src-value (.getValue ace-editor)
+                                                       src-value' (rewrite-src src-value replacements)]
+                                                   (.setValue ace-editor src-value'))))
+      (sci/init)))
+
 ;; endregion
 
-(defn eval-string [s !root-element]
-  (try
-    (let [opts {:classes    {'js js/globalThis :allow :all}
-                :namespaces {'sci.core {'eval-string sci/eval-string}
-                             'cb       {'get-element-by-id (fn [id] (.querySelector @!root-element (str "#" id)))}
-                             'util     {'parse-long parse-long
-                                        'parse-double parse-double
-                                        'parse-boolean parse-boolean
-                                        'pad2 pad2
-                                        'pad3 pad3
-                                        'pad4 pad4
-                                        'round1 round1
-                                        'round2 round2
-                                        'round3 round3
-                                        'set-inner-html set-inner-html
-                                        'set-display set-display
-                                        'set-display-block set-display-block
-                                        'set-display-none set-display-none}}}]
-      (sci/eval-string s opts))
-    (catch :default e
-      (js/console.error e)
-      (pr-str s))))
-
-(defn eval-from-editor [state !root-element]
+(defn eval-from-editor [state sci-opts]
   (let [code (.getValue (:editor @state))
-        result (eval-string code !root-element)]
+        result (eval-string code sci-opts)]
     (swap! state #(conj % {:calc result :result result}))))
 
-(defn eval-on-load [state !root-element]
+(defn eval-on-load [state sci-opts]
   (let [code (:code @state)
-        result (eval-string code !root-element)]
+        result (eval-string code sci-opts)]
     (swap! state #(conj % {:calc result :result result}))))
 
 (defn toggle-code! [state]
@@ -156,10 +190,11 @@
                           :source_type      source_type})
         !root-element (clojure.core/atom nil)
         !editor-element (clojure.core/atom nil)
+        sci-opts (create-sci-opts local-db !root-element)
         track-theme (r/track! (partial theme-tracker db local-db))]
 
     (when (get card-configuration :eval-on-load)
-      (eval-on-load local-db !root-element))
+      (eval-on-load local-db sci-opts))
 
     (reagent.core/create-class
 
@@ -198,7 +233,7 @@
                                    [:div.code-section-header-container
                                     [:h4 "Code"]
                                     [:div.workspace-buttons
-                                     [:button.big-btn.big-btn-left.lambda-button {:on-click (fn [] (eval-from-editor local-db !root-element))}
+                                     [:button.big-btn.big-btn-left.lambda-button {:on-click (fn [] (eval-from-editor local-db sci-opts))}
                                       [:span {:class [:material-symbols-sharp :clickable]} "λ"]]
                                      [:button.big-btn.big-btn-middle {:on-click (fn [] (on-save-clicked db local-db))}
                                       [:span {:class [:material-symbols-sharp :clickable]} "save"]]
