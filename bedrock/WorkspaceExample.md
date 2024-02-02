@@ -1,6 +1,7 @@
 An example embedded ClojureScript Workspace. It uses the Small Clojure Interpreter (<https://github.com/borkdude/sci>), running in the browser.
 
 Note that the output of the code is expected to be either a string or [hiccup](https://github.com/weavejester/hiccup) surrounded by [:div :]
+
 ----
 :workspace
 
@@ -9,6 +10,48 @@ Note that the output of the code is expected to be either a string or [hiccup](h
 [:ul {:style {:font-size "small"}}
 (map (fn [x] [:li (str x ", " (reduce + (range x)))]) (range 10))
 ]]
+
+----
+
+### Workspace Configuration (experimental)
+
+A Workspace card supports several configuration options affecting appearance and behavior.
+
+
+Workspace cards are configured by adding a clojure map following (next line) the initial `:workspace` declaration. See the 'Advanced Workspace Example' below.
+
+
+The following configuration options are supported:
+* `:eval-on-load` - [true | false] - causes the workspace code to be evaluated immediately upon loading
+* `:layout` - [:horizontal | :vertical] - causes the layout of the workspace sections to be vertically stacked or side-by-side
+* `:code-visibility` [true | false] - causes the 'code' section of the workspace to be visible or hidden
+* `:result-visibility` [true | false] - causes the 'result' section of the workspace to be visible or hidden
+
+----
+
+### Evaluation Environment
+
+In addition to the default SCI execution environment, the following functions are available to be called by workspace code:
+
+* `js/*` - exposes the global javascript object to the execution environment
+* `util/prn` - exposes cljs.core/prn to the execution environment
+* `util/println` - exposes cljs.core/println to the execution environment
+* `util/parse-boolean` - exposes cljs.core/parse-boolean to the execution environment
+* `util/parse-double` - exposes cljs.core/parse-double to the execution environment
+* `util/parse-long` - exposes cljs.core/parse-long to the execution environment
+* `util/pad2` - stringifies the argument and pads the string to 2 places with '0'
+* `util/pad3` - stringifies the argument and pads the string to 3 places with '0'
+* `util/pad4` - stringifies the argument and pads the string to 4 places with '0'
+* `util/round1` - rounds the argument to 1 decimal
+* `util/round2` - rounds the argument to 2 decimals
+* `util/round3` - rounds the argument to 3 decimals
+* `util/set-inner-html` - accepts an (DOM) element and a value; sets innerHTML of the `element` to `value`
+* `util/set-display` - accepts an (DOM) element and a 'display' value; sets the display style of the element to `display`
+* `util/set-display-none` - accepts an (DOM) element; sets the display style of the element to 'none'
+* `util/set-display-block` - accepts an (DOM) element; sets the display style of the element to 'block'
+* `cb/get-element-by-id` - performs an element query using the provided argument id (do not prefix with '#' as this will be done for you) and returns the result; note - the query is scoped to the container element for the Workspace.
+* `cb/update-card` - (experimental) - accepts a clojure map where keys represent the names of symbols within the containing workspace; for each pair in the map parameter, attempts to locate a top-level symbol named by the pair; if found, replaces the symbol's value provided by the pair.
+
 ----
 
 ### Publishing Code
@@ -40,11 +83,13 @@ Look at the example in the Workspace below. Note that if you run it in a live Ca
 )
   "Total:" (reduce + (range 20))
 )
+
 ----
 
 To test this feature and see what exported workspaces look like, simply hit the Export button for this page and see the exported html file (probably at bedrock/exported/WorkspaceExample )
 
 ----
+
 ### Simplifying Published Code
 
 You'll notice when you look at the above example, that all the exported code can be seen and edited in the textarea of the published page.
@@ -91,3 +136,38 @@ See the following example in the exported page to understand how it works
 ;;;;PUBLIC
 
 (list-and-total "A List of Numbers" (range 20))
+
+----
+
+### Advanced Workspace Example
+
+see below
+
+----
+:workspace
+
+{:result-visibility true 
+ :eval-on-load true 
+ :layout :horizontal}
+
+(def x nil)
+(def y nil)
+
+(let [input-replacement-symbol (atom nil)
+      input-replacement-value (atom nil)]
+  [:div
+   [:input {:style {:display "block"}
+            :type "text"
+            :placeholder "replacement symbol"
+            :on-change #(reset! input-replacement-symbol (-> % .-target .-value))}]
+   [:input {:style {:display "block"}
+            :type "text"
+            :placeholder "replacement value"
+            :on-change #(reset! input-replacement-value (-> % .-target .-value))}]
+   [:button.big-btn.material-symbols-sharp
+    {:on-click (fn []
+                 (js/console.log (.toLocaleString (js/Date.)))
+                 (when-let [replacement-symbol @input-replacement-symbol]
+                   (cb/update-card {"y" "static value" 
+                                    replacement-symbol (util/parse-long @input-replacement-value)})))}
+    "play_arrow"]])
