@@ -1,6 +1,7 @@
 (ns clj-ts.ace
   (:require ["ace-builds/src-min-noconflict/ace" :default ace]
             ["ace-builds/src-min-noconflict/ext-language_tools"]
+            ["ace-builds/src-min-noconflict/ext-searchbox"]
             ["ace-builds/src-min-noconflict/mode-clojure" :as mode-clojure]
             ["ace-builds/src-min-noconflict/mode-markdown" :as mode-markdown]
             ["ace-builds/src-min-noconflict/theme-cloud9_day"]
