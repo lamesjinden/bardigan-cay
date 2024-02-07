@@ -1,6 +1,10 @@
 An example embedded ClojureScript Workspace. It uses the Small Clojure Interpreter (<https://github.com/borkdude/sci>), running in the browser.
 
-Note that the output of the code is expected to be either a string or [hiccup](https://github.com/weavejester/hiccup) surrounded by [:div :]
+Note that the output of the code is expected to be either:
+* a string
+* [hiccup](https://github.com/weavejester/hiccup) surrounded by [:div :]
+* a [reagent component](https://github.com/reagent-project/reagent/blob/master/doc/CreatingReagentComponents.md) (experimental; Form 3 untested)
+  * see 'Advanced' example below
 
 ----
 :workspace
@@ -26,6 +30,7 @@ The following configuration options are supported:
 * `:layout` - [:horizontal | :vertical] - causes the layout of the workspace sections to be vertically stacked or side-by-side
 * `:code-visibility` [true | false] - causes the 'code' section of the workspace to be visible or hidden
 * `:result-visibility` [true | false] - causes the 'result' section of the workspace to be visible or hidden
+* `:editor-size` [:small | :medium | :large] - controls the default editor height (respectively: 25 lines, 50 lines, all lines)
 
 ----
 
@@ -34,8 +39,8 @@ The following configuration options are supported:
 In addition to the default SCI execution environment, the following functions are available to be called by workspace code:
 
 * `js/*` - exposes the global javascript object to the execution environment
-* `util/prn` - exposes cljs.core/prn to the execution environment
-* `util/println` - exposes cljs.core/println to the execution environment
+* `prn` - exposes cljs.core/prn to the execution environment
+* `println` - exposes cljs.core/println to the execution environment
 * `util/parse-boolean` - exposes cljs.core/parse-boolean to the execution environment
 * `util/parse-double` - exposes cljs.core/parse-double to the execution environment
 * `util/parse-long` - exposes cljs.core/parse-long to the execution environment
@@ -49,7 +54,7 @@ In addition to the default SCI execution environment, the following functions ar
 * `util/set-display` - accepts an (DOM) element and a 'display' value; sets the display style of the element to `display`
 * `util/set-display-none` - accepts an (DOM) element; sets the display style of the element to 'none'
 * `util/set-display-block` - accepts an (DOM) element; sets the display style of the element to 'block'
-* `cb/get-element-by-id` - performs an element query using the provided argument id (do not prefix with '#' as this will be done for you) and returns the result; note - the query is scoped to the container element for the Workspace.
+* `util/get-element-by-id` - performs an element query using the provided argument id (do not prefix with '#' as this will be done for you) and returns the result; note - the query is scoped to the container element for the Workspace.
 * `cb/update-card` - (experimental) - accepts a clojure map where keys represent the names of symbols within the containing workspace; for each pair in the map parameter, attempts to locate a top-level symbol named by the pair; if found, replaces the symbol's value provided by the pair.
 
 ----
@@ -146,28 +151,41 @@ see below
 ----
 :workspace
 
-{:result-visibility true 
- :eval-on-load true 
- :layout :horizontal}
+{:result-visibility true
+ :eval-on-load true
+ :layout :horizontal
+ :editor-size :large}
 
-(def x nil)
-(def y nil)
+(def x 1)
+(def y "hello")
+(def target-symbol nil)
+(def target-value nil)
 
-(let [input-replacement-symbol (atom nil)
-      input-replacement-value (atom nil)]
-  [:div
-   [:input {:style {:display "block"}
-            :type "text"
-            :placeholder "replacement symbol"
-            :on-change #(reset! input-replacement-symbol (-> % .-target .-value))}]
-   [:input {:style {:display "block"}
-            :type "text"
-            :placeholder "replacement value"
-            :on-change #(reset! input-replacement-value (-> % .-target .-value))}]
-   [:button.big-btn.material-symbols-sharp
-    {:on-click (fn []
-                 (js/console.log (.toLocaleString (js/Date.)))
-                 (when-let [replacement-symbol @input-replacement-symbol]
-                   (cb/update-card {"y" "static value" 
-                                    replacement-symbol (util/parse-long @input-replacement-value)})))}
-    "play_arrow"]])
+(fn []
+  (let [input-replacement-symbol (r/atom target-symbol)
+        input-replacement-value (r/atom target-value)]
+    (fn []
+      [:div
+       [:div
+        [:input {:type "text"
+                 :value @input-replacement-symbol
+                 :placeholder "replacement symbol"
+                 :on-change (util/bind-ratom input-replacement-symbol)}]
+        [:span (str "\"" @input-replacement-symbol "\"")]]
+       [:div
+        [:input {:type "text"
+                 :value @input-replacement-value
+                 :placeholder "replacement value"
+                 :on-change (util/bind-ratom input-replacement-value)}]
+        [:span @input-replacement-value]]
+       [:button.big-btn.material-symbols-sharp
+        {:on-click (fn []
+                     (when-let [replacement-symbol @input-replacement-symbol]
+                       (let [replacement-value (inc (if (number? @input-replacement-value)
+                                                      @input-replacement-value
+                                                      (util/parse-long @input-replacement-value)))]
+                         (cb/update-card {"y" "static value"
+                                          'target-symbol @input-replacement-symbol
+                                          'target-value replacement-value
+                                          replacement-symbol replacement-value}))))}
+        "play_arrow"]])))

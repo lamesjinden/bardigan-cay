@@ -56,12 +56,16 @@
 (defn set-display-none [element] (set-display element "none"))
 (defn set-display-block [element] (set-display element "block"))
 
+(defn bind-ratom [ratom]
+  (fn [event]
+    (let [value (-> event .-target .-value)]
+      (reset! ratom value))))
+
 (def base-sci-opts
   {:classes    {'js js/globalThis :allow :all}
-   :namespaces {'sci.core {'eval-string sci/eval-string}
-                'util     {'println println
-                           'prn prn
-                           'parse-long parse-long
+   :namespaces {'clojure.core {'println println
+                               'prn prn}
+                'util     {'parse-long parse-long
                            'parse-double parse-double
                            'parse-boolean parse-boolean
                            'pad2 pad2
@@ -73,17 +77,21 @@
                            'set-inner-html set-inner-html
                            'set-display set-display
                            'set-display-block set-display-block
-                           'set-display-none set-display-none}}})
+                           'set-display-none set-display-none
+                           'bind-ratom bind-ratom}
+                'r {'atom r/atom}}})
 
-(defn create-sci-opts [state !root-element]
+(defn create-sci-opts [state root-element-ref sci-opts-ref]
   (-> base-sci-opts
+      (assoc-in [:namespaces 'util 'get-element-by-id] (fn [id] (.querySelector @root-element-ref (str "#" id))))
       (assoc-in [:namespaces 'cb] {})
-      (assoc-in [:namespaces 'cb 'get-element-by-id] (fn [id] (.querySelector @!root-element (str "#" id))))
       (assoc-in [:namespaces 'cb 'update-card] (fn [replacements]
                                                  (let [ace-editor (:editor @state)
                                                        src-value (.getValue ace-editor)
                                                        src-value' (rewrite-src src-value replacements)]
-                                                   (.setValue ace-editor src-value'))))
+                                                   (.setValue ace-editor src-value')
+                                                   (let [result (eval-string src-value' @sci-opts-ref)]
+                                                     (swap! state #(conj % {:calc result :result result}))))))
       (sci/init)))
 
 ;; endregion
@@ -161,8 +169,8 @@
                     ace/ace-theme
                     ace/ace-theme-dark)))
 
-(defn- setup-editor [db local-db !editor-element]
-  (let [editor-element @!editor-element
+(defn- setup-editor [db local-db editor-element-ref]
+  (let [editor-element @editor-element-ref
         ace-instance (ace/create-edit editor-element)
         max-lines (->> (:code-editor-size @local-db)
                        (get size->editor-max-lines))
@@ -180,7 +188,7 @@
         local-db (r/atom {:calc             []
                           :calc-toggle      (get card-configuration :calc-visibility false)
                           :code             source_data
-                          :code-editor-size :small
+                          :code-editor-size (get card-configuration :editor-size :small)
                           :code-toggle      (get card-configuration :code-visibility true)
                           :editor           nil
                           :hash             hash
@@ -188,10 +196,13 @@
                           :result           ""
                           :result-toggle    (get card-configuration :result-visibility false)
                           :source_type      source_type})
-        !root-element (clojure.core/atom nil)
-        !editor-element (clojure.core/atom nil)
-        sci-opts (create-sci-opts local-db !root-element)
+        root-element-ref (clojure.core/atom nil)
+        editor-element-ref (clojure.core/atom nil)
+        sci-opts-ref (clojure.core/atom nil)
+        sci-opts (create-sci-opts local-db root-element-ref sci-opts-ref)
         track-theme (r/track! (partial theme-tracker db local-db))]
+
+    (reset! sci-opts-ref sci-opts)
 
     (when (get card-configuration :eval-on-load)
       (eval-on-load local-db sci-opts))
@@ -199,12 +210,12 @@
     (reagent.core/create-class
 
      {:component-did-mount    (fn []
-                                (setup-editor db local-db !editor-element))
+                                (setup-editor db local-db editor-element-ref))
       :component-will-unmount (fn []
                                 (destroy-editor local-db)
                                 (r/dispose! track-theme))
       :reagent-render         (fn []
-                                [:div.workspace {:ref             (fn [element] (reset! !root-element element))}
+                                [:div.workspace {:ref (fn [element] (reset! root-element-ref element))}
                                  [:div.workspace-header-container
                                   [:div.visibility-buttons
                                    [:button.big-btn.big-btn-left {:class    (when (-> @local-db :code-toggle) "pressed")
@@ -233,15 +244,19 @@
                                    [:div.code-section-header-container
                                     [:h4 "Code"]
                                     [:div.workspace-buttons
-                                     [:button.big-btn.big-btn-left.lambda-button {:on-click (fn [] (eval-from-editor local-db sci-opts))}
+                                     [:button.big-btn.big-btn-left.lambda-button {:on-click (fn [] (eval-from-editor local-db sci-opts))
+                                                                                  :on-double-click (fn [e] (.stopPropagation e))}
                                       [:span {:class [:material-symbols-sharp :clickable]} "λ"]]
-                                     [:button.big-btn.big-btn-middle {:on-click (fn [] (on-save-clicked db local-db))}
+                                     [:button.big-btn.big-btn-middle {:on-click (fn [] (on-save-clicked db local-db))
+                                                                      :on-double-click (fn [e] (.stopPropagation e))}
                                       [:span {:class [:material-symbols-sharp :clickable]} "save"]]
-                                     [:button.big-btn.big-btn-right {:on-click (fn [] (format-workspace local-db))}
+                                     [:button.big-btn.big-btn-right {:on-click (fn [] (format-workspace local-db))
+                                                                     :on-double-click (fn [e] (.stopPropagation e))}
                                       [:span {:class [:material-symbols-sharp :clickable]} "format_align_justify"]]
-                                     [:button.big-btn {:on-click (fn [] (resize-editor! db local-db))}
+                                     [:button.big-btn {:on-click (fn [] (resize-editor! db local-db))
+                                                       :on-double-click (fn [e] (.stopPropagation e))}
                                       [:span {:class [:material-symbols-sharp :clickable]} "expand"]]]]
-                                   [:div.workspace-editor {:ref             (fn [element] (reset! !editor-element element))
+                                   [:div.workspace-editor {:ref             (fn [element] (reset! editor-element-ref element))
                                                            :on-key-down     (fn [e] (workspace-editor-on-key-down db local-db e))
                                                            :on-double-click (fn [e] (.stopPropagation e))}
                                     (str/trim (-> @local-db :code))]]
@@ -261,8 +276,12 @@
                                             [:div {:dangerouslySetInnerHTML {:__html result}}]
                                             result)
 
-                                          (= (first result) :div)
+                                          (and (vector? result)
+                                               (= (first result) :div))
                                           result
+
+                                          (fn? result)
+                                          [result]
 
                                           :else
                                           (str result)))]])]
