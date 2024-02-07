@@ -55,7 +55,7 @@ In addition to the default SCI execution environment, the following functions ar
 * `util/set-display-none` - accepts an (DOM) element; sets the display style of the element to 'none'
 * `util/set-display-block` - accepts an (DOM) element; sets the display style of the element to 'block'
 * `util/get-element-by-id` - performs an element query using the provided argument id (do not prefix with '#' as this will be done for you) and returns the result; note - the query is scoped to the container element for the Workspace.
-* `cb/update-card` - (experimental) - accepts a clojure map where keys represent the names of symbols within the containing workspace; for each pair in the map parameter, attempts to locate a top-level symbol named by the pair; if found, replaces the symbol's value provided by the pair.
+* `cb/update-card` - (experimental) - accepts a clojure map where keys represent the names of symbols within the containing workspace; for each pair in the map parameter, attempts to locate a top-level symbol named by the pair; if found, replaces the symbol's value provided by the pair. An optional keyword-arg, :with-eval, can be provided. When `true` (default), the updated workspace code will be evaluated; when `false` the updated workspace code is not evaluated.
 
 ----
 

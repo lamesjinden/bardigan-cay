@@ -85,13 +85,16 @@
   (-> base-sci-opts
       (assoc-in [:namespaces 'util 'get-element-by-id] (fn [id] (.querySelector @root-element-ref (str "#" id))))
       (assoc-in [:namespaces 'cb] {})
-      (assoc-in [:namespaces 'cb 'update-card] (fn [replacements]
+      (assoc-in [:namespaces 'cb 'update-card] (fn [replacements & {:keys [with-eval]
+                                                                    :or   {with-eval true}}]
                                                  (let [ace-editor (:editor @state)
-                                                       src-value (.getValue ace-editor)
+                                                       src-value  (.getValue ace-editor)
                                                        src-value' (rewrite-src src-value replacements)]
                                                    (.setValue ace-editor src-value')
-                                                   (let [result (eval-string src-value' @sci-opts-ref)]
-                                                     (swap! state #(conj % {:calc result :result result}))))))
+                                                   (when with-eval
+                                                     (let [result (eval-string src-value' @sci-opts-ref)]
+                                                       (swap! state #(conj % {:calc   result
+                                                                              :result result})))))))
       (sci/init)))
 
 ;; endregion
