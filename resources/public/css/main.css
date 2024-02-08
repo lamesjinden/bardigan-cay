@@ -967,21 +967,26 @@ dialog::backdrop {
   flex: 1 1 0;
 }
 
-:is(.code-section-header-container, .calculated-section, .result-section) > h4 {
+:is(.code-section-header-container, .calculated-section, .result-section) > h4,
+:is(.result-section-header-container, .calculated-section, .result-section)
+  > h4 {
   margin: 0.912rem 5px 0 0 !important;
   white-space: nowrap;
 }
 
-.code-section-header-container {
+.code-section-header-container,
+.result-section-header-container {
   display: flex;
   align-content: flex-end;
 }
 
-.code-section-header-container > h4 {
+.code-section-header-container > h4,
+.result-section-header-container > h4 {
   display: inline-block;
 }
 
-.code-section-header-container > .workspace-buttons {
+.code-section-header-container > .workspace-buttons,
+.result-section-header-container > .workspace-buttons {
   margin-left: auto;
 }
 

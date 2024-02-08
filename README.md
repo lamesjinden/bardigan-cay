@@ -22,6 +22,10 @@
 * Added Expand-All / Collapse-All cards functionality 
 * Added keyboard shortcuts when editing page content
 * Added confirmation dialog when leaving an active editor
+* Workspace cards can evaluate when loaded (without user interaction)
+* Workspace card layout can be toggled between vertical and horizontal (side-by-side)
+* Workspace cards can self-update
+* Workspace cards can return Reagent components, in addition to the previous types (string, hiccup)
 
 ### Development
 

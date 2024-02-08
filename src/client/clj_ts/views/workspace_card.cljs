@@ -90,11 +90,13 @@
                                                  (let [ace-editor (:editor @state)
                                                        src-value  (.getValue ace-editor)
                                                        src-value' (rewrite-src src-value replacements)]
-                                                   (.setValue ace-editor src-value')
-                                                   (when with-eval
-                                                     (let [result (eval-string src-value' @sci-opts-ref)]
-                                                       (swap! state #(conj % {:calc   result
-                                                                              :result result})))))))
+                                                   (when (not (= src-value src-value'))
+                                                     (.setValue ace-editor src-value')
+                                                     (swap! state assoc :dirty? true)
+                                                     (when with-eval
+                                                       (let [result (eval-string src-value' @sci-opts-ref)]
+                                                         (swap! state #(conj % {:calc   result
+                                                                                :result result}))))))))
       (sci/init)))
 
 ;; endregion
@@ -193,6 +195,7 @@
                           :code             source_data
                           :code-editor-size (get card-configuration :editor-size :small)
                           :code-toggle      (get card-configuration :code-visibility true)
+                          :dirty?           false
                           :editor           nil
                           :hash             hash
                           :layout           (get card-configuration :layout :vertical)
@@ -266,7 +269,13 @@
 
                                   (when (:result-toggle @local-db)
                                     [:div.result-section {:on-double-click (fn [e] (.stopPropagation e))}
-                                     [:h4 "Result"]
+                                     [:div.result-section-header-container
+                                      [:h4 (str "Result" (when (:dirty? @local-db) " *"))]
+                                      (when (:dirty? @local-db)
+                                        [:div.workspace-buttons
+                                         [:button.big-btn {:on-click (fn [] (on-save-clicked db local-db))
+                                                           :on-double-click (fn [e] (.stopPropagation e))}
+                                          [:span {:class [:material-symbols-sharp :clickable]} "save"]]])]
                                      [:output
                                       (let [result (-> @local-db :result)]
                                         (cond
