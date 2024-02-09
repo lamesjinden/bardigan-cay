@@ -974,6 +974,10 @@ dialog::backdrop {
   white-space: nowrap;
 }
 
+.result-section-header-container > h4.dirty {
+  font-style: italic;
+}
+
 .code-section-header-container,
 .result-section-header-container {
   display: flex;

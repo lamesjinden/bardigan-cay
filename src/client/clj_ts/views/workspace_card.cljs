@@ -278,12 +278,14 @@
                                   (when (:result-toggle @local-db)
                                     [:div.result-section {:on-double-click (fn [e] (.stopPropagation e))}
                                      [:div.result-section-header-container
-                                      [:h4 (str "Result" (when (:dirty? @local-db) " *"))]
-                                      (when (:dirty? @local-db)
-                                        [:div.workspace-buttons
-                                         [:button.big-btn {:on-click (fn [] (on-save-clicked db local-db))
-                                                           :on-double-click (fn [e] (.stopPropagation e))}
-                                          [:span {:class [:material-symbols-sharp :clickable]} "save"]]])]
+                                      (if (:dirty? @local-db)
+                                        [:<>
+                                         [:h4.dirty "Result"]
+                                         [:div.workspace-buttons
+                                          [:button.big-btn {:on-click (fn [] (on-save-clicked db local-db))
+                                                            :on-double-click (fn [e] (.stopPropagation e))}
+                                           [:span {:class [:material-symbols-sharp :clickable]} "save"]]]]
+                                        [:h4 "Result"])]
                                      [:output
                                       (let [result (-> @local-db :result)]
                                         (cond
