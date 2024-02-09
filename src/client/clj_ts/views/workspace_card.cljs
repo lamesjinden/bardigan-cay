@@ -168,6 +168,14 @@
                control?)
       (workspace-editor-on-key-s-press db local-db e))))
 
+(def default-width-threshold 1400)
+
+(defn- get-default-layout []
+  (let [window-width (.-innerWidth js/window)]
+    (if (> window-width default-width-threshold)
+      :horizontal
+      :vertical)))
+
 (defn- theme-tracker [db local-db]
   (ace/set-theme! (:editor @local-db)
                   (if (theme/light-theme? db)
@@ -198,9 +206,9 @@
                           :dirty?           false
                           :editor           nil
                           :hash             hash
-                          :layout           (get card-configuration :layout :vertical)
+                          :layout           (get card-configuration :layout (get-default-layout))
                           :result           ""
-                          :result-toggle    (get card-configuration :result-visibility false)
+                          :result-toggle    (get card-configuration :result-visibility true)
                           :source_type      source_type})
         root-element-ref (clojure.core/atom nil)
         editor-element-ref (clojure.core/atom nil)
