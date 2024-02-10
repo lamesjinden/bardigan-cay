@@ -312,10 +312,7 @@ div textarea {
   border-bottom-right-radius: var(--card-border-radius);
   margin-left: calc(-1 * var(--card-outer-padding));
   margin-right: calc(-1 * var(--card-outer-padding));
-  padding-bottom: 8px;
-  padding-top: 4px;
-  padding-left: 4px;
-  padding-right: 4px;
+  padding: 8px;
 }
 
 .details-container {
