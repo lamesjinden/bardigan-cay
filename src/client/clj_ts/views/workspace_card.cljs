@@ -276,7 +276,8 @@
                                     (str/trim (-> @local-db :code))]]
 
                                   (when (:result-toggle @local-db)
-                                    [:div.result-section {:on-double-click (fn [e] (.stopPropagation e))}
+                                    [:div.result-section {:on-key-down     (fn [e] (workspace-editor-on-key-down db local-db e))
+                                                          :on-double-click (fn [e] (.stopPropagation e))}
                                      [:div.result-section-header-container
                                       (if (:dirty? @local-db)
                                         [:<>
