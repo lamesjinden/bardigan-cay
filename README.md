@@ -81,15 +81,14 @@ Depending on the desired workflow, choose between:
 
 - client (choose 1)
   - `run-dev-client`
-    - starts `Figwheel.main` to continuously compile and reload client changes
-      - changes (including css) are reflected (almost) immediately from Figwheel's reported url (defaults to port 9500)
+    - starts `shadow-cljs` to continuously compile and reload client changes
+      - changes, including css, are reflected (almost) immediately within running broswers
       - changes are also reflected (less) immediately from the paired `run-dev-server*` process (defaults to port 4545)
-        - because Figwheel compiles to a directory served by the server process
+        - ...because `shadown-cljs` compiles to a directory served by the server process
   - `run-dev-client-repl`
-    - starts `rebel.main` to enable bootstrapping the client repl
+    - starts `shadow-cljs` to enable bootstrapping the client repl
     - see `dev/dev_client.clj` for usage instructions
     - this configuration is more involved, but enables fine-grained control over the client application
-      - use your editor's repl integration (i.e. Cursvie, Calva, etc.) to connect to the REPL hosted by `shadow-cljs` (by default: port 9630)
 - server (choose 1)
   - `run-dev-server`
     - starts the server application through `dev-server`

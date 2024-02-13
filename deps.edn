@@ -14,9 +14,10 @@
 
   :client
   {:extra-deps  {org.clojure/clojurescript {:mvn/version "1.11.60"}
-                 rewrite-clj/rewrite-clj   {:mvn/version "1.1.47"}
+                 org.clojure/math.combinatorics {:mvn/version "0.2.0"}
+                 cljfmt/cljfmt             {:mvn/version "0.9.2"}
                  reagent/reagent           {:mvn/version "1.2.0"}
-                 cljfmt/cljfmt             {:mvn/version "0.9.2"}}
+                 rewrite-clj/rewrite-clj   {:mvn/version "1.1.47"}}
    :extra-paths ["src/client"]}
 
   :shadow

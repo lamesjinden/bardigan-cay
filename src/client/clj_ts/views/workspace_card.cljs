@@ -1,5 +1,7 @@
 (ns clj-ts.views.workspace-card
   (:require [clojure.string :as str]
+            [clojure.math.combinatorics]
+            [cljs.math]
             [cljs.pprint :refer [pprint]]
             [cljfmt.core :as format]
             [reagent.core :as r]
@@ -62,24 +64,32 @@
       (reset! ratom value))))
 
 (def base-sci-opts
-  {:classes    {'js js/globalThis :allow :all}
-   :namespaces {'clojure.core {'println println
-                               'prn prn}
-                'util     {'parse-long parse-long
-                           'parse-double parse-double
-                           'parse-boolean parse-boolean
-                           'pad2 pad2
-                           'pad3 pad3
-                           'pad4 pad4
-                           'round1 round1
-                           'round2 round2
-                           'round3 round3
-                           'set-inner-html set-inner-html
-                           'set-display set-display
-                           'set-display-block set-display-block
-                           'set-display-none set-display-none
-                           'bind-ratom bind-ratom}
-                'r {'atom r/atom}}})
+  (let [math-ns (sci/create-ns 'cljs.math)
+        math-publics (ns-publics 'cljs.math)
+        sci-math-ns (update-vals math-publics #(sci/copy-var* % math-ns))
+        combo-ns (sci/create-ns 'clojure.math.combinatorics)
+        combo-publics (ns-publics 'clojure.math.combinatorics)
+        sci-combo-ns (update-vals combo-publics #(sci/copy-var* % combo-ns))]
+    {:classes    {'js js/globalThis :allow :all}
+     :namespaces {'clojure.core {'println println
+                                 'prn prn
+                                 'parse-long parse-long
+                                 'parse-double parse-double
+                                 'parse-boolean parse-boolean}
+                  'math sci-math-ns
+                  'combo sci-combo-ns
+                  'util     {'pad2 pad2
+                             'pad3 pad3
+                             'pad4 pad4
+                             'round1 round1
+                             'round2 round2
+                             'round3 round3
+                             'set-inner-html set-inner-html
+                             'set-display set-display
+                             'set-display-block set-display-block
+                             'set-display-none set-display-none
+                             'bind-ratom bind-ratom}
+                  'r {'atom r/atom}}}))
 
 (defn create-sci-opts [state root-element-ref sci-opts-ref]
   (-> base-sci-opts
