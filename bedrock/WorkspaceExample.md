@@ -73,7 +73,6 @@ In an *exported* Workspace, hiccup isn't available. So if you want to write a pr
 
 Look at the example in the Workspace below. Note that if you run it in a live Cardigan Bay, the tags won't render correctly. But in an exported page they will.
 
-
 ----
 :workspace
 
@@ -115,11 +114,9 @@ Clojure ignores this line, as it's justs a comment. But the exporter treats it a
 
 See the following example in the exported page to understand how it works
 
-
 ----
 :workspace
 
- 
 (defn tag [t s] (str "<" t ">" s "</" t ">"))
 
 (defn ul [s] (tag "ul" s))
@@ -183,7 +180,7 @@ see below
                      (when-let [replacement-symbol @input-replacement-symbol]
                        (let [replacement-value (inc (if (number? @input-replacement-value)
                                                       @input-replacement-value
-                                                      (util/parse-long @input-replacement-value)))]
+                                                      (parse-long @input-replacement-value)))]
                          (cb/update-card {"y" "static value"
                                           'target-symbol @input-replacement-symbol
                                           'target-value replacement-value

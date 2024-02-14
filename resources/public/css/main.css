@@ -20,6 +20,9 @@
   --base-a-tag-color: #39cccc;
   --header-input-background-color: var(--primary-background-color);
   --header-input-separator-color: #dbdde1;
+  --input-background-color: var(--primary-background-color);
+  --input-border-color: var(--secondary-foreground-color);
+  --input-focus-color: var(--primary-accent-color);
   --wikilink-color: #85144b;
   --double-comma-table-border-color: #808080;
   --manual-copy-background-color: #fafcf2;
@@ -72,6 +75,8 @@
   --card-gutter-background-color: #373737;
   --header-input-background-color: var(--secondary-background-color);
   --header-input-separator-color: #2a2a2a;
+  --input-background-color: var(--secondary-background-color);
+  --input-border-color: var(--off-primary-color);
   --progress-bar-background-color: #0078d7;
 }
 
@@ -186,8 +191,22 @@ input {
   border-width: 1px;
   border-color: var(--secondary-background-color);
   padding: 8px;
-  background-color: transparent;
+  background-color: var(--input-background-color);
   color: var(--primary-foreground-color);
+  border: 1px solid var(--input-border-color);
+  border-radius: 6px;
+}
+
+input:focus:not(:focus-visible) {
+  border-color: var(--input-focus-color);
+  outline: none;
+  box-shadow: inset 0 0 0 1px var(--input-focus-color);
+}
+
+input:focus-visible {
+  border-color: var(--input-focus-color);
+  outline: none;
+  box-shadow: inset 0 0 0 1px var(--input-focus-color);
 }
 
 pre {
@@ -352,10 +371,19 @@ div textarea {
   border: 1px solid transparent;
 }
 
-.send-elsewhere-input-container input {
-  width: 100%;
-  border: none;
+.send-elsewhere-input-container:has(> input:focus-visible),
+.send-elsewhere-input-container:has(> input:focus:not(:focus-visible)) {
+  border-color: var(--input-focus-color);
   outline: none;
+  box-shadow: inset 0 0 0 1px var(--input-focus-color);
+}
+
+.send-elsewhere-input-container input {
+  background-color: transparent;
+  border: none;
+  box-shadow: unset;
+  outline: none;
+  width: 100%;
 }
 
 .send-elsewhere-input-actions {
@@ -735,6 +763,18 @@ dialog::backdrop {
   padding-left: 15px;
   padding-right: 15px;
   border: 1px solid transparent;
+}
+
+#header-input:has(> input:focus-visible),
+#header-input:has(> input:focus:not(:focus-visible)) {
+  border-color: var(--input-focus-color);
+  outline: none;
+  box-shadow: inset 0 0 0 1px var(--input-focus-color);
+}
+
+#header-input > input {
+  background-color: transparent;
+  box-shadow: unset;
 }
 
 .header-input-actions {
