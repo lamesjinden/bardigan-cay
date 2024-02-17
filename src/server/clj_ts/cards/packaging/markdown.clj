@@ -18,5 +18,12 @@
     (catch Exception _e
       source_data)))
 
-(defn package [id source-data render-context]
-  (util/package-card id :markdown :html source-data (render/md->html (remove-card-configuration source-data)) render-context))
+(defn package [id card-map render-context]
+  (let [{source-data       :source_data
+         [a b :as _tokens] :tokens} card-map
+        server-prepared-data (render/md->html (cond
+                                                (nil? (:type a)) (remove-card-configuration source-data)
+                                                (= :keyword (:type a)) (remove-card-configuration (:value b))
+                                                (= :map (:type a)) (remove-card-configuration source-data)
+                                                :else (throw (ex-info (format "unknown token type: %s" (:type a)) {}))))]
+    (util/package-card id :markdown :html source-data server-prepared-data  render-context)))

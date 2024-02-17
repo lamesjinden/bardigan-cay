@@ -27,21 +27,15 @@
 ;; We'll call it render-context
 ;; {:for-export false :user-authored? true}
 
-;; todo - when to remove card-configuration?
-;;        - only ever removed for 'server-prepared-data'
-;;        - do not remove from:
-;;          - workspace
-;;          - raw
-
 ;; todo - Q: why does process-card-map return a vector of 1 element?
 ;;        A: b/c transclude returns a header card and the subject card, and the array unifies the result type (??)
 (defn process-card-map
-  [server-snapshot id {:keys [source_type source_data]} render-context]
+  [server-snapshot id {:keys [source_type source_data] :as card-map} render-context]
   (try
     [(condp = source_type
 
        :markdown
-       (markdown/package id source_data render-context)
+       (markdown/package id card-map render-context)
 
        :manual-copy
        (manual-copy/package id source_data render-context)
@@ -62,7 +56,7 @@
        (workspace/package id source_data render-context)
 
        :bookmark
-       (bookmark/package id source_data render-context)
+       (bookmark/package id card-map render-context)
 
        :patterning
        (patterning/package id source_data render-context)
@@ -71,18 +65,18 @@
        (filelink/package id source_data render-context)
 
        :network
-       (network/package id source_data render-context)
+       (network/package id card-map render-context)
 
        :system
-       (system/package id source_data render-context server-snapshot)
+       (system/package id card-map render-context server-snapshot)
 
        :embed
-       (embed/package id source_data render-context server-snapshot)
+       (embed/package id card-map render-context server-snapshot)
 
-       ;; not recognised
+       ;; not recognized
        (util/package-card id source_type source_type source_data source_data render-context))]
     (catch
-      Exception e
+     Exception e
       [(util/package-card id :raw :raw source_data (render/process-card-error source_type source_data e) render-context)])))
 
 (defn- transclude

@@ -1,20 +1,19 @@
 (ns clj-ts.card-server
   {:clj-kondo/config '{:linters {:unresolved-symbol {:exclude [(better-cond.core/cond)]}}}}
   [:require [clojure.string :as str]
-            [better-cond.core :as b]
-            [clj-ts.cards.packaging :as packaging]
-            [clj-ts.cards.parsing :as parsing]
-            [clj-ts.cards.system :as system]
-            [clj-ts.common :as common]
-            [clj-ts.export.page-exporter]
-            [clj-ts.query.card-server-record :as server-record]
-            [clj-ts.query.facts-db :as facts]
-            [clj-ts.query.logic :as ldb]
-            [clj-ts.render :as render]
-            [clj-rss.core :as rss]
-            [clj-ts.search :as search]
-            [clj-ts.storage.page_store :as pagestore]
-            [clj-ts.util :as util]]
+   [clj-ts.cards.packaging :as packaging]
+   [clj-ts.cards.parsing :as parsing]
+   [clj-ts.cards.system :as system]
+   [clj-ts.common :as common]
+   [clj-ts.export.page-exporter]
+   [clj-ts.query.card-server-record :as server-record]
+   [clj-ts.query.facts-db :as facts]
+   [clj-ts.query.logic :as ldb]
+   [clj-ts.render :as render]
+   [clj-rss.core :as rss]
+   [clj-ts.search :as search]
+   [clj-ts.storage.page_store :as pagestore]
+   [clj-ts.util :as util]]
   (:import (clojure.lang Atom)))
 
 ;; Card Server state is just a defrecord.
@@ -25,14 +24,14 @@
 
 (defn create-card-server ^Atom [wiki-name site-url port-no start-page nav-links logic-db page-store page-exporter]
   (atom (server-record/->CardServerRecord
-          wiki-name
-          site-url
-          port-no
-          start-page
-          nav-links
-          logic-db
-          page-store
-          page-exporter)))
+         wiki-name
+         site-url
+         port-no
+         start-page
+         nav-links
+         logic-db
+         page-store
+         page-exporter)))
 
 (defn- set-state!
   [^Atom card-server key val]
@@ -61,9 +60,9 @@
 (defn- load->cards
   [server-snapshot page-name]
   (as-> server-snapshot $
-        (.page-store $)
-        (.load-page $ page-name)
-        (packaging/raw->cards server-snapshot $ {:user-authored? true :for-export? false})))
+    (.page-store $)
+    (.load-page $ page-name)
+    (packaging/raw->cards server-snapshot $ {:user-authored? true :for-export? false})))
 
 (defn resolve-text-search [server-snapshot _context arguments _value]
   (let [{:keys [query_string]} arguments
@@ -112,9 +111,9 @@ If you would *like* to create a page with this name, simply click the [Edit] but
                           (if (empty? sim-names)
                             []
                             [(util/package-card
-                               :similarly_name_pages :system :markdown ""
-                               (str "Here are some similarly named pages :"
-                                    (apply str sim-names)) false)]))})))
+                              :similarly_name_pages :system :markdown ""
+                              (str "Here are some similarly named pages :"
+                                   (apply str sim-names)) false)]))})))
 
 ; region RecentChanges as RSS
 
@@ -153,8 +152,8 @@ If you would *like* to create a page with this name, simply click the [Edit] but
   (if (= page-name destination-name)
     nil                                                     ;; don't try to move to self
     (let [server-snapshot @card-server
-          ps (.page-store server-snapshot)
-          from-cards (.get-page-as-card-maps ps page-name)
+          page-store (.page-store server-snapshot)
+          from-cards (.get-page-as-card-maps page-store page-name)
           card (common/find-card-by-hash from-cards hash)
           stripped (into [] (common/remove-card-by-hash from-cards hash))
           stripped-raw (common/cards->raw stripped)]
@@ -183,9 +182,9 @@ If you would *like* to create a page with this name, simply click the [Edit] but
       :not-found
       (let [new-card (parsing/raw-card-text->card-map new-body)
             new-cards (common/replace-card
-                        cards
-                        #(common/match-hash % hash)
-                        new-card)]
+                       cards
+                       #(common/match-hash % hash)
+                       new-card)]
         (write-page-to-file! card-server page-name (common/cards->raw new-cards))
         (let [render-context {:user-authored? true :for-export? false}
               packaged-card (-> (packaging/process-card-map server-snapshot -1 new-card render-context)

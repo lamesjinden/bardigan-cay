@@ -16,24 +16,23 @@
     (cond
       (= bl :not-available)
       (util/package-card
-        :backlinks :system :markdown
-        (str backlinks-card-default-configuration "\n\n" "Backlinks Not Available")
-
-        "Backlinks Not Available"
-        false)
+       :backlinks :system :markdown
+       (str backlinks-card-default-configuration "\n\n" "Backlinks Not Available")
+       "Backlinks Not Available"
+       false)
 
       (= bl '())
       (util/package-card
-        :backlinks :system :markdown
-        (str backlinks-card-default-configuration "\n\n" "No Backlinks")
-        "No Backlinks"
-        false)
+       :backlinks :system :markdown
+       (str backlinks-card-default-configuration "\n\n" "No Backlinks")
+       "No Backlinks"
+       false)
 
       :else
       (ldb-query->mdlist-card
-        "backlinks"
-        (str backlinks-card-default-configuration "\n\n" "backlinks")
-        "Backlinks" bl
-        :calculated
-        (fn [[a b]] (str "* [[" a "]] \n"))
-        false))))
+       "backlinks"
+       (str backlinks-card-default-configuration "\n\n" "backlinks")
+       "Backlinks" bl
+       :calculated
+       (fn [[a]] (str "* [[" a "]] \n"))
+       false))))

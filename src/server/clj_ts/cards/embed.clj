@@ -1,10 +1,10 @@
 (ns clj-ts.cards.embed
-  (:require [clojure.edn :as edn]
-            [clojure.data.json :as json]
+  (:require [clojure.data.json :as json]
             [clojure.string :as string]
             [org.httpkit.client :as http]
             [org.httpkit.sni-client :as sni]
-            [remus :refer [parse-url]]))
+            [remus :refer [parse-url]]
+            [clj-ts.render :as render]))
 
 (alter-var-root #'org.httpkit.client/*default-client* (fn [_] sni/default-client))
 
@@ -28,14 +28,14 @@
         caption (:caption data)
         extra-link (:extra-link data)]
     (str
-      (if title (str "<div><h3>" title "</h3></div>") "")
-      (if extra-link (str "<div>" extra-link "</div>") "")
-      "<div class=\"embed_div\">"
-      inner
-      "
+     (if title (str "<div><h3>" title "</h3></div>") "")
+     (if extra-link (str "<div>" extra-link "</div>") "")
+     "<div class=\"embed_div\">"
+     inner
+     "
  </div>
  "
-      (if caption (str "<div class='embed-caption'>" (caption-renderer caption) "</div>") ""))))
+     (if caption (str "<div class='embed-caption'>" (caption-renderer caption) "</div>") ""))))
 
 (defn generic-oembed [oembed url method]
   (let [call (http-call oembed
@@ -48,16 +48,16 @@
 API : " oembed " URL : " url)
       (try
         (str (->
-               call
-               json/read-str (get "html")))
+              call
+              json/read-str (get "html")))
         (catch Exception e
           (str (.getMessage e) " " oembed " " url "  " (str call)))))))
 
 (defn resizable-iframe [url]
   (let [uid (str "iframe" (string/replace (gensym) #"_" "xxXxx"))]
     (str
-      "<iframe class='resizable-iframe' id='" uid "' src='" url "' style='width:100%; height:300px;'"
-      " allowfullscreen></iframe>")))
+     "<iframe class='resizable-iframe' id='" uid "' src='" url "' style='width:100%; height:300px;'"
+     " allowfullscreen></iframe>")))
 
 ;; Matching
 
@@ -70,50 +70,50 @@ API : " oembed " URL : " url)
 (defn youtube [data caption-renderer]
   (let [url (:url data)
         id (->
-             (re-matches youtube-pattern url)
-             second)]
+            (re-matches youtube-pattern url)
+            second)]
     (generic-embed
-      data
-      (str
-        "   <div class='youtube-embedded'>
+     data
+     (str
+      "   <div class='youtube-embedded'>
 <iframe src='https://www.youtube.com/embed/" id "'
         style=\" width:100%; height:100%;\"
         frameborder='0' allowfullscreen>
 </iframe>
 </div>
 ")
-      caption-renderer)))
+     caption-renderer)))
 
 (defn vimeo [data caption-renderer]
   (let [url (:url data)
         id (-> (string/split url #"/") last)]
     (generic-embed
-      data
-      (str
-        "<div class=\"vimeo-embedded\">
+     data
+     (str
+      "<div class=\"vimeo-embedded\">
   <iframe src='https://player.vimeo.com/video/" id "' width='640' height='360' frameborder='0' allow='autoplay; fullscreen' allowfullscreen></iframe>
 <p><a href='https://vimeo.com/" id "'>"
 
-        url "</a></p>
+      url "</a></p>
 </div>
 ")
-      caption-renderer)))
+     caption-renderer)))
 
 (defn soundcloud [data caption-renderer]
   (generic-embed
-    data
-    (generic-oembed "https://soundcloud.com/oembed" (:url data) :post)
-    caption-renderer))
+   data
+   (generic-oembed "https://soundcloud.com/oembed" (:url data) :post)
+   caption-renderer))
 
 (defn bandcamp [{:keys [id url description] :as data} caption-renderer]
   (generic-embed
-    data
-    (str
-      "<div class=\"embed_div\"><div class='bandcamp-embedded'>
+   data
+   (str
+    "<div class=\"embed_div\"><div class='bandcamp-embedded'>
   <iframe style='border: 0; width: 550px; height: 655px;'
   src='https://bandcamp.com/EmbeddedPlayer/album=" id "/size=large/bgcol=ffffff/linkcol=0687f5/transparent=true/'
 seamless><a href='" url "'>" description "</a></iframe></div></div>")
-    caption-renderer))
+   caption-renderer))
 
 (defn twitter [data caption-renderer]
   (let [url (:url data)
@@ -121,15 +121,15 @@ seamless><a href='" url "'>" description "</a></iframe></div></div>")
         {:keys [status body error]}
         @(http/get api)]
     (generic-embed
-      (conj {:extra-link (str "<a href='https://threadviewer.com/"
-                              (-> url ((fn [s] (string/split s #"/"))) last)
-                              "'>ThreadView</a>")} data)
-      (if error
-        (str "Failed, exception: " error)
-        (do
-          (println "HTTP GET success: " status)
-          (-> body json/read-str (get "html"))))
-      caption-renderer)))
+     (conj {:extra-link (str "<a href='https://threadviewer.com/"
+                             (-> url ((fn [s] (string/split s #"/"))) last)
+                             "'>ThreadView</a>")} data)
+     (if error
+       (str "Failed, exception: " error)
+       (do
+         (println "HTTP GET success: " status)
+         (-> body json/read-str (get "html"))))
+     caption-renderer)))
 
 (defn mastodon [data caption-renderer]
   (let [url (:url data)
@@ -137,14 +137,14 @@ seamless><a href='" url "'>" description "</a></iframe></div></div>")
         new-url
         (str "https://" (nth match 1) "/" (nth match 3) "/" (nth match 4) "/embed")]
     (generic-embed
-      data
-      (resizable-iframe new-url)
-      caption-renderer)))
+     data
+     (resizable-iframe new-url)
+     caption-renderer)))
 
 (defn strip-tags [html]
   (if (nil? html) "NO DESCRIPTION"
-                  (let [processed (clojure.string/replace html #"\<([^>])+\>" "")]
-                    processed)))
+      (let [processed (clojure.string/replace html #"\<([^>])+\>" "")]
+        processed)))
 
 (defn rss [data caption-renderer]
   (let [url (:url data)
@@ -152,49 +152,48 @@ seamless><a href='" url "'>" description "</a></iframe></div></div>")
         feed (:feed result)
         entries
         (map
-          (fn [e]
-            (let [stripped (str (strip-tags (-> e :description :value)))
-                  txt
-                  (str (if (:title e) (:title e)
-                                      (apply str (take 40 stripped))))]
-              (str
-                "[" txt "](" (:link e) ") ... ,, "
-                (:published-date e) "\n")))
-          (:entries feed))]
+         (fn [e]
+           (let [stripped (str (strip-tags (-> e :description :value)))
+                 txt
+                 (str (if (:title e) (:title e)
+                          (apply str (take 40 stripped))))]
+             (str
+              "[" txt "](" (:link e) ") ... ,, "
+              (:published-date e) "\n")))
+         (:entries feed))]
     (generic-embed
-      data
-      (caption-renderer (apply str (doall entries)))
-      caption-renderer)))
+     data
+     (caption-renderer (apply str (doall entries)))
+     caption-renderer)))
 
 (defn media-img [data render-context caption-renderer server-state]
   (let [src (:src data)
         width (if (:width data) (:width data) "100%")]
     (generic-embed
-      data
-      (if (:for-export? render-context)
-        (str "<img src='"
-             (-> server-state :page-exporter (.media-name->exported-link src))
-             "' class='embedded_image_for_export' width='" width "' />")
-        (str "<img src='/media/" src "' class='embedded_image' width='" width "' />"))
-      caption-renderer)))
+     data
+     (if (:for-export? render-context)
+       (str "<img src='"
+            (-> server-state :page-exporter (.media-name->exported-link src))
+            "' class='embedded_image_for_export' width='" width "' />")
+       (str "<img src='/media/" src "' class='embedded_image' width='" width "' />"))
+     caption-renderer)))
 
 (defn img [data caption-renderer]
   (let [src (:url data)
         width (if (:width data) (:width data) "100%")]
     (generic-embed
-      data
-      (str "<img src='" src "' class='embedded_image' width='" width "' />")
-      caption-renderer)))
+     data
+     (str "<img src='" src "' class='embedded_image' width='" width "' />")
+     caption-renderer)))
 
 (defn codepen [data caption-renderer]
   (generic-embed
-    data
-    (generic-oembed "https://codepen.io/api/oembed" (:url data) :get)
-    caption-renderer))
+   data
+   (generic-oembed "https://codepen.io/api/oembed" (:url data) :get)
+   caption-renderer))
 
-(defn process [card-text render-context caption-renderer server-state]
-  ;; todo/note - change to account for non-destructive card parsing
-  (let [data (edn/read-string card-text)]
+(defn process [card-map render-context caption-renderer server-state]
+  (let [data (render/card-map->card-data card-map)]
     (try
       (condp = (:type data)
         :media-img

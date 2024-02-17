@@ -1,18 +1,17 @@
 (ns clj-ts.cards.packaging.system
-  (:require [clj-ts.render :as render]
+  (:require [clj-ts.cards.system :as system]
+            [clj-ts.render :as render]
             [clj-ts.search :as search]
-            [clj-ts.util :as util]
-            [clojure.edn :as edn]
-            [clj-ts.cards.system :as system]))
+            [clj-ts.util :as util]))
 
 (defn- item1 [s] (str "* [[" s "]]\n"))
 
-(defn package [id source-data render-context server-snapshot]
-  ;; todo/note - change to account for non-desctructive card parsing
-  (let [info (edn/read-string source-data)
-        command (:command info)
-        facts-db (-> server-snapshot :facts-db)
-        page-store (-> server-snapshot :page-store)]
+(defn package [id card-map render-context server-snapshot]
+  (let [facts-db (-> server-snapshot :facts-db)
+        page-store (-> server-snapshot :page-store)
+        source-data (:source_data card-map)
+        info (render/card-map->card-data card-map)
+        command (:command info)]
 
     (condp = command
       :allpages
@@ -20,20 +19,20 @@
 
       :alllinks
       (system/ldb-query->mdlist-card
-        id source-data "All Links" (.all-links facts-db) :alllinks
-        (fn [[a b]] (str "[[" a "]],, &#8594;,, [[" b "]]\n"))
-        render-context)
+       id source-data "All Links" (.all-links facts-db) :alllinks
+       (fn [[a b]] (str "[[" a "]],, &#8594;,, [[" b "]]\n"))
+       render-context)
 
       :brokenlinks
       (system/ldb-query->mdlist-card
-        id source-data "Broken Internal Links" (.broken-links facts-db) :brokenlinks
-        (fn [[a b]] (str "[[" a "]],, &#8603;,, [[" b "]]\n"))
-        render-context)
+       id source-data "Broken Internal Links" (.broken-links facts-db) :brokenlinks
+       (fn [[a b]] (str "[[" a "]],, &#8603;,, [[" b "]]\n"))
+       render-context)
 
       :orphanpages
       (system/ldb-query->mdlist-card
-        id source-data "Orphan Pages" (.orphan-pages facts-db) :orphanpages item1
-        render-context)
+       id source-data "Orphan Pages" (.orphan-pages facts-db) :orphanpages item1
+       render-context)
 
       :recentchanges
       (let [src (.read-recent-changes page-store)
@@ -60,9 +59,9 @@
       (let [file-names (-> (.page-store server-snapshot) .media-list)
             file-list (str "<ul>\n"
                            (apply
-                             str
-                             (map #(str "<li> <a href='/media/" % "'>" % "</a></li>\n")
-                                  file-names))
+                            str
+                            (map #(str "<li> <a href='/media/" % "'>" % "</a></li>\n")
+                                 file-names))
                            "</ul>")]
         (util/package-card id :system :html source-data file-list render-context))
 
