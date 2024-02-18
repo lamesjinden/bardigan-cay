@@ -2,6 +2,7 @@
   (:require [clojure.string :as str]
             [clojure.edn :as edn]
             [cljs.core.async :as a]
+            [cljs.tools.reader.reader-types :as reader-types]
             [clj-ts.page :as page]))
 
 (defn has-link-target? [e]
@@ -36,14 +37,29 @@
           (swap! db replace-card replaced-hash new-card raw))))))
 
 (defn ->card-configuration
-  "the card configuration is a map literal read from server_prepared_data.
-   if the first form is not a map, returns nil."
-  [{:strs [source_data] :or {source_data ""} :as _card}]
+  "attmpts to read the card-configuration map from the 'source_data' key of `card`.
+   
+   * if the first form is a keyword, attemps to read the next form. 
+     when the second form is a map, it is returned as the card-configuration.
+   
+   * if the first form is a map, it is returned as the card configuration.
+   
+   * otherwise, returns nil."
+  [card]
   (try
-    (let [edn (-> source_data
-                  (str/trim)
-                  (edn/read-string))]
-      (when (map? edn)
-        edn))
+    (let [source_data (-> card (get "source_data" "") (str/trim))
+          reader (reader-types/string-push-back-reader source_data)
+          a (edn/read reader)]
+      (cond
+        (keyword? a)
+        (let [b (edn/read reader)]
+          (if (map? b)
+            b
+            nil))
+
+        (map? a)
+        a
+
+        :else nil))
     (catch :default _e
       nil)))

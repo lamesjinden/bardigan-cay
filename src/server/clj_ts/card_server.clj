@@ -136,21 +136,19 @@ If you would *like* to create a page with this name, simply click the [Edit] but
 ; endregion
 
 (defn- append-card-to-page!
-  [^Atom card-server page-name {:keys [source_type source_type_implicit? source_data] :as _card}]
+  [^Atom card-server page-name {:keys [source_data] :as _card}]
   (let [server-snapshot @card-server
         page-body (try
                     (pagestore/read-page server-snapshot page-name)
                     (catch Exception _ (str "Automatically created a new page : " page-name "\n\n")))
-        ;; todo - change to account for non-destructive card parsing
-        new-body (if (and (= source_type :markdown) source_type_implicit?)
-                   (str page-body "\n\n" "----" "\n\n" (str/trim source_data) "\n\n")
-                   (str page-body "\n\n" "----" "\n" source_type "\n\n" (str/trim source_data) "\n\n"))]
+        new-body (str page-body "\n\n" "----" "\n\n" (str/trim source_data) "\n\n")]
     (write-page-to-file! card-server page-name new-body)))
 
 (defn move-card!
   [^Atom card-server page-name hash destination-name]
   (if (= page-name destination-name)
-    nil                                                     ;; don't try to move to self
+    ;; don't try to move to self
+    nil
     (let [server-snapshot @card-server
           page-store (.page-store server-snapshot)
           from-cards (.get-page-as-card-maps page-store page-name)
@@ -171,7 +169,6 @@ If you would *like* to create a page with this name, simply click the [Edit] but
                     (common/move-card-down cards hash))]
     (write-page-to-file! card-server page-name (common/cards->raw new-cards))))
 
-;; todo - move forward with using source-type-hint? or introduce a non-destructive partitioning scheme
 (defn replace-card!
   [^Atom card-server page-name hash new-body]
   (let [server-snapshot @card-server

@@ -29,7 +29,7 @@
         (parsing/raw-card-text->card-map raw-card-text)]
     (is (= source_type :markdown))
     (is (= (boolean source_type_implicit?) false))
-    (is (= source_data "simple text"))))
+    (is (= source_data raw-card-text))))
 
 (deftest raw-card-text->card-map_workspace-with-configuration-map
   (let [raw-card-text
@@ -58,7 +58,7 @@
         (parsing/raw-card-text->card-map raw-card-text)]
     (is (= source_type :system))
     (is (= (boolean source_type_implicit?) false))
-    (is (= source_data "{:command :search :query \"query string\"}"))))
+    (is (= source_data raw-card-text))))
 
 (deftest raw-card-text->card-map_combined-parameter-map-and-card-configuration-map
   (let [raw-card-text
