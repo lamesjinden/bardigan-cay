@@ -1,8 +1,11 @@
-{:deps     {:aliases [:shadow :client :dev]}
- :builds   {:app
-            {:target   :browser
-             :output-dir "resources/public/js"
-             :modules  {:main {:entries [clj-ts.client]
+{:deps   {:aliases [:shadow :client :dev :client-tests]}
+ :builds {:app
+          {:target     :browser
+           :output-dir "resources/public/js"
+           :modules    {:main {:entries [clj-ts.client]
                                :init-fn clj-ts.client/init}}
-             :devtools {:preloads [devtools.preload]
-                        :watch-dir "resources/public"}}}}
+           :devtools   {:preloads  [devtools.preload]
+                        :watch-dir "resources/public"}}
+
+          :tests {:target    :node-test
+                  :output-to "out/node-tests.js"}}}

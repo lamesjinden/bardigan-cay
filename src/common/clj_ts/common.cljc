@@ -2,9 +2,10 @@
   (:require [clojure.string :as string]))
 
 (defn card->raw [{:keys [source_type source_type_implicit? source_data]}]
-  (if (and (= source_type :markdown) source_type_implicit?)
-    (str "\n\n" source_data "\n\n")
-    (str "\n" source_type "\n\n" (string/trim source_data) "\n\n")))
+  (str "\n\n" (string/trim source_data) "\n\n")
+  #_(if (and (= source_type :markdown) source_type_implicit?)
+      (str "\n\n" source_data "\n\n")
+      (str "\n" source_type "\n\n" (string/trim source_data) "\n\n")))
 
 (defn card-is-blank? [{:keys [source_data]}]
   (= "" (string/trim source_data)))

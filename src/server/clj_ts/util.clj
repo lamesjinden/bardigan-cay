@@ -1,10 +1,12 @@
 (ns clj-ts.util
   (:require [clojure.string :as str]
             [clojure.java.io :as io]
+            [hasch.core :refer [uuid5 edn-hash]]
             [ring.util.response :as resp]
             [sci.core :as sci])
   (:import (java.io PrintWriter StringWriter)
            (java.nio.file Path)
+           (java.util.regex Pattern)
            (java.util.zip ZipEntry ZipOutputStream)))
 
 ;; Helpful for print debugging ... diffs two strings
@@ -103,3 +105,20 @@
                \& "&amp;"
                \' "&apos;"
                \" "&quot;"}))
+
+(defn hash-it [card-data]
+  (-> card-data
+      (edn-hash)
+      (uuid5)))
+
+(defn package-card [id source-type render-type source-data server-prepared-data render-context]
+  {:source_type          source-type
+   :render_type          render-type
+   :source_data          source-data
+   :server_prepared_data server-prepared-data
+   :id                   id
+   :hash                 (hash-it source-data)
+   :user_authored?       (:user-authored? render-context)})
+
+(defn string->pattern-string [s]
+  (str "(?i)" (Pattern/quote s)))
