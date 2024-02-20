@@ -83,21 +83,21 @@
         (.scrollIntoView edit-box-container)
         (.disconnect observer)))))
 
-(defn <setup-global-editor [db-theme source-data editor-element edit-box-container]
+(defn- <setup-editor [db-theme source-data editor-element edit-box-container on-edit-begin]
   (<defer   (fn []
               (let [ace-instance (create-edit editor-element)]
 
                 ;; configure ace
                 (let [ace-options (assoc default-ace-options :maxLines "Infinity")
-                      theme       (if (theme/light-theme? db-theme)
-                                    ace-theme
-                                    ace-theme-dark)]
+                      theme (if (theme/light-theme? db-theme)
+                              ace-theme
+                              ace-theme-dark)]
                   (configure-ace-instance! ace-instance ace-mode-markdown theme ace-options))
 
                 ;; watch for the first change; notify app
                 (a/go
                   (when-some [_delta (a/<! (<editor-dirty$ ace-instance source-data))]
-                    (editing-events/notify-global-editing-start)))
+                    (on-edit-begin)))
 
                 ;; after ace is visible
                 (a/go
@@ -106,26 +106,8 @@
 
                 ace-instance))))
 
+(defn <setup-global-editor [db-theme source-data editor-element edit-box-container]
+  (<setup-editor db-theme source-data editor-element edit-box-container editing-events/notify-global-editing-start))
+
 (defn <setup-card-editor [db-theme source-data hash editor-element edit-box-container]
-  (<defer (fn []
-            (let [ace-instance (create-edit editor-element)]
-
-              ;; configure ace
-              (let [ace-options (assoc default-ace-options :maxLines "Infinity")
-                    theme (if (theme/light-theme? db-theme)
-                            ace-theme
-                            ace-theme-dark)]
-                (configure-ace-instance! ace-instance ace-mode-markdown theme ace-options))
-
-              ;; watch for the first change; notify app
-              (a/go
-                (when-some [_delta (a/<! (<editor-dirty$ ace-instance source-data))]
-                  (editing-events/notify-editing-begin hash)))
-
-              ;; after ace is visible
-              (a/go
-                (when-some [mutation (a/<! (<css-class-change$ edit-box-container))]
-                  (focus-editor-on-mutation ace-instance edit-box-container mutation)))
-
-              ;; return the ace-instance
-              ace-instance))))
+  (<setup-editor db-theme source-data editor-element edit-box-container (partial editing-events/notify-editing-begin hash)))
