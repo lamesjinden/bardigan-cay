@@ -219,7 +219,9 @@
                           :layout           (get card-configuration :layout (get-default-layout))
                           :result           ""
                           :result-toggle    (get card-configuration :result-visibility true)
-                          :source_type      source_type})
+                          :source_type      source_type
+                          :title            (get card-configuration :workspace/title)})
+
         root-element-ref (clojure.core/atom nil)
         editor-element-ref (clojure.core/atom nil)
         sci-opts-ref (clojure.core/atom nil)
@@ -240,6 +242,8 @@
                                 (r/dispose! track-theme))
       :reagent-render         (fn []
                                 [:div.workspace {:ref (fn [element] (reset! root-element-ref element))}
+                                 (when-let [title (:title @local-db)]
+                                   [:h3 title])
                                  [:div.workspace-header-container
                                   [:div.visibility-buttons
                                    [:button.big-btn.big-btn-left {:class    (when (-> @local-db :code-toggle) "pressed")
