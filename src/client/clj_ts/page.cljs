@@ -19,7 +19,7 @@
   ([db callback]
    (let [page-name (-> @db :current-page)
          editor (:editor @db)
-         new-data (.getValue editor)
+         new-data ^string (.getValue editor)
          body (pr-str {:page page-name
                        :data new-data})]
      (a/go

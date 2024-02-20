@@ -496,6 +496,11 @@ ul.system-card-list {
   border-bottom-left-radius: var(--card-border-radius);
   border-bottom-right-radius: var(--card-border-radius);
   box-shadow: var(--card-box-shadow);
+  visibility: hidden;
+}
+
+.editor-container.configured {
+  visibility: visible;
 }
 
 .edit-box-single {
