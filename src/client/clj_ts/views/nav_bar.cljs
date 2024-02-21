@@ -3,9 +3,9 @@
             [clojure.string :as str]
             [reagent.core :as r]
             [sci.core :as sci]
+            [clj-ts.events.transcript :as transcript-events]
             [clj-ts.http :as http]
             [clj-ts.keyboard :as keyboard]
-            [clj-ts.mode :as mode]
             [clj-ts.navigation :as nav]
             [clj-ts.view :as view]
             [clj-ts.views.app-menu :refer [app-menu]]))
@@ -36,15 +36,15 @@
 (defn- prepend-transcript! [db code result]
   (let [current-transcript (-> @db :transcript)
         updated-transcript (updated-transcript code result current-transcript)]
-    (swap! db assoc :transcript updated-transcript)
-    (mode/set-transcript-mode! db)))
+    (swap! db assoc :transcript updated-transcript)))
 
 (defn- load-search-results! [db cleaned-query body]
   (let [edn (js->clj body)
         result (get edn "result_text")]
     (prepend-transcript! db
                          (str "Searching for " cleaned-query)
-                         (view/string->html result))))
+                         (view/string->html result))
+    (transcript-events/<notify-transcript-navigating db)))
 
 (defn- search-text-async! [db query-text]
   (let [cleaned-query (-> (or query-text "")
@@ -78,7 +78,8 @@
 (defn- eval-input! [db input-value]
   (let [code input-value
         result (sci/eval-string code)]
-    (prepend-transcript! db code result)))
+    (prepend-transcript! db code result)
+    (transcript-events/<notify-transcript-navigating db)))
 
 (defn- on-eval-clicked [db input-value]
   (let [current (-> (or input-value "")
@@ -90,7 +91,7 @@
   (.preventDefault e)
   (cond
     (= target "Transcript")
-    (swap! db assoc :mode :transcript)
+    (transcript-events/<notify-transcript-navigating db)
 
     :else
     (nav/<on-link-clicked db e target aux-clicked?)))

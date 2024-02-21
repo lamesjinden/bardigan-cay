@@ -3,16 +3,18 @@
    [cljs.core.async :as a]
    [reagent.core :as r]
    [reagent.dom :as dom]
+   [clj-ts.confirmation.onbeforeload-process :as confirm-onbeforeload]
    [clj-ts.confirmation.edit-process :as confirm-edit]
    [clj-ts.confirmation.navigation-process :as confirm-nav]
-   [clj-ts.confirmation.onbeforeload-process :as confirm-onbeforeload]
-   [clj-ts.events.editing :as e-editing]
+   [clj-ts.confirmation.transcript-process :as confirm-transcript]
    [clj-ts.events.confirmation :as e-confirm]
+   [clj-ts.events.editing :as e-editing]
    [clj-ts.events.navigation :as e-nav]
    [clj-ts.events.progression :as e-progress]
+   [clj-ts.events.transcript :as e-transcript]
    [clj-ts.mode :as mode]
-   [clj-ts.theme :as theme]
    [clj-ts.navigation :as nav]
+   [clj-ts.theme :as theme]
    [clj-ts.views.app :refer [app]]))
 
 ;; region top-level ratom
@@ -46,6 +48,10 @@
 
         _onbeforeload-process (confirm-onbeforeload/<create-onbeforeload-process
                                (e-editing/create-editing$))
+
+        _transcript-process (confirm-transcript/<create-transcript-process
+                             (e-transcript/create-transcript-navigating$)
+                             (e-editing/create-editing$))
 
         confirmation-request$ (e-confirm/create-confirmation-request$)
         progress$ (e-progress/create-progress$)]
