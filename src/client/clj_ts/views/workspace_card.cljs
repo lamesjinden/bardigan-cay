@@ -11,7 +11,8 @@
             [clj-ts.card :as cards]
             [clj-ts.keyboard :as keyboard]
             [clj-ts.theme :as theme]
-            [clj-ts.view :refer [->display]]))
+            [clj-ts.view :refer [->display]]
+            ["date-fns" :as date-fns]))
 
 ;; region eval/rewrite
 
@@ -71,6 +72,7 @@
         combo-publics (ns-publics 'clojure.math.combinatorics)
         sci-combo-ns (update-vals combo-publics #(sci/copy-var* % combo-ns))]
     {:classes    {'js js/globalThis :allow :all}
+     :js-libs {"date-fns" date-fns}
      :namespaces {'clojure.core {'println println
                                  'prn prn
                                  'parse-long parse-long
