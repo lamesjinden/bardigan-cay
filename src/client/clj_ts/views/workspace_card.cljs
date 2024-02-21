@@ -106,7 +106,8 @@
                                                      (when with-eval
                                                        (let [result (eval-string src-value' @sci-opts-ref)]
                                                          (swap! state #(conj % {:calc   result
-                                                                                :result result}))))))))
+                                                                                :result result}))
+                                                         (.focus @root-element-ref)))))))
       (sci/init)))
 
 ;; endregion
@@ -174,8 +175,7 @@
 (defn- workspace-editor-on-key-down [db local-db e]
   (let [key-code (.-keyCode e)
         control? (.-ctrlKey e)]
-    (when (and (= key-code keyboard/key-s-code)
-               control?)
+    (when (and (= key-code keyboard/key-s-code) control?)
       (workspace-editor-on-key-s-press db local-db e))))
 
 (def default-width-threshold 1400)
@@ -241,7 +241,9 @@
                                 (destroy-editor local-db)
                                 (r/dispose! track-theme))
       :reagent-render         (fn []
-                                [:div.workspace {:ref (fn [element] (reset! root-element-ref element))}
+                                [:div.workspace {:ref (fn [element] (reset! root-element-ref element))
+                                                 :on-key-down     (fn [e] (workspace-editor-on-key-down db local-db e))
+                                                 :tab-index -1}
                                  (when-let [title (:title @local-db)]
                                    [:h3 title])
                                  [:div.workspace-header-container
@@ -285,13 +287,11 @@
                                                        :on-double-click (fn [e] (.stopPropagation e))}
                                       [:span {:class [:material-symbols-sharp :clickable]} "expand"]]]]
                                    [:div.workspace-editor {:ref             (fn [element] (reset! editor-element-ref element))
-                                                           :on-key-down     (fn [e] (workspace-editor-on-key-down db local-db e))
                                                            :on-double-click (fn [e] (.stopPropagation e))}
                                     (str/trim (-> @local-db :code))]]
 
                                   (when (:result-toggle @local-db)
-                                    [:div.result-section {:on-key-down     (fn [e] (workspace-editor-on-key-down db local-db e))
-                                                          :on-double-click (fn [e] (.stopPropagation e))}
+                                    [:div.result-section {:on-double-click (fn [e] (.stopPropagation e))}
                                      [:div.result-section-header-container
                                       (if (:dirty? @local-db)
                                         [:<>
