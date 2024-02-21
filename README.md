@@ -77,8 +77,6 @@ You should be running your wiki. By default CardiganBay starts on port 4545 and 
 
 Depending on the desired workflow, choose between:
 
-#### Option 1: `run-minimal`
-
 - client (choose 1)
   - `run-dev-client`
     - starts `shadow-cljs` to continuously compile and reload client changes
