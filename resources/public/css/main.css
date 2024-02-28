@@ -262,6 +262,14 @@ div textarea {
   min-height: var(--card-min-height);
 }
 
+.card :is(h1, h2, h3, h4, h5, h6) {
+  margin: 10px 0;
+}
+
+.card :is(h1, h2, h3, h4, h5, h6):first-child {
+  margin-top: 0;
+}
+
 .big-btn {
   cursor: pointer;
   background-color: var(--secondary-background-color);
