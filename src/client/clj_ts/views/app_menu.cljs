@@ -24,20 +24,22 @@
            [:ul.menu-list
             (if (theme/light-theme? db-theme)
               [:li
-               [:span {:class [:material-symbols-sharp]} "dark_mode"]
-               [:span.label {:on-click (fn []
-                                         (theme/set-dark-theme! db)
-                                         (collapse!))}
+               [:span.container.label.clickable {:on-click (fn []
+                                                             (theme/set-dark-theme! db)
+                                                             (collapse!))}
+                [:span {:class [:material-symbols-sharp]} "dark_mode"]
                 "Switch Theme"]]
               [:li
-               [:span {:class [:material-symbols-sharp]} "light_mode"]
-               [:span.label {:on-click (fn []
-                                         (theme/set-light-theme! db)
-                                         (collapse!))}
+               [:span.container.label.clickable {:on-click (fn []
+                                                             (theme/set-light-theme! db)
+                                                             (collapse!))}
+                [:span {:class [:material-symbols-sharp]} "light_mode"]
                 "Switch Theme"]])
             [:li
-             [:span {:class [:material-symbols-sharp]} "deployed_code_update"]
-             [:a.label {:href "/api/exportallpages"} "Export All"]]
+             [:a.container.label {:href "/api/exportallpages"}
+              [:span {:class [:material-symbols-sharp]} "deployed_code_update"]
+              "Export All"]]
             [:li
-             [:span {:class [:material-symbols-sharp]} "rss_feed"]
-             [:a.label.rss-link {:href "/api/rss/recentchanges"} "RSS Feed"]]]]])])))
+             [:a.container.label.rss-link {:href "/api/rss/recentchanges"}
+              [:span {:class [:material-symbols-sharp]} "rss_feed"]
+              "RSS Feed"]]]]])])))
