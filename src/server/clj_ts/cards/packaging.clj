@@ -80,9 +80,10 @@
       [(util/package-card id :raw :raw source_data (render/process-card-error source_type source_data e) render-context)])))
 
 (defn- transclude
-  [server-snapshot i source-data render-context]
+  [server-snapshot i card-map render-context]
   ;; todo/note - change to account for non-desctructive card parsing
-  (let [{:keys [from _process ids]} (edn/read-string source-data)
+  (let [data (render/card-map->card-data card-map)
+        {:keys [from ids]} data
         page-store (.page-store server-snapshot)
         matched-cards (.get-cards-from-page page-store from ids)
         card-maps->processed (fn [id-start card-maps render-context]
@@ -96,9 +97,9 @@
         body (str "### Transcluded from [[" from "]]")]
     (concat [(util/package-card i :transclude :markdown body body render-context)] cards)))
 
-(defn- process-card [server-snapshot i {:keys [source_type source_data] :as card-maps} render-context]
+(defn- process-card [server-snapshot i {:keys [source_type] :as card-maps} render-context]
   (if (= source_type :transclude)
-    (transclude server-snapshot i source_data render-context)
+    (transclude server-snapshot i card-maps render-context)
     (process-card-map server-snapshot i card-maps render-context)))
 
 (defn raw->cards [server-snapshot raw render-context]
