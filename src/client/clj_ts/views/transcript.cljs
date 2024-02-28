@@ -1,5 +1,7 @@
 (ns clj-ts.views.transcript
-  (:require [clj-ts.card :refer [has-link-target?]]
+  (:require [reagent.core :as r]
+            [clj-ts.card :as card]
+            [clj-ts.keyboard :as keyboard]
             [clj-ts.navigation :as nav]))
 
 (defn navigate-via-link-async! [db e]
@@ -7,10 +9,26 @@
         data (.getAttribute tag "data")]
     (nav/<navigate! db data)))
 
+(defn- on-escape-key-up [db]
+  (swap! db assoc :mode :viewing))
+
+(defn- on-key-up [db e]
+  ;; note - escape doesn't fire for key-press, only key-up
+  (let [key-code (.-keyCode e)]
+    (cond
+      (= key-code keyboard/key-escape-code)
+      (on-escape-key-up db))))
+
 (defn transcript [db db-transcript]
-  [:div {:class                   "transcript"
-         :dangerouslySetInnerHTML {:__html @db-transcript}
-         :on-click                (fn [e]
-                                    (.preventDefault e)
-                                    (when (has-link-target? e)
-                                      (navigate-via-link-async! db e)))}])
+  (let [key-up-listener (partial on-key-up db)]
+
+    (r/create-class
+     {:component-did-mount    (fn [] (js/window.addEventListener "keyup" key-up-listener))
+      :component-will-unmount (fn [] (js/window.removeEventListener "keyup" key-up-listener))
+      :reagent-render         (fn []
+                                [:div {:class                   "transcript"
+                                       :dangerouslySetInnerHTML {:__html @db-transcript}
+                                       :on-click                (fn [e]
+                                                                  (.preventDefault e)
+                                                                  (when (card/has-link-target? e)
+                                                                    (navigate-via-link-async! db e)))}])})))
