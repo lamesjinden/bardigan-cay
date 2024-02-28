@@ -1,6 +1,5 @@
 (ns clj-ts.cards.packaging
-  (:require [clojure.edn :as edn]
-            [clj-ts.cards.parsing :as parsing]
+  (:require [clj-ts.cards.parsing :as parsing]
             [clj-ts.cards.packaging.bookmark :as bookmark]
             [clj-ts.cards.packaging.code :as code]
             [clj-ts.cards.packaging.embed :as embed]
@@ -93,9 +92,9 @@
                                        card-maps
                                        (repeat render-context)))
         ;; todo - may have broken transclusion here while attempting to avoid forward declaring card-maps->processed
-        cards (card-maps->processed (* 100 i) matched-cards render-context)
-        body (str "### Transcluded from [[" from "]]")]
-    (concat [(util/package-card i :transclude :markdown body body render-context)] cards)))
+        cards (->> (card-maps->processed (* 100 i) matched-cards render-context)
+                   (map (fn [card-map] (assoc card-map :transcluded {:source-page from}))))]
+    cards))
 
 (defn- process-card [server-snapshot i {:keys [source_type] :as card-maps} render-context]
   (if (= source_type :transclude)

@@ -33,6 +33,7 @@
   --card-border-radius: 5px;
   --card-min-height: 50px;
   --card-box-shadow: 0 3px 10px rgb(0 0 0 / 0.2);
+  --card-box-shadow-transcluded: 0 0 10px rgba(0, 120, 215, 0.5);
   --card-outer-padding: 5px;
   --card-gutter-background-color: #efefef;
   --card-details-label-color: #808080;
@@ -344,6 +345,7 @@ div textarea {
 
 .details-container {
   display: grid;
+  grid-auto-rows: 1fr;
   grid-template-columns: 1fr 1fr;
   font-size: 1rem;
 }
@@ -353,7 +355,7 @@ div textarea {
   display: inline-flex;
   font-size: small;
   font-style: italic;
-  width: 50px;
+  width: 100px;
 }
 
 .details-container .details-value {
@@ -440,6 +442,10 @@ ul.system-card-list {
   margin: var(--card-list-item-margin) 0;
   box-shadow: var(--card-box-shadow);
   border-radius: var(--card-border-radius);
+}
+
+.card-shell.transcluded {
+  box-shadow: var(--card-box-shadow-transcluded);
 }
 
 .card-shell:hover {
@@ -1164,16 +1170,6 @@ header a {
   padding: 5px;
   margin: 2px;
   border-radius: 10px;
-}
-
-/*#endregion */
-
-/*#region server.static_export */
-
-.transcluded {
-  background-color: #eeeeff;
-  padding: 10px;
-  border-left: 10px solid #faaa96;
 }
 
 /*#endregion */
