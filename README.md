@@ -26,6 +26,7 @@
 - Workspace card layout can be toggled between vertical and horizontal (side-by-side)
 - Workspace cards can self-update
 - Workspace cards can return Reagent components, in addition to the previous types (string, hiccup)
+- Allow transclusion using 'stable card IDs' - to enable in-place editing of transcluded content
 
 ### Development
 
@@ -39,35 +40,32 @@
 
 ## Getting Started (as Developer)
 
-Make sure you have the [JDK](https://openjdk.org/install/), [Clojure](https://clojure.org/guides/install_clojure), and [Babashka](https://github.com/babashka/babashka#installation) installed.
+Make sure you have the [JDK](https://openjdk.org/install/), [Clojure](https://clojure.org/guides/install_clojure), [Node](https://nodejs.org/en/learn/getting-started/how-to-install-nodejs), and [Babashka](https://github.com/babashka/babashka#installation) installed.
 
 Then
 
 1. clone this repository
-
 ```bash
 git clone https://github.com/lamesjinden/bardigan-cay.git bc
 ```
-
 2. change directory into the repository
-
 ```bash
 cd bc
 ```
-
-3. start development applications
-1. start server application
-
+3. install node dependencies
 ```bash
-bb run-dev-client
+npm i
 ```
-
-2. start client application (assumes your `bedrock` directory is located at )
-
-```bash
-# you may want to modify bb.edn target 'run-dev-server' to map to your custom directory structure instead of passing the following CLI args
-bb run-dev-server --directory "./bedrock" --export-dir "./bedrock/exported/"
-```
+4. start development applications
+    1. start client application
+    ```bash
+    bb run-dev-client
+    ```
+    2. start server application (assumes your `bedrock` directory is located at )
+    ```bash
+    # you may want to modify bb.edn target 'run-dev-server' to map to your custom directory structure instead of passing the following CLI args
+    bb run-dev-server --directory "./bedrock" --export-dir "./bedrock/exported/"
+    ```
 
 Then navigate to [http://localhost:4545/](http://localhost:4545/) in your browser.
 
