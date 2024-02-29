@@ -5,9 +5,13 @@
   (swap! parent-db assoc :mode :viewing))
 
 (defn- on-save-clicked [db parent-db local-db]
-  (let [hash (-> @parent-db :card (get "hash"))
+  (let [card (:card @parent-db)
         new-body (->> @local-db :editor (.getValue))]
-    (cards/replace-card-async! db hash new-body)))
+    (if-let [{:strs [source-page] :as _transcluded} (get card "transcluded")]
+      (when-let [card-id (:card/id (cards/->card-configuration card))]
+        (cards/replace-card-async! db source-page card-id new-body))
+      (let [hash (get card "hash")]
+        (cards/replace-card-async! db hash new-body)))))
 
 (defn paste-bar-single
   [db parent-db local-db]

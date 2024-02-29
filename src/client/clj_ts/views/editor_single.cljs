@@ -10,9 +10,13 @@
 
 (defn- single-editor-on-key-s-press [db parent-db local-db e]
   (.preventDefault e)
-  (let [current-hash (:hash @parent-db)
+  (let [card (:card @parent-db)
         new-body (->> @local-db :editor (.getValue))]
-    (cards/replace-card-async! db current-hash new-body)))
+    (if-let [{:strs [source-page] :as _transcluded} (get card "transcluded")]
+      (when-let [card-id (:card/id (cards/->card-configuration card))]
+        (cards/replace-card-async! db source-page card-id new-body))
+      (let [hash (get card "hash")]
+        (cards/replace-card-async! db hash new-body)))))
 
 (defn- single-editor-on-key-down [db parent-db local-db e]
   (let [key-code (.-keyCode e)

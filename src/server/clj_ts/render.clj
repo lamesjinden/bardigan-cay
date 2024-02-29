@@ -1,6 +1,5 @@
 (ns clj-ts.render
-  (:require [clojure.edn :as edn]
-            [clojure.pprint :as pp]
+  (:require [clojure.pprint :as pp]
             [markdown.core :as md]
             [clj-ts.common :as common]
             [clj-ts.util :as util]))
@@ -28,10 +27,3 @@
        "\nSource was\n" source-data
        "\n\nStack trace\n"
        (util/exception-stack exception)))
-
-(defn card-map->card-data [card-map]
-  (let [{[a b :as _tokens] :tokens} card-map
-        card-data (if-let [readable-token (when (= :keyword (:type a)) (:value b))]
-                    (edn/read-string readable-token)
-                    (:value a))]
-    card-data))

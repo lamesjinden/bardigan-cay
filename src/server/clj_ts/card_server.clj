@@ -12,7 +12,7 @@
    [clj-ts.render :as render]
    [clj-rss.core :as rss]
    [clj-ts.search :as search]
-   [clj-ts.storage.page_store :as pagestore]
+   [clj-ts.storage.page-store :as pagestore]
    [clj-ts.util :as util]]
   (:import (clojure.lang Atom)))
 
@@ -180,7 +180,7 @@ If you would *like* to create a page with this name, simply click the [Edit] but
       (let [new-card (parsing/raw-card-text->card-map new-body)
             new-cards (common/replace-card
                        cards
-                       #(common/match-hash % hash)
+                       #(common/card-matches % hash)
                        new-card)]
         (write-page-to-file! card-server page-name (common/cards->raw new-cards))
         (let [render-context {:user-authored? true :for-export? false}

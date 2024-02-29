@@ -1,11 +1,11 @@
-(ns clj-ts.storage.page_store
+(ns clj-ts.storage.page-store
   (:require
-    [clojure.java.io :as io]
-    [clojure.string :as string]
-    [clojure.core.memoize :refer [memo memo-clear!]]
-    [clj-ts.cards.parsing :as parsing]
-    [clj-ts.common :refer [find-card-by-hash]]
-    [clj-ts.storage.page-storage :as page-storage])
+   [clojure.core.memoize :refer [memo memo-clear!]]
+   [clojure.java.io :as io]
+   [clojure.string :as string]
+   [clj-ts.cards.parsing :as parsing]
+   [clj-ts.common :refer [find-card-by-hash]]
+   [clj-ts.storage.page-storage :as page-storage])
   (:import (java.nio.file Files Path Paths)))
 
 ;; Data structures / types
@@ -48,12 +48,12 @@
          (.load-page this)
          (parsing/raw-text->card-maps)))
 
-  (get-card [this page-name hash]
+  (get-card [this page-name hash-or-id]
     (-> (.get-page-as-card-maps this page-name)
-        (find-card-by-hash hash)))
+        (find-card-by-hash hash-or-id)))
 
-  (get-cards-from-page [this page-name card-hashes]
-    (remove nil? (map #(.get-card this page-name %) card-hashes)))
+  (get-cards-from-page [this page-name hashes-or-ids]
+    (remove nil? (map #(.get-card this page-name %) hashes-or-ids)))
 
   (write-page! [this page data]
     (if (instance? Path page)
@@ -163,8 +163,8 @@
         filter-step (fn [xs] (filter #(not (string/includes? % (str "[[" page-name "]]"))) xs))
         curlist (-> rcc string/split-lines filter-step)
         newlist (cons
-                  (str "* [[" page-name "]] (" (.toString (java.util.Date.)) ")")
-                  curlist)]
+                 (str "* [[" page-name "]] (" (.toString (java.util.Date.)) ")")
+                 curlist)]
     (.write-recent-changes! page-store (string/join "\n" (take 80 newlist)))))
 
 ;; API for writing a file

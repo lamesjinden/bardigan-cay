@@ -4,7 +4,7 @@
             [org.httpkit.client :as http]
             [org.httpkit.sni-client :as sni]
             [remus :refer [parse-url]]
-            [clj-ts.render :as render]))
+            [clj-ts.common :as common]))
 
 (alter-var-root #'org.httpkit.client/*default-client* (fn [_] sni/default-client))
 
@@ -193,7 +193,7 @@ seamless><a href='" url "'>" description "</a></iframe></div></div>")
    caption-renderer))
 
 (defn process [card-map render-context caption-renderer server-state]
-  (let [data (render/card-map->card-data card-map)]
+  (let [data (common/card-map->card-data card-map)]
     (try
       (condp = (:type data)
         :media-img

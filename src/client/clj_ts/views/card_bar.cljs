@@ -96,7 +96,8 @@
            [:div.details-pair.right
             [:div.details-label "render:"]
             [:div.details-value (get card "render_type")]]
-           [:div.details-pair
-            [:div.details-label "page"]
-            [:div.details-value (get-in card ["transcluded" "source-page"])]]]
+           (when-let [source-page (get-in card ["transcluded" "source-page"])]
+             [:div.details-pair
+              [:div.details-label "page"]
+              [:div.details-value source-page]])]
           [send-elsewhere-input db input-value (get card "hash")]])])))

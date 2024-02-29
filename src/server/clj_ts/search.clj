@@ -1,5 +1,5 @@
 (ns clj-ts.search
-  (:require [clj-ts.storage.page_store :as pagestore]))
+  (:require [clj-ts.storage.page-store :as pagestore]))
 
 (defn search
   [server-snapshot pattern term]

@@ -16,26 +16,6 @@
           data (.getAttribute tag "data")]
       data)))
 
-(defn- replace-card [snapshot replaced-hash new-card raw]
-  (let [matching-index (->> (:cards snapshot)
-                            (map-indexed (fn [i x] [i x]))
-                            (filter (fn [[_i x]]
-                                      (= (get x "hash") replaced-hash)))
-                            (ffirst))]
-    (-> snapshot
-        (assoc :raw raw)
-        (update-in [:cards matching-index] merge new-card))))
-
-(defn replace-card-async! [db current-hash new-card-body]
-  (let [page-name (:current-page @db)]
-    (a/go
-      (when-let [json (a/<! (page/<save-card! page-name current-hash new-card-body))]
-        (let [edn (js->clj json)
-              replaced-hash (get edn "replaced-hash")
-              new-card (get edn "new-card")
-              raw (get-in edn ["source_page" "body"])]
-          (swap! db replace-card replaced-hash new-card raw))))))
-
 (defn ->card-configuration
   "attmpts to read the card-configuration map from the 'source_data' key of `card`.
    
@@ -63,3 +43,41 @@
         :else nil))
     (catch :default _e
       nil)))
+
+(defn- replace-card [snapshot source-page replaced-hash new-card raw]
+  (let [transcluded? (not (= source-page (:current-page snapshot)))]
+    (if-let [matching-index (if transcluded?
+                              (->> (:cards snapshot)
+                                   (map-indexed (fn [i x] (assoc x :display-index i)))
+                                   (filter (fn [card]
+                                             (= source-page (get-in card ["transcluded" "source-page"]))))
+                                   (filter (fn [card]
+                                             (= replaced-hash (:card/id (->card-configuration card)))))
+                                   (map (fn [card] (:display-index card)))
+                                   (first))
+                              (->> (:cards snapshot)
+                                   (map-indexed (fn [i x] (assoc x :display-index i)))
+                                   (filter (fn [card]
+                                             (= (get card "hash") replaced-hash)))
+                                   (map (fn [card] (:display-index card)))
+                                   (first)))]
+      (-> snapshot
+          (assoc :raw raw)
+          (update-in [:cards matching-index] merge new-card))
+      (do
+        (js/console.debug (str "no matching index: " "transcluded?=" transcluded? "; replaced-hash=" replaced-hash))
+        snapshot))))
+
+(defn replace-card-async!
+  ([db page-name current-hash new-card-body]
+   (a/go
+     (when-let [json (a/<! (page/<save-card! page-name current-hash new-card-body))]
+       (let [edn (js->clj json)
+             replaced-hash (get edn "replaced-hash")
+             new-card (get edn "new-card")
+             source-page (get-in edn ["source_page" "page_name"])
+             raw (get-in edn ["source_page" "body"])]
+         (swap! db replace-card source-page replaced-hash new-card raw)))))
+  ([db current-hash new-card-body]
+   (let [page-name (:current-page @db)]
+     (replace-card-async! db page-name current-hash new-card-body))))

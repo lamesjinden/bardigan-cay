@@ -13,6 +13,7 @@
             [clj-ts.cards.packaging.raw :as raw]
             [clj-ts.cards.packaging.system :as system]
             [clj-ts.cards.packaging.workspace :as workspace]
+            [clj-ts.common :as common]
             [clj-ts.render :as render]
             [clj-ts.util :as util]))
 
@@ -27,7 +28,7 @@
 ;; {:for-export false :user-authored? true}
 
 ;; todo - Q: why does process-card-map return a vector of 1 element?
-;;        A: b/c transclude returns a header card and the subject card, and the array unifies the result type (??)
+;;        A: b/c transclude (used to return) a header card and the subject card, and the array unifies the result type
 (defn process-card-map
   [server-snapshot id {:keys [source_type source_data] :as card-map} render-context]
   (try
@@ -80,8 +81,7 @@
 
 (defn- transclude
   [server-snapshot i card-map render-context]
-  ;; todo/note - change to account for non-desctructive card parsing
-  (let [data (render/card-map->card-data card-map)
+  (let [data (common/card-map->card-data card-map)
         {:keys [from ids]} data
         page-store (.page-store server-snapshot)
         matched-cards (.get-cards-from-page page-store from ids)
@@ -96,15 +96,15 @@
                    (map (fn [card-map] (assoc card-map :transcluded {:source-page from}))))]
     cards))
 
-(defn- process-card [server-snapshot i {:keys [source_type] :as card-maps} render-context]
+(defn- process-card [server-snapshot i {:keys [source_type] :as card-map} render-context]
   (if (= source_type :transclude)
-    (transclude server-snapshot i card-maps render-context)
-    (process-card-map server-snapshot i card-maps render-context)))
+    (transclude server-snapshot i card-map render-context)
+    (process-card-map server-snapshot i card-map render-context)))
 
 (defn raw->cards [server-snapshot raw render-context]
   (let [card-maps (parsing/raw-text->card-maps raw)]
-    (mapcat (fn [i card-maps render-context]
-              (process-card server-snapshot i card-maps render-context))
+    (mapcat (fn [i card-map render-context]
+              (process-card server-snapshot i card-map render-context))
             (iterate inc 0)
             card-maps
             (repeat render-context))))

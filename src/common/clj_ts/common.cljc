@@ -1,30 +1,38 @@
 (ns clj-ts.common
-  (:require [clojure.string :as string]))
+  (:require [clojure.edn :as edn]
+            [clojure.string :as string]))
 
-(defn card->raw [{:keys [source_type source_type_implicit? source_data]}]
-  (str "\n\n" (string/trim source_data) "\n\n")
-  #_(if (and (= source_type :markdown) source_type_implicit?)
-      (str "\n\n" source_data "\n\n")
-      (str "\n" source_type "\n\n" (string/trim source_data) "\n\n")))
+(defn card->raw [{:keys [source_data]}]
+  (str "\n\n" (string/trim source_data) "\n\n"))
 
 (defn card-is-blank? [{:keys [source_data]}]
   (= "" (string/trim source_data)))
 
-(defn match-hash [card hash]
-  (= (.toString (:hash card))
-     (.toString hash)))
+(defn card-map->card-data [card-map]
+  (let [{[a b :as _tokens] :tokens} card-map
+        card-data (if-let [readable-token (when (= :keyword (:type a)) (:value b))]
+                    (edn/read-string readable-token)
+                    (:value a))]
+    card-data))
+
+(defn card-matches [card-map hash-or-id]
+  (or (= (.toString (:hash card-map))
+         (.toString hash-or-id))
+      (let [card-data (card-map->card-data card-map)
+            card-id (:card/id card-data)]
+        (= card-id hash-or-id))))
 
 (defn neh
   "Not equal hash"
   [card hash]
-  (not (match-hash card hash)))
+  (not (card-matches card hash)))
 
 ;; region Cards in card list
 
 (defn find-card-by-hash
-  "Take a list of cards and return the one that matches hash or nil"
-  [cards hash]
-  (let [results (filter #(match-hash % hash) cards)]
+  "Take a list of cards and return the one that matches hash or id; else nil"
+  [cards hash-or-id]
+  (let [results (filter #(card-matches % hash-or-id) cards)]
     (if (> (count results) 0)
       (first results)
       nil)))
@@ -32,7 +40,7 @@
 (defn remove-card-by-hash
   "Take a list of cards and return the list without the card that matches hash"
   [cards hash]
-  (remove #(match-hash % hash) cards))
+  (remove #(card-matches % hash) cards))
 
 (defn replace-card
   "Replace the first card that matches p with new-card. If no card matches, return cards unchanged"
@@ -54,10 +62,10 @@
             after (rest (drop-while #(neh % hash) cards))
             res (remove nil?
                         (concat
-                          (butlast before)
-                          [c]
-                          [(last before)]
-                          after))]
+                         (butlast before)
+                         [c]
+                         [(last before)]
+                         after))]
         res))))
 
 (defn move-card-down
@@ -70,10 +78,10 @@
             after (rest (drop-while #(neh % hash) cards))
             res (remove nil?
                         (concat
-                          before
-                          [(first after)]
-                          [c]
-                          (rest after)))]
+                         before
+                         [(first after)]
+                         [c]
+                         (rest after)))]
         res))))
 
 (defn cards->raw [cards]
@@ -93,9 +101,9 @@
 
 (defn double-bracket-links [text]
   (string/replace
-    text
-    #"\[\[(.+?)\]\]"
-    (str "<a class='wikilink' data='$1' href='/pages/$1'>$1</a>")))
+   text
+   #"\[\[(.+?)\]\]"
+   (str "<a class='wikilink' data='$1' href='/pages/$1'>$1</a>")))
 
 (defn tag [t s] (str "<" t ">" s "</" t ">"))
 (defn td [s] (tag "td" s))
