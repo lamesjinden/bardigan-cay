@@ -983,13 +983,19 @@ dialog::backdrop {
 /*#region workspace_card */
 
 .workspace-header-container {
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
+  display: grid;
+  grid-template-areas: "a b c";
+  grid-template-columns: 1fr 1fr 1fr;
+  padding-bottom: 1em;
 }
 
-.workspace-header-container > * {
-  margin-bottom: 1em;
+.workspace-header-container > h3 {
+  grid-area: a;
+}
+
+.workspace-header-button-container {
+  display: flex;
+  grid-area: b;
 }
 
 .visibility-buttons {
@@ -1004,11 +1010,6 @@ dialog::backdrop {
 
 .visibility-buttons > button.pressed {
   background-color: var(--secondary-foreground-color);
-}
-
-.workspace-header {
-  flex: 1 1 0;
-  margin-bottom: 5px;
 }
 
 .workspace-section-container,

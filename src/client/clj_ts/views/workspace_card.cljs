@@ -246,28 +246,29 @@
                                 [:div.workspace {:ref (fn [element] (reset! root-element-ref element))
                                                  :on-key-down     (fn [e] (workspace-editor-on-key-down db local-db e))
                                                  :tab-index -1}
-                                 (when-let [title (:title @local-db)]
-                                   [:h3 title])
                                  [:div.workspace-header-container
-                                  [:div.visibility-buttons
-                                   [:button.big-btn.big-btn-left {:class    (when (-> @local-db :code-toggle) "pressed")
-                                                                  :on-click (fn [] (toggle-code! local-db))
-                                                                  :on-double-click (fn [e] (.stopPropagation e))}
-                                    "CODE"]
-                                   [:button.big-btn.big-btn-middle {:class    (when (-> @local-db :result-toggle) "pressed")
-                                                                    :on-click (fn [] (toggle-result! local-db))
-                                                                    :on-double-click (fn [e] (.stopPropagation e))}
-                                    "RESULT"]
-                                   [:button.big-btn.big-btn-right {:class    (when (-> @local-db :calc-toggle) "pressed")
-                                                                   :on-click (fn [] (toggle-calc! local-db))
+                                  (when-let [title (:title @local-db)]
+                                    [:h3 title])
+                                  [:div.workspace-header-button-container
+                                   [:div.visibility-buttons
+                                    [:button.big-btn.big-btn-left {:class    (when (-> @local-db :code-toggle) "pressed")
+                                                                   :on-click (fn [] (toggle-code! local-db))
                                                                    :on-double-click (fn [e] (.stopPropagation e))}
-                                    "RAW"]]
+                                     "CODE"]
+                                    [:button.big-btn.big-btn-middle {:class    (when (-> @local-db :result-toggle) "pressed")
+                                                                     :on-click (fn [] (toggle-result! local-db))
+                                                                     :on-double-click (fn [e] (.stopPropagation e))}
+                                     "RESULT"]
+                                    [:button.big-btn.big-btn-right {:class    (when (-> @local-db :calc-toggle) "pressed")
+                                                                    :on-click (fn [] (toggle-calc! local-db))
+                                                                    :on-double-click (fn [e] (.stopPropagation e))}
+                                     "RAW"]]
 
-                                  [:button.big-btn {:on-click (fn [] (toggle-layout! local-db))
-                                                    :on-double-click (fn [e] (.stopPropagation e))}
-                                   [:span {:class [:material-symbols-sharp :clickable]} (if (= :vertical (:layout @local-db))
-                                                                                          "vertical_split"
-                                                                                          "horizontal_split")]]]
+                                   [:button.rotate-button.big-btn {:on-click (fn [] (toggle-layout! local-db))
+                                                                   :on-double-click (fn [e] (.stopPropagation e))}
+                                    [:span {:class [:material-symbols-sharp :clickable]} (if (= :vertical (:layout @local-db))
+                                                                                           "vertical_split"
+                                                                                           "horizontal_split")]]]]
                                  [:div.workspace-section-container {:class (if (= :vertical (:layout @local-db))
                                                                              "vertical"
                                                                              "horizontal")}
