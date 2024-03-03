@@ -34,6 +34,7 @@
   --card-min-height: 50px;
   --card-box-shadow: 0 3px 10px rgb(0 0 0 / 0.2);
   --card-box-shadow-transcluded: 0 0 15px rgba(0, 120, 215, 0.5);
+  --card-box-shadow-transcluded-readonly: 0 0 15px rgba(0, 120, 215, 0.15);
   --card-outer-padding: 5px;
   --card-gutter-background-color: #efefef;
   --card-details-label-color: #808080;
@@ -446,6 +447,10 @@ ul.system-card-list {
 }
 
 .card-shell.transcluded {
+  border: 1px solid rgba(0, 120, 215, 0.4);
+}
+
+.card-shell.transcluded.editable {
   box-shadow: var(--card-box-shadow-transcluded);
 }
 
@@ -507,7 +512,7 @@ ul.system-card-list {
 }
 
 .editor-container {
-  margin: var(--card-list-item-margin) 0;
+  /* margin: var(--card-list-item-margin) 0; */
   border-bottom-left-radius: var(--card-border-radius);
   border-bottom-right-radius: var(--card-border-radius);
   box-shadow: var(--card-box-shadow);

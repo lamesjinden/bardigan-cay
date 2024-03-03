@@ -17,7 +17,7 @@
 (defn- <card-send-to-page! [db card new-page-name]
   (let [page-name (-> @db :current-page)
         hash (if-let [transcluded (get card "transcluded")]
-               (get transcluded "tx-hash")
+               (get transcluded "hash")
                (get card "hash"))
         body (pr-str {:from page-name
                       :to   new-page-name
@@ -29,7 +29,7 @@
 (defn- <card-reorder! [db card direction]
   (let [page-name (-> @db :current-page)
         hash (if-let [transcluded (get card "transcluded")]
-               (get transcluded "tx-hash")
+               (get transcluded "hash")
                (get card "hash"))
         body (pr-str {:page      page-name
                       :hash      hash

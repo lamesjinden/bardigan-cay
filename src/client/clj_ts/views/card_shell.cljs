@@ -46,7 +46,7 @@
     (collapsed? local-db)
     (swap! local-db assoc :expanded-state :expanded)
 
-    (true? (:editable? @local-db))
+    (boolean (:editable? @local-db))
     (enter-edit-mode! local-db)))
 
 (defn- ->initial-expanded-state [card-configuration]
@@ -56,12 +56,20 @@
 
 (defn card-shell [db card _component]
   (let [card-configuration (or (cards/->card-configuration card) {})
+        {transcluded "transcluded"
+         user-authored? "user_authored?"} card
+
+        editable? (if user-authored?
+                    (if transcluded
+                      (= (get transcluded "locator") "id")
+                      true)
+                    false)
         local-db (r/atom {:expanded-state (->initial-expanded-state card-configuration)
                           :mode           :viewing
                           :card           card
                           :hash           (get card "hash")
                           :editor         nil
-                          :editable?      (get card "user_authored?")})
+                          :editable?      editable?})
         !editor-element (clojure.core/atom nil)
         !root-element (clojure.core/atom nil)
         rx-theme (r/cursor db [:theme])
@@ -85,10 +93,16 @@
             (highlight/highlight-element selected))))
 
       :reagent-render
-      (fn [db {:strs [transcluded] :as card} component]
+      (fn [db card component]
         [:div.card-shell (as-> {:ref (fn [element] (reset! !root-element element))} $
-                           (if transcluded
+                           (cond
+                             (and transcluded editable?)
+                             (assoc $ :class ["transcluded editable"])
+
+                             (and transcluded (not editable?))
                              (assoc $ :class ["transcluded"])
+
+                             :else
                              $))
          (if (viewing? local-db)
            [:article.card-outer {:on-double-click (fn [] (on-card-double-clicked local-db))}

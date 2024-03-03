@@ -1,5 +1,7 @@
 (ns clj-ts.cards.cards
+  {:clj-kondo/config '{:linters {:unresolved-symbol {:exclude [(better-cond.core/cond)]}}}}
   (:require [clojure.string :as string]
+            [better-cond.core :as b]
             [clj-ts.cards.parsing :as parsing]))
 
 (defn card->raw [{:keys [source_data]}]
@@ -10,12 +12,22 @@
 
 ;; region Cards in card list
 
+(defn card-match [card-map hash-or-id]
+  (b/cond
+    (= (.toString hash-or-id) (.toString (:hash card-map)))
+    (assoc card-map :tx/locator :hash)
+
+    :let [card-data (parsing/card-map->card-data card-map)
+          card-id (:card/id card-data)]
+
+    (= card-id hash-or-id)
+    (assoc card-map :tx/locator :id)
+
+    :else nil))
+
 (defn card-matches [card-map hash-or-id]
-  (or (= (.toString (:hash card-map))
-         (.toString hash-or-id))
-      (let [card-data (parsing/card-map->card-data card-map)
-            card-id (:card/id card-data)]
-        (= card-id hash-or-id))))
+  (let [match (card-match card-map hash-or-id)]
+    (boolean match)))
 
 (defn neh
   "Not equal hash"
@@ -25,15 +37,15 @@
 (defn find-card-by-hash
   "Take a list of cards and return the one that matches hash or id; else nil"
   [cards hash-or-id]
-  (let [results (filter #(card-matches % hash-or-id) cards)]
-    (if (> (count results) 0)
-      (first results)
-      nil)))
+  (->> cards
+       (keep (fn [card]
+               (card-match card hash-or-id)))
+       (first)))
 
 (defn remove-card-by-hash
   "Take a list of cards and return the list without the card that matches hash"
-  [cards hash]
-  (remove #(card-matches % hash) cards))
+  [cards hash-or-id]
+  (remove #(card-matches % hash-or-id) cards))
 
 (defn replace-card
   "Replace the first card that matches p with new-card. If no card matches, return cards unchanged"

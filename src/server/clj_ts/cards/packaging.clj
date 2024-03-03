@@ -84,16 +84,17 @@
         {:keys [from ids]} data
         page-store (.page-store server-snapshot)
         matched-cards (.get-cards-from-page page-store from ids)
-        card-maps->processed (fn [id-start card-maps render-context]
-                               (mapcat (fn [i card-maps render-context]
-                                         (process-card-map server-snapshot i card-maps render-context))
-                                       (iterate inc id-start)
-                                       card-maps
-                                       (repeat render-context)))
-        cards (->> (card-maps->processed (* 100 i) matched-cards render-context)
+        cards (->> matched-cards
+                   (map-indexed (fn [index card-map]
+                                  (->> (process-card-map server-snapshot (+ (* 100 i) index) card-map render-context)
+                                       (map (fn [processed] (merge processed (select-keys card-map [:tx/locator])))))))
+                   (mapcat identity)
                    (map (fn [processed-card]
-                          (assoc processed-card :transcluded {:source-page from
-                                                              :tx-hash     (:hash card-map)}))))]
+                          (-> processed-card
+                              (assoc  :transcluded {:source-page from
+                                                    :hash     (:hash card-map)
+                                                    :locator (:tx/locator processed-card)})
+                              (dissoc :tx/locator)))))]
     cards))
 
 (defn- process-card [server-snapshot i {:keys [source_type] :as card-map} render-context]
@@ -103,8 +104,7 @@
 
 (defn raw->cards [server-snapshot raw render-context]
   (let [card-maps (parsing/raw-text->card-maps raw)]
-    (mapcat (fn [i card-map render-context]
+    (mapcat (fn [i card-map]
               (process-card server-snapshot i card-map render-context))
             (iterate inc 0)
-            card-maps
-            (repeat render-context))))
+            card-maps)))
