@@ -12,11 +12,7 @@
   (.preventDefault e)
   (let [card (:card @parent-db)
         new-body (->> @local-db :editor (.getValue))]
-    (if-let [{:strs [source-page] :as _transcluded} (get card "transcluded")]
-      (when-let [card-id (:card/id (cards/->card-configuration card))]
-        (cards/replace-card-async! db source-page card-id new-body))
-      (let [hash (get card "hash")]
-        (cards/replace-card-async! db hash new-body)))))
+    (cards/replace-async! db card new-body)))
 
 (defn- single-editor-on-key-down [db parent-db local-db e]
   (let [key-code (.-keyCode e)

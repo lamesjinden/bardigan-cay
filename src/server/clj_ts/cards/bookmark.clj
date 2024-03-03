@@ -1,9 +1,9 @@
 (ns clj-ts.cards.bookmark
-  (:require [clj-ts.common :as common]
+  (:require [clj-ts.cards.parsing :as parsing]
             [clj-ts.util :as util]))
 
 (defn bookmark-card [card-map]
-  (let [data (common/card-map->card-data card-map)
+  (let [data (parsing/card-map->card-data card-map)
         {:keys [url timestamp title]} data
         url' (util/nonblank url "url missing")
         title' (util/nonblank title url)

@@ -4,7 +4,7 @@
             [hasch.core :refer [uuid5 edn-hash]]
             [ring.util.response :as resp]
             [sci.core :as sci])
-  (:import (java.io PrintWriter StringWriter)
+  (:import (java.io PrintWriter PushbackReader StringWriter)
            (java.nio.file Path)
            (java.util.regex Pattern)
            (java.util.zip ZipEntry ZipOutputStream)))
@@ -101,10 +101,10 @@
 
 (defn html-escape [s]
   (str/escape s {\< "&lt;"
-               \> "&gt;"
-               \& "&amp;"
-               \' "&apos;"
-               \" "&quot;"}))
+                 \> "&gt;"
+                 \& "&amp;"
+                 \' "&apos;"
+                 \" "&quot;"}))
 
 (defn hash-it [card-data]
   (-> card-data
@@ -122,3 +122,9 @@
 
 (defn string->pattern-string [s]
   (str "(?i)" (Pattern/quote s)))
+
+(defn string->reader [s]
+  (-> s
+      (char-array)
+      (io/reader)
+      (PushbackReader.)))

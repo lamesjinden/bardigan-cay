@@ -1,96 +1,5 @@
 (ns clj-ts.common
-  (:require [clojure.edn :as edn]
-            [clojure.string :as string]))
-
-(defn card->raw [{:keys [source_data]}]
-  (str "\n\n" (string/trim source_data) "\n\n"))
-
-(defn card-is-blank? [{:keys [source_data]}]
-  (= "" (string/trim source_data)))
-
-(defn card-map->card-data [card-map]
-  (let [{[a b :as _tokens] :tokens} card-map
-        card-data (if-let [readable-token (when (= :keyword (:type a)) (:value b))]
-                    (edn/read-string readable-token)
-                    (:value a))]
-    card-data))
-
-(defn card-matches [card-map hash-or-id]
-  (or (= (.toString (:hash card-map))
-         (.toString hash-or-id))
-      (let [card-data (card-map->card-data card-map)
-            card-id (:card/id card-data)]
-        (= card-id hash-or-id))))
-
-(defn neh
-  "Not equal hash"
-  [card hash]
-  (not (card-matches card hash)))
-
-;; region Cards in card list
-
-(defn find-card-by-hash
-  "Take a list of cards and return the one that matches hash or id; else nil"
-  [cards hash-or-id]
-  (let [results (filter #(card-matches % hash-or-id) cards)]
-    (if (> (count results) 0)
-      (first results)
-      nil)))
-
-(defn remove-card-by-hash
-  "Take a list of cards and return the list without the card that matches hash"
-  [cards hash]
-  (remove #(card-matches % hash) cards))
-
-(defn replace-card
-  "Replace the first card that matches p with new-card. If no card matches, return cards unchanged"
-  [cards p new-card]
-  (let [un-p #(not (p %))
-        before (take-while un-p cards)
-        after (rest (drop-while un-p cards))]
-    (if (= 0 (count (filter p cards)))
-      cards
-      (concat before [new-card] after))))
-
-(defn move-card-up
-  "Move a card (id by hash) one up"
-  [cards hash]
-  (let [c (find-card-by-hash cards hash)]
-    (if (nil? c)
-      cards
-      (let [before (take-while #(neh % hash) cards)
-            after (rest (drop-while #(neh % hash) cards))
-            res (remove nil?
-                        (concat
-                         (butlast before)
-                         [c]
-                         [(last before)]
-                         after))]
-        res))))
-
-(defn move-card-down
-  "Move a card (id by hash) one down"
-  [cards hash]
-  (let [c (find-card-by-hash cards hash)]
-    (if (nil? c)
-      cards
-      (let [before (take-while #(neh % hash) cards)
-            after (rest (drop-while #(neh % hash) cards))
-            res (remove nil?
-                        (concat
-                         before
-                         [(first after)]
-                         [c]
-                         (rest after)))]
-        res))))
-
-(defn cards->raw [cards]
-  (->> cards
-       (map card->raw)
-       (string/join "----")
-       (string/trim)))
-
-;; endregion
+  (:require [clojure.string :as string]))
 
 ;; region Rendering / special Markup
 
@@ -144,119 +53,100 @@
     :youtube
     "
 ----
-:embed
-
-{:type :youtube
+{:card/type :embed
+ :type :youtube
  :url \"URL GOES HERE\"
  :title \"\"
- :caption \"\"
-}
+ :caption \"\"}
 "
 
     :vimeo
     "
 ----
-:embed
-
-{:type :vimeo
+{:card/type :embed
+ :type :vimeo
  :url \"URL GOES HERE\"
  :title \"\"
- :caption \"\"
-}
+ :caption \"\"}
 "
 
     :media-img
     "
 ----
-:embed
-
-{:type :media-img
+{:card/type :embed
+ :type :media-img
  :url \"URL GOES HERE\"
  :title \"\"
- :caption \"\"
-}
+ :caption \"\"}
 "
 
     :img
     "
 ----
-:embed
-
-{:type :img
+{:card/type :embed
+ :type :img
  :url \"URL GOES HERE\"
  :title \"\"
- :caption \"\"
-}
+ :caption \"\"}
 "
 
     :soundcloud
     "
 ----
-:embed
-
-{:type :soundcloud
+{:card/type :embed
+ :type :soundcloud
  :url \"URL GOES HERE\"
  :title \"\"
- :caption \"\"
-}
+ :caption \"\"}
 "
 
     :bandcamp
     "
 ----
-:embed
-
-{:type :bandcamp
+{:card/type :embed
+ :type :bandcamp
  :id IDHERE
  :url \"URL GOES HERE\"
  :description \"DESCRIPTION GOES HERE\"
  :title \"\"
- :caption \"\"
-}
+ :caption \"\"}
 "
 
     :twitter
     "
 ----
-:embed
-
-{:type :twitter
+{:card/type :embed
+ :type :twitter
  :url \"URL GOES HERE\"
  :title \"\"
- :caption \"\"
-}
+ :caption \"\"}
 "
 
     :mastodon
     "
 ----
-:embed
-
-{:type :mastodon
+{:card/type :embed
+ :type :mastodon
  :url \"URL GOES HERE\"
  :title \"\"
- :caption \"\"
-}
+ :caption \"\"}
 "
 
     :codepen
     "
 ----
-:embed
-
-{:type :codepen
+{:card/type :embed
+ :type :codepen
  :url \"URL GOES HERE\"
  :title \"\"
- :caption \"\"
-}
+ :caption \"\"}
 "
 
     :rss
     "
 ----
-:embed
-
-{:type :rss
+{:card/type :embed
+ :type :rss
  :url \"URL GOES HERE\"
  :caption \"\"
  :title \"\"}
@@ -265,9 +155,8 @@
     :oembed
     "
 ----
-:embed
-
-{:type :oembed
+{:card/type :embed
+ :type :oembed
  :url \"URL GOES HERE\"
  :api \"API ENDPOINT
  :title \"\"

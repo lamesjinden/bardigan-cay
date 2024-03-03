@@ -13,7 +13,6 @@
             [clj-ts.cards.packaging.raw :as raw]
             [clj-ts.cards.packaging.system :as system]
             [clj-ts.cards.packaging.workspace :as workspace]
-            [clj-ts.common :as common]
             [clj-ts.render :as render]
             [clj-ts.util :as util]))
 
@@ -81,7 +80,7 @@
 
 (defn- transclude
   [server-snapshot i card-map render-context]
-  (let [data (common/card-map->card-data card-map)
+  (let [data (parsing/card-map->card-data card-map)
         {:keys [from ids]} data
         page-store (.page-store server-snapshot)
         matched-cards (.get-cards-from-page page-store from ids)
@@ -91,9 +90,10 @@
                                        (iterate inc id-start)
                                        card-maps
                                        (repeat render-context)))
-        ;; todo - may have broken transclusion here while attempting to avoid forward declaring card-maps->processed
         cards (->> (card-maps->processed (* 100 i) matched-cards render-context)
-                   (map (fn [card-map] (assoc card-map :transcluded {:source-page from}))))]
+                   (map (fn [processed-card]
+                          (assoc processed-card :transcluded {:source-page from
+                                                              :tx-hash     (:hash card-map)}))))]
     cards))
 
 (defn- process-card [server-snapshot i {:keys [source_type] :as card-map} render-context]

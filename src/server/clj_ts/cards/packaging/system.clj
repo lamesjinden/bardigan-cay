@@ -1,6 +1,6 @@
 (ns clj-ts.cards.packaging.system
-  (:require [clj-ts.cards.system :as system]
-            [clj-ts.common :as common]
+  (:require [clj-ts.cards.parsing :as parsing]
+            [clj-ts.cards.system :as system]
             [clj-ts.render :as render]
             [clj-ts.search :as search]
             [clj-ts.util :as util]))
@@ -11,7 +11,7 @@
   (let [facts-db (-> server-snapshot :facts-db)
         page-store (-> server-snapshot :page-store)
         source-data (:source_data card-map)
-        info (common/card-map->card-data card-map)
+        info (parsing/card-map->card-data card-map)
         command (:command info)]
 
     (condp = command

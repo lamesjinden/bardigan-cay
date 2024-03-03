@@ -2,28 +2,25 @@
   (:require [clj-ts.common :as common]))
 
 (def system-search-template "----
-:system
-
-{:command :search
- :query \"\"
-}
+{:card/type :system
+ :command :search
+ :query \"\"}
 
 ----
 ")
 
 (def workspace-template "----
-:workspace
+{:card/type :workspace}
 
 ;; Write some code
 [:div
-(str \"Hello Teenage America\")
-]
+  (str \"Hello Teenage America\")]
 
 ----
 ")
 
 (def evalmd-template "----
-:evalmd
+{:card/type :evalmd}
 
 ;; Write some code.
 ;; Note that if the result of your executed code is a number
@@ -35,21 +32,17 @@
 ")
 
 (def transclude-template "----
-:transclude
-
-{:from \"\"
- :ids [\"\"]
-}
+{:card/type :transclude
+ :from \"\"
+ :ids [\"\"]}
 
 ----
 ")
 
 (def bookmark-template "----
-:bookmark
-
-{:url \"URL GOES HERE\"
- :title \"\"
-}
+{:card/type :bookmark
+ :url \"URL GOES HERE\"
+ :title \"\"}
 
 ----
 ")

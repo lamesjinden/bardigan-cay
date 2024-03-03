@@ -1,21 +1,22 @@
 (ns clj-ts.cards.parsing
-  {:clj-kondo/config '{:linters {:unresolved-symbol {:exclude [(better-cond.core/cond)]}}}}
   (:require [clojure.edn :as edn]
-            [clojure.java.io :as io]
             [clojure.string :as str]
-            [clj-ts.util :as util])
-  (:import (java.io PushbackReader)))
+            [clj-ts.util :as util]))
 
 (defn split-by-hyphens [input]
   (->> (str/split input #"-{4,}")
        (map str/trim)
        (remove str/blank?)))
 
-(defn safe-read [reader]
+(defn try-read [reader]
   (try
     (edn/read reader)
     (catch Exception _e
       nil)))
+
+(defn try-read-string [s]
+  (with-open [reader (util/string->reader s)]
+    (try-read reader)))
 
 (defn type-declaring-map? [x]
   (and (map? x) (:card/type x)))
@@ -23,11 +24,8 @@
 (defn partition-raw-card-text [raw-card-text]
   (let [card-text (str/trim raw-card-text)]
     (try
-      (with-open [reader (-> card-text
-                             (char-array)
-                             (io/reader)
-                             (PushbackReader.))]
-        (let [first-token (safe-read reader)]
+      (with-open [reader (util/string->reader card-text)]
+        (let [first-token (try-read reader)]
           (cond
             (keyword? first-token)
             {:source-type first-token
@@ -37,17 +35,26 @@
                       {:type :unknown
                        :value (str/trim (slurp reader))}]}
 
-            ;; note: handles cards with configuration-map only and configuration-map + body
             (type-declaring-map? first-token)
             {:source-type             (:card/type first-token)
              :source-type-configured? true
              :source-body             card-text
              :tokens [{:type :map
-                       :value first-token}]}
+                       :value first-token}
+                      {:type :unknown
+                       :value (str/trim (slurp reader))}]}
+
+            ;; support card-configuration maps without types; 
+            ;; still allows :markdown to be implicit
+            (map? first-token)
+            {:source-body card-text
+             :tokens [{:type :map
+                       :value first-token}
+                      {:type :unknown
+                       :value (str/trim (slurp reader))}]}
 
             :else
-            {:source-type nil
-             :source-body card-text})))
+            {:source-body card-text})))
       (catch Exception _e
         {:source-type nil
          :source-body card-text}))))
@@ -83,6 +90,14 @@
   (->> raw
        (split-by-hyphens)
        (map raw-card-text->card-map)))
+
+(defn card-map->card-data [card-map]
+  (let [{[a b :as _tokens] :tokens} card-map
+        card-data (if-let [readable-token (when (= :keyword (:type a))
+                                            (:value b))]
+                    (try-read-string readable-token)
+                    (:value a))]
+    card-data))
 
 (comment
 

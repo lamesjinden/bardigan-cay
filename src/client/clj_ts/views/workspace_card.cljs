@@ -164,15 +164,15 @@
     (.setValue editor formatted)))
 
 (defn- on-save-clicked [db state]
-  (let [current-hash (-> @state :hash)
+  (let [card (-> @state :card)
         new-body (-> @state :editor (.getValue))]
-    (cards/replace-card-async! db current-hash new-body)))
+    (cards/replace-async! db card new-body)))
 
 (defn- workspace-editor-on-key-s-press [db local-db e]
   (.preventDefault e)
-  (let [current-hash (-> @local-db :hash)
+  (let [card (-> @local-db :card)
         new-body (->> @local-db :editor (.getValue))]
-    (cards/replace-card-async! db current-hash new-body)))
+    (cards/replace-async! db card new-body)))
 
 (defn- workspace-editor-on-key-down [db local-db e]
   (let [key-code (.-keyCode e)
@@ -210,7 +210,8 @@
 
 (defn workspace [db {:strs [hash source_type source_data] :as card}]
   (let [card-configuration (or (cards/->card-configuration card) {})
-        local-db (r/atom {:calc             []
+        local-db (r/atom {:card             card
+                          :calc             []
                           :calc-toggle      (get card-configuration :calc-visibility false)
                           :code             source_data
                           :code-editor-size (get card-configuration :editor-size :small)

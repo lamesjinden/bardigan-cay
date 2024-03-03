@@ -5,11 +5,12 @@
             [markdown.core :as md]
             [selmer.parser :refer [render]]
             [selmer.util :refer [without-escaping]]
-            [clj-ts.cards.system :as system]
-            [clj-ts.util :as util]
-            [clj-ts.common :as common]
-            [clj-ts.cards.packaging :as packaging]
             [clj-ts.card-server :as card-server]
+            [clj-ts.cards.cards :as cards]
+            [clj-ts.cards.packaging :as packaging]
+            [clj-ts.cards.system :as system]
+            [clj-ts.common :as common]
+            [clj-ts.util :as util]
             [clj-ts.export.page-exporter :as page-exporter])
   (:import (java.io FileOutputStream)
            (java.nio.file Files)
@@ -71,20 +72,20 @@
         set (str "(set! (" vname " js/window) " fn-name ")")]
 
     (hiccup/html
-      [:div {:class "scittle-workspace"}
-       [:input {:type  :hidden
-                :id    src-name-private
-                :value private}]
-       [:textarea {:id src-name :cols 80 :rows 15}
-        public]
-       [:script {:type "application/x-scittle"}
-        "\n"
-        final-script
-        "\n"
-        set
-        "\n"]
-       [:button {:onclick (str fn-name "()")} "Run"]
-       [:div {:id output-name}]])))
+     [:div {:class "scittle-workspace"}
+      [:input {:type  :hidden
+               :id    src-name-private
+               :value private}]
+      [:textarea {:id src-name :cols 80 :rows 15}
+       public]
+      [:script {:type "application/x-scittle"}
+       "\n"
+       final-script
+       "\n"
+       set
+       "\n"]
+      [:button {:onclick (str fn-name "()")} "Run"]
+      [:div {:id output-name}]])))
 
 (defn card-specific-wrapper [card server-prepared]
   (condp = (:render_type card)
@@ -127,15 +128,15 @@
 
 (defn- default-template []
   (hiccup/html
-    [:html
-     [:head]
-     [:body
-      [:div "<!-- NOTE :: Cardigan Bay couldn't find custom template, using hardwired default -->"]
-      [:div {:class "navbar"}]
-      [:div
-       [:h1 "{{page-title}}"]]
-      [:div
-       "{{{page-main-content}}}"]]]))
+   [:html
+    [:head]
+    [:body
+     [:div "<!-- NOTE :: Cardigan Bay couldn't find custom template, using hardwired default -->"]
+     [:div {:class "navbar"}]
+     [:div
+      [:h1 "{{page-title}}"]]
+     [:div
+      "{{{page-main-content}}}"]]]))
 
 ; region PageExporter
 
@@ -221,11 +222,11 @@ USING DEFAULT"))))
 
 (defn load->cards-for-export [server-snapshot page-name link-renderer]
   (as-> server-snapshot $
-        (.page-store $)
-        (.load-page $ page-name)
-        (packaging/raw->cards server-snapshot $ {:user-authored? true
-                                                 :for-export?    true
-                                                 :link-renderer  link-renderer})))
+    (.page-store $)
+    (.load-page $ page-name)
+    (packaging/raw->cards server-snapshot $ {:user-authored? true
+                                             :for-export?    true
+                                             :link-renderer  link-renderer})))
 
 (defn- export-page [server-snapshot page-name template working-directory]
   (let [page-store (:page-store server-snapshot)
@@ -234,16 +235,16 @@ USING DEFAULT"))))
         page-last-modified (.last-modified page-store page-name)
         file-name (-> (.page-name->export-file-path exporter page-name working-directory) .toString)
         rendered (str/join
-                   "\n"
-                   (->> cards
-                        (filter #(not (common/card-is-blank? %)))
-                        (map #(card->html % exporter))))
+                  "\n"
+                  (->> cards
+                       (filter #(not (cards/card-is-blank? %)))
+                       (map #(card->html % exporter))))
         insert-page (hiccup/html
+                     [:div
                       [:div
-                       [:div
-                        rendered]
-                       [:div {:class "system"}
-                        (card->html (system/backlinks server-snapshot page-name) exporter)]])
+                       rendered]
+                      [:div {:class "system"}
+                       (card->html (system/backlinks server-snapshot page-name) exporter)]])
         page (without-escaping (render template
                                        {:page-title        page-name
                                         :page-main-content insert-page

@@ -1,16 +1,11 @@
 (ns clj-ts.cards.packaging.markdown
   (:require [clj-ts.render :as render]
             [clj-ts.util :as util]
-            [clojure.edn :as edn]
-            [clojure.java.io :as io])
-  (:import (java.io PushbackReader)))
+            [clojure.edn :as edn]))
 
 (defn- remove-card-configuration [source_data]
   (try
-    (with-open [reader (-> source_data
-                           (char-array)
-                           (io/reader)
-                           (PushbackReader.))]
+    (with-open [reader (util/string->reader source_data)]
       (let [edn (edn/read reader)]
         (if (map? edn)
           (slurp reader)

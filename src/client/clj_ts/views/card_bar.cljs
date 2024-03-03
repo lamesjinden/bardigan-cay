@@ -14,16 +14,24 @@
 {:from \"" from-page "\"
  :ids [\"" hash "\"] } ")))
 
-(defn- <card-send-to-page! [db page-name hash new-page-name]
-  (let [body (pr-str {:from page-name
+(defn- <card-send-to-page! [db card new-page-name]
+  (let [page-name (-> @db :current-page)
+        hash (if-let [transcluded (get card "transcluded")]
+               (get transcluded "tx-hash")
+               (get card "hash"))
+        body (pr-str {:from page-name
                       :to   new-page-name
                       :hash hash})]
     (a/go
       (when-let [_ (a/<! (http/<http-post "/api/movecard" body))]
         (nav/<navigate! db new-page-name)))))
 
-(defn- <card-reorder! [db page-name hash direction]
-  (let [body (pr-str {:page      page-name
+(defn- <card-reorder! [db card direction]
+  (let [page-name (-> @db :current-page)
+        hash (if-let [transcluded (get card "transcluded")]
+               (get transcluded "tx-hash")
+               (get card "hash"))
+        body (pr-str {:page      page-name
                       :hash      hash
                       :direction direction})]
     (a/go
@@ -41,13 +49,13 @@
 (defn- on-clear-clicked [^Atom input-value]
   (clear-input! input-value))
 
-(defn- on-navigate-clicked [db input-value hash]
+(defn- on-navigate-clicked [db input-value card]
   (let [input-value (-> (or input-value "")
                         (clojure.string/trim))]
     (when (not (str/blank? input-value))
-      (<card-send-to-page! db (-> @db :current-page) hash input-value))))
+      (<card-send-to-page! db card input-value))))
 
-(defn send-elsewhere-input [db value hash]
+(defn send-elsewhere-input [db value card]
   [:div.send-elsewhere-input-container
    [:input.send-elsewhere-input {:type        "text"
                                  :placeholder "Send to another page"
@@ -61,7 +69,7 @@
     (when (not (nil? @value))
       [:div.input-separator])
     [:button
-     {:on-click (fn [] (on-navigate-clicked db @value hash))}
+     {:on-click (fn [] (on-navigate-clicked db @value card))}
      [:span {:class [:material-symbols-sharp :clickable]} "navigate_next"]]]])
 
 (defn card-bar [_db _card]
@@ -71,10 +79,10 @@
       [:div.card-gutter
        [:div.actions-container
         [:div {:class    [:material-symbols-sharp :clickable]
-               :on-click (fn [] (<card-reorder! db (-> @db :current-page) (get card "hash") "up"))}
+               :on-click (fn [] (<card-reorder! db card "up"))}
          "expand_less"]
         [:div {:class    [:material-symbols-sharp :clickable]
-               :on-click (fn [] (<card-reorder! db (-> @db :current-page) (get card "hash") "down"))}
+               :on-click (fn [] (<card-reorder! db card "down"))}
          "expand_more"]
         [:span.expansion-toggle {:on-click (fn [] (toggle! state))}
          (if (= (-> @state :toggle) "none")
@@ -100,4 +108,4 @@
              [:div.details-pair
               [:div.details-label "page"]
               [:div.details-value source-page]])]
-          [send-elsewhere-input db input-value (get card "hash")]])])))
+          [send-elsewhere-input db input-value card]])])))
