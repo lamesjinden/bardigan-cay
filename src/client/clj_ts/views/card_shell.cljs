@@ -38,6 +38,9 @@
   (when-let [target (cards/wikilink-data e)]
     (nav/<on-link-clicked db e target aux-clicked?)))
 
+(defn- on-transclude-link-clicked [db e {:strs [source-page] :as _transcluded}]
+  (nav/<on-link-clicked db e source-page false))
+
 (defn- on-card-double-clicked [local-db]
   (cond
     (collapsed? local-db)
@@ -91,6 +94,9 @@
            [:article.card-outer {:on-double-click (fn [] (on-card-double-clicked local-db))}
             [:div.card-meta-parent
              [:div.card-meta
+              (when transcluded
+                [:span {:class [:material-symbols-sharp :clickable]
+                        :on-click (fn [e] (on-transclude-link-clicked db e transcluded))} "step_over"])
               [:span.toggle-container {:on-click (fn [e] (toggle-local-expanded-state! local-db e))}
                (if (collapsed? local-db)
                  [:span {:class [:material-symbols-sharp :clickable]} "unfold_more"]
