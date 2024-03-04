@@ -8,11 +8,13 @@
   (string/replace text #"(http(s)?\\/\\/(\S+))"
                   (str "<a href=\"$1\">$1</a>")))
 
+(def double-link-pattern #"\[\[(.+?)\]\]")
+(def double-link-pattern-ext #"\[\[(.+?)\|(.+?)\]\]")
+
 (defn double-bracket-links [text]
-  (string/replace
-   text
-   #"\[\[(.+?)\]\]"
-   (str "<a class='wikilink' data='$1' href='/pages/$1'>$1</a>")))
+  (-> text
+      (string/replace double-link-pattern-ext (str "<a class='wikilink' data='$1' href='/pages/$1'>$2</a>"))
+      (string/replace double-link-pattern (str "<a class='wikilink' data='$1' href='/pages/$1'>$1</a>"))))
 
 (defn tag [t s] (str "<" t ">" s "</" t ">"))
 (defn td [s] (tag "td" s))
