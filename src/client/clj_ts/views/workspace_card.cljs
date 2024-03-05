@@ -248,8 +248,7 @@
                                                  :on-key-down     (fn [e] (workspace-editor-on-key-down db local-db e))
                                                  :tab-index -1}
                                  [:div.workspace-header-container
-                                  (when-let [title (:title @local-db)]
-                                    [:h3 title])
+                                  [:h3 (if-let [title (:title @local-db)] title "")]
                                   [:div.workspace-header-button-container
                                    [:div.visibility-buttons
                                     [:button.big-btn.big-btn-left {:class    (when (-> @local-db :code-toggle) "pressed")
