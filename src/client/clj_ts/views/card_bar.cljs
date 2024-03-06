@@ -9,10 +9,9 @@
 (defn clip-hash [from-page hash]
   (view/send-to-clipboard
    (str "----
-:transclude
-
-{:from \"" from-page "\"
- :ids [\"" hash "\"] } ")))
+{:card/type :transclude
+ :from \"" from-page "\"
+ :ids [\"" hash "\"]}\n")))
 
 (defn- <card-send-to-page! [db card new-page-name]
   (let [page-name (-> @db :current-page)

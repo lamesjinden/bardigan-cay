@@ -33,8 +33,7 @@
   --card-border-radius: 5px;
   --card-min-height: 50px;
   --card-box-shadow: 0 3px 10px rgb(0 0 0 / 0.2);
-  --card-box-shadow-transcluded: 0 0 15px rgba(0, 120, 215, 0.5);
-  --card-box-shadow-transcluded-readonly: 0 0 15px rgba(0, 120, 215, 0.15);
+  --card-box-shadow-transcluded: 0 0 10px rgba(0, 120, 215, 0.3);
   --card-outer-padding: 5px;
   --card-gutter-background-color: #efefef;
   --card-details-label-color: #808080;
@@ -1005,6 +1004,7 @@ dialog::backdrop {
 .workspace-header-button-container {
   display: flex;
   flex: 0 0 calc(100% / 3);
+  justify-content: center;
 }
 
 .visibility-buttons {

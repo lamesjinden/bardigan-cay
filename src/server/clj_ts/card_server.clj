@@ -72,8 +72,8 @@
 (defn resolve-source-page
   [server-snapshot _context arguments _value]
   (let [{:keys [page_name]} arguments
-        ps (.page-store server-snapshot)]
-    (if (.page-exists? ps page_name)
+        page-store (.page-store server-snapshot)]
+    (if (.page-exists? page-store page_name)
       {:page_name page_name
        :body      (pagestore/read-page server-snapshot page_name)}
       {:page_name page_name
