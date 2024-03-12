@@ -12,6 +12,7 @@
             [clj-ts.cards.packaging.patterning :as patterning]
             [clj-ts.cards.packaging.raw :as raw]
             [clj-ts.cards.packaging.system :as system]
+            [clj-ts.cards.packaging.todo :as todo]
             [clj-ts.cards.packaging.workspace :as workspace]
             [clj-ts.render :as render]
             [clj-ts.util :as util]))
@@ -65,6 +66,9 @@
 
        :network
        (network/package id card-map render-context)
+
+       :todo
+       (todo/package id source_data render-context)
 
        :system
        (system/package id card-map render-context server-snapshot)

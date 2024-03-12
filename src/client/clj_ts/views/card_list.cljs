@@ -3,6 +3,7 @@
             [clj-ts.view :as view]
             [clj-ts.views.inner-html-card :refer [inner-html]]
             [clj-ts.views.card-shell :refer [card-shell]]
+            [clj-ts.views.todo-card :refer [todo]]
             [clj-ts.views.workspace-card :refer [workspace]]))
 
 (defn error-boundary
@@ -41,6 +42,9 @@
 
                           "workspace"
                           [workspace db card]
+
+                          "todo"
+                          [todo db card]
 
                           "html"
                           [inner-html data]
