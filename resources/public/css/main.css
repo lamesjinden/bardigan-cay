@@ -1,4 +1,4 @@
-/*#region css variables */
+/* #region css variables */
 
 :root {
   color-scheme: light dark;
@@ -81,9 +81,9 @@
   --progress-bar-background-color: #0078d7;
 }
 
-/*#endregion */
+/* #endregion */
 
-/*#region base element styling */
+/* #region base element styling */
 
 html {
   background-color: var(--secondary-background-color);
@@ -233,15 +233,15 @@ blockquote {
   box-shadow: inset 5px 0 var(--blockquote-inset-color);
 }
 
-/*#region input */
+/* #region input */
 
 input:focus-visible {
   outline: none;
 }
 
-/*#endregion */
+/* #endregion */
 
-/*#region textarea */
+/* #region textarea */
 
 div textarea {
   box-sizing: border-box;
@@ -250,11 +250,11 @@ div textarea {
   font-size: 1.1rem;
 }
 
-/*#endregion */
+/* #endregion */
 
-/*#endregion */
+/* #endregion */
 
-/*#region utility */
+/* #region utility */
 
 /* todo - shared by card_list and card_shell; code smell? */
 .card {
@@ -312,17 +312,17 @@ div textarea {
   cursor: pointer;
 }
 
-/*#endregion */
+/* #endregion */
 
-/*#region transcript */
+/* #region transcript */
 
 .transcript {
   padding-top: var(--main-padding-bottom);
 }
 
-/*#endregion */
+/* #endregion */
 
-/*#region card_bar */
+/* #region card_bar */
 
 .card-gutter .actions-container {
   display: flex;
@@ -397,12 +397,14 @@ div textarea {
   width: 100%;
 }
 
-.send-elsewhere-input-actions {
+.send-elsewhere-input-actions,
+.send-transcript-input-actions {
   display: flex;
   align-items: center;
 }
 
-.send-elsewhere-input-actions button {
+.send-elsewhere-input-actions button,
+.send-transcript-input-actions button {
   color: var(--primary-foreground-color);
   cursor: pointer;
   border: none;
@@ -423,9 +425,9 @@ div textarea {
   min-height: var(--material-icon-size);
 }
 
-/*#endregion */
+/* #endregion */
 
-/*#region card_list */
+/* #region card_list */
 
 ul.user-card-list,
 ul.system-card-list {
@@ -435,9 +437,9 @@ ul.system-card-list {
   padding-inline-start: 0;
 }
 
-/*#endregion */
+/* #endregion */
 
-/*#region card_shell */
+/* #region card_shell */
 
 .card-shell {
   margin: var(--card-list-item-margin) 0;
@@ -532,9 +534,9 @@ ul.system-card-list {
   padding: 0;
 }
 
-/*#endregion */
+/* #endregion */
 
-/*#region editor */
+/* #region editor */
 
 .edit-box-container {
   border-bottom-left-radius: var(--card-border-radius);
@@ -559,9 +561,9 @@ ul.system-card-list {
   padding: 0;
 }
 
-/*#endregion */
+/* #endregion */
 
-/*#region page-controls */
+/* #region page-controls */
 
 .page-controls-container {
   display: flex;
@@ -584,9 +586,9 @@ ul.system-card-list {
   margin-right: calc(-1 * var(--page-control-pull-outside-margin));
 }
 
-/*#endregion */
+/* #endregion */
 
-/*#region dialog */
+/* #region dialog */
 
 dialog {
   background-color: var(--primary-background-color);
@@ -612,9 +614,9 @@ dialog::backdrop {
   margin-top: var(--material-icon-size);
 }
 
-/*#endregion */
+/* #endregion */
 
-/*#region progress bar */
+/* #region progress bar */
 
 .progress-bar-outer {
   background-color: transparent;
@@ -746,9 +748,9 @@ dialog::backdrop {
   }
 }
 
-/*#endregion */
+/* #endregion */
 
-/*#region nav_bar */
+/* #region nav_bar */
 
 .nav-container {
   padding: 0 10px 5px 10px;
@@ -855,9 +857,58 @@ dialog::backdrop {
   outline: none;
 }
 
-/*#endregion */
+/* #endregion */
 
-/*#region app-menu */
+/* #region send-transcript */
+
+#send-transcript-menu {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+}
+
+#send-transcript-menu .menu-outer .menu-container {
+  align-items: center;
+  background-color: var(--secondary-background-color);
+  border-radius: 24px;
+  display: flex;
+  min-width: 150px;
+  padding-left: 15px;
+  padding-right: 15px;
+}
+
+#send-transcript-menu .menu-outer .menu-container input {
+  background-color: transparent;
+  border: none;
+  border: solid 1px transparent;
+  flex: 1 1 auto;
+  width: 300px;
+}
+
+#send-transcript-menu .menu-outer .menu-container:has(> input:focus-visible),
+#send-transcript-menu
+  .menu-outer
+  .menu-container:has(> input:focus:not(:focus-visible)) {
+  border-color: var(--input-focus-color);
+  outline: none;
+  box-shadow: inset 0 0 0 1px var(--input-focus-color);
+}
+
+#send-transcript-menu .menu-outer .menu-container > input {
+  background-color: transparent;
+  box-shadow: unset;
+}
+
+#send-transcript-menu .menu-outer .menu-container .input-separator {
+  border-left: 1px solid var(--header-input-separator-color);
+  height: 85%;
+  margin-left: 10px;
+  min-height: var(--material-icon-size);
+}
+
+/* #endregion */
+
+/* #region app-menu */
 
 #app-menu {
   margin-left: auto;
@@ -930,9 +981,9 @@ dialog::backdrop {
   word-wrap: none;
 }
 
-/*#endregion */
+/* #endregion */
 
-/*#region paste_bar */
+/* #region paste_bar */
 
 .pastebar {
   align-items: center;
@@ -966,9 +1017,9 @@ dialog::backdrop {
   }
 }
 
-/*#endregion */
+/* #endregion */
 
-/*#region tool_bar */
+/* #region tool_bar */
 
 .toolbar-container {
   display: flex;
@@ -983,9 +1034,9 @@ dialog::backdrop {
   display: flex;
 }
 
-/*#endregion */
+/* #endregion */
 
-/*#region workspace_card */
+/* #region workspace_card */
 
 .workspace-header-container {
   align-items: center;
@@ -1096,9 +1147,9 @@ dialog::backdrop {
   font-size: 1em;
 }
 
-/*#endregion */
+/* #endregion */
 
-/*#region client */
+/* #region client */
 
 header {
   background-color: var(--primary-background-color);
@@ -1144,11 +1195,11 @@ header a {
   }
 }
 
-/*#endregion */
+/* #endregion */
 
-/*#region shared (between client and server) */
+/* #region shared (between client and server) */
 
-/*#region common.cljc */
+/* #region common.cljc */
 
 .wikilink {
   cursor: pointer;
@@ -1172,7 +1223,7 @@ header a {
   background-color: var(--secondary-background-color);
 }
 
-/*#endregion */
+/* #endregion */
 
 /* shared by client.card_list and server.static_export */
 .manual-copy {
@@ -1182,9 +1233,9 @@ header a {
   border-radius: 10px;
 }
 
-/*#endregion */
+/* #endregion */
 
-/*#region server.embed */
+/* #region server.embed */
 
 /* note: also referenced by common.cljc */
 .embed_div {
@@ -1206,4 +1257,4 @@ header a {
   height: 20em;
 }
 
-/*#endregion */
+/* #endregion */

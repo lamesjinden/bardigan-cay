@@ -2,7 +2,8 @@
   (:require [reagent.core :as r]
             [clj-ts.card :as card]
             [clj-ts.keyboard :as keyboard]
-            [clj-ts.navigation :as nav]))
+            [clj-ts.navigation :as nav]
+            [clj-ts.transcript]))
 
 (defn navigate-via-link-async! [db e]
   (let [tag (-> e .-target)
@@ -10,7 +11,7 @@
     (nav/<navigate! db data)))
 
 (defn- on-escape-key-up [db]
-  (swap! db assoc :mode :viewing))
+  (clj-ts.transcript/exit-transcript! db))
 
 (defn- on-key-up [db e]
   ;; note - escape doesn't fire for key-press, only key-up

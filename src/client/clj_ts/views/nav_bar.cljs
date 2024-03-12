@@ -7,6 +7,7 @@
             [clj-ts.http :as http]
             [clj-ts.keyboard :as keyboard]
             [clj-ts.navigation :as nav]
+            [clj-ts.transcript :as transcript]
             [clj-ts.view :as view]
             [clj-ts.views.app-menu :refer [app-menu]]))
 
@@ -30,20 +31,12 @@
 
 ;; region search
 
-(defn- updated-transcript [code result transcript]
-  (str "<p> > " code "\n<br/>\n" result "\n</p>\n" transcript))
-
-(defn- prepend-transcript! [db code result]
-  (let [current-transcript (-> @db :transcript)
-        updated-transcript (updated-transcript code result current-transcript)]
-    (swap! db assoc :transcript updated-transcript)))
-
 (defn- load-search-results! [db cleaned-query body]
   (let [edn (js->clj body)
         result (get edn "result_text")]
-    (prepend-transcript! db
-                         (str "Searching for " cleaned-query)
-                         (view/string->html result))
+    (transcript/prepend-transcript! db
+                                    (str "Searching for " cleaned-query)
+                                    (view/string->html result))
     (transcript-events/<notify-transcript-navigating db)))
 
 (defn- search-text-async! [db query-text]
@@ -78,7 +71,7 @@
 (defn- eval-input! [db input-value]
   (let [code input-value
         result (sci/eval-string code)]
-    (prepend-transcript! db code result)
+    (transcript/prepend-transcript! db code result)
     (transcript-events/<notify-transcript-navigating db)))
 
 (defn- on-eval-clicked [db input-value]
@@ -89,12 +82,11 @@
 
 (defn- on-link-click [db e target aux-clicked?]
   (.preventDefault e)
-  (cond
-    (= target "Transcript")
-    (transcript-events/<notify-transcript-navigating db)
+  (nav/<on-link-clicked db e target aux-clicked?))
 
-    :else
-    (nav/<on-link-clicked db e target aux-clicked?)))
+(defn- on-transcript-click [db e]
+  (.preventDefault e)
+  (transcript-events/<notify-transcript-navigating db))
 
 ;; endregion
 
@@ -113,10 +105,13 @@
         [:div.nav-container
          [:nav#header-nav
           (->> nav-links
+               (remove #(= % "Transcript"))
                (mapcat #(vector [:a.clickable {:key          %
                                                :on-click     (fn [e] (on-link-click db e % false))
                                                :on-aux-click (fn [e] (on-link-click db e % true))
                                                :href         (str "/pages/" %)} %])))
+          [:a.clickable {:key "transcript"
+                         :on-click (fn [e] (on-transcript-click db e))} "Transcript"]
           [app-menu db (r/cursor db [:theme])]]
          [:div#header-input
           [nav-input db input-value]

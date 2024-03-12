@@ -148,6 +148,13 @@
     (card-server/write-page-to-file! card-server page-name body)
     (get-page-response card-server page-name)))
 
+(defn handle-api-append [{:keys [card-server] :as request}]
+  (let [form-body (-> request :body .bytes slurp edn/read-string)
+        page-name (:page form-body)
+        body (:data form-body)]
+    (card-server/append-page! card-server page-name body)
+    (get-page-response card-server page-name)))
+
 (defn handle-api-reorder-card [{:keys [card-server] :as request}]
   (let [form-body (-> request :body .bytes slurp edn/read-string)
         page-name (:page form-body)
@@ -190,6 +197,7 @@
              :api-system-db          {:get handle-api-system-db}
              :api-search             {:get handle-api-search}
              :api-save               {:post handle-api-save}
+             :api-append             {:post handle-api-append}
              :api-move-card          {:post handle-api-move-card}
              :api-reorder-card       {:post handle-api-reorder-card}
              :api-replace-card       {:post handle-api-replace-card}
@@ -207,6 +215,7 @@
     (= uri "/api/system/db") :api-system-db
     (= uri "/api/search") :api-search
     (= uri "/api/save") :api-save
+    (= uri "/api/append") :api-append
     (= uri "/api/movecard") :api-move-card
     (= uri "/api/reordercard") :api-reorder-card
     (= uri "/api/replacecard") :api-replace-card

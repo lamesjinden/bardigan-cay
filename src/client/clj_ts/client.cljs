@@ -15,14 +15,15 @@
    [clj-ts.mode :as mode]
    [clj-ts.navigation :as nav]
    [clj-ts.theme :as theme]
-   [clj-ts.views.app :refer [app]]))
+   [clj-ts.views.app :refer [app]]
+   [clj-ts.transcript :as transcript]))
 
 ;; region top-level ratom
 
 (defonce db (r/atom
              {:current-page "HelloWorld"
               :raw          ""
-              :transcript   ""
+              :transcript   (transcript/get-initial-transcript)
               :cards        []
               :wiki-name    "Wiki Name"
               :site-url     "Site URL"

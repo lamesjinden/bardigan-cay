@@ -1,7 +1,8 @@
 (ns clj-ts.confirmation.transcript-process
   (:require [cljs.core.async :as a]
             [clj-ts.events.confirmation :as e-confirm]
-            [clj-ts.mode :as mode]))
+            [clj-ts.mode :as mode]
+            [clj-ts.navigation :as nav]))
 
 (defn- update-edit-sessions [editing {:keys [id action]}]
   (condp = action
@@ -16,6 +17,7 @@
         transcript-navigating$ (let [{:keys [out-chan db]} value]
                                  (if (empty? editing)
                                    (do
+                                     (nav/push-state {:mode "transcript"} "/#transcript")
                                      (mode/set-transcript-mode! db)
                                      (a/put! out-chan true)
                                      (a/close! out-chan)
@@ -24,6 +26,7 @@
                                          response (a/<! confirm$)]
                                      (if (= response :ok)
                                        (do
+                                         (nav/push-state {:mode "transcript"} "/#transcript")
                                          (mode/set-transcript-mode! db)
                                          (a/put! out-chan true)
                                          (a/close! out-chan)

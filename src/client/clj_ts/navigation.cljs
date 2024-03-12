@@ -2,7 +2,8 @@
   (:require [cljs.core.async :as a]
             [clojure.string :as str]
             [clj-ts.http :as http]
-            [clj-ts.events.navigation :as nav-events]))
+            [clj-ts.events.navigation :as nav-events]
+            [clj-ts.mode :as mode]))
 
 ;; region load page
 
@@ -42,10 +43,6 @@
             body (.parse js/JSON body-text)]
         body))))
 
-;; endregion
-
-;; region nav2
-
 (defn- <load-page! [db page-name]
   (a/go
     (let [completed$ (nav-events/<notify-navigating page-name)
@@ -69,7 +66,12 @@
 
 (defn push-state
   ([state-map url]
-   (js/history.pushState (clj->js state-map) "" url))
+   (let [state-map-js (clj->js state-map)]
+     (if-let [history-state-js (.-state js/history)]
+       (when-not (= (js->clj history-state-js)
+                    (js->clj state-map-js))
+         (js/history.pushState state-map-js "" url))
+       (js/history.pushState state-map-js "" url))))
   ([state-map]
    (push-state state-map "")))
 
@@ -134,8 +136,13 @@
 ;; note - push-state resides above
 
 (defn- pop-state-handler [db state]
-  (let [page-name (popstate->page-name db state)]
-    (<go-new! db page-name)))
+  (let [state-map (js->clj state true)]
+    (cond
+      (= (get state-map "mode") "transcript")
+      (mode/set-transcript-mode! db)
+
+      :else (let [page-name (popstate->page-name db state)]
+              (<go-new! db page-name)))))
 
 ;; endregion
 

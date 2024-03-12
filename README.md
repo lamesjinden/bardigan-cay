@@ -27,6 +27,8 @@
 - Workspace cards can self-update
 - Workspace cards can return Reagent components, in addition to the previous types (string, hiccup)
 - Allow transclusion using 'stable card IDs' - to enable in-place editing of transcluded content
+- Transcript content is persisted via localStorage
+- Transcript content can be cleared or moved to a new/existing page
 
 ### Development
 

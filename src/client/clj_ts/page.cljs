@@ -33,6 +33,14 @@
                         (nav/load-page! db body))))]
      (<save-page! db callback))))
 
+(defn <append-page!
+  ([db destination body]
+   (let [body (pr-str {:page destination
+                       :data body})]
+     (a/go
+       (when-let [_ (a/<! (http/<http-post "/api/append" body))]
+         (nav/<navigate! db destination))))))
+
 (defn <save-card!
   [page-name hash new-val]
   (let [body (pr-str {:page page-name

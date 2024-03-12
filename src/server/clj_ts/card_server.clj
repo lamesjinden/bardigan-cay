@@ -190,3 +190,29 @@ If you would *like* to create a page with this name, simply click the [Edit] but
 
 (defn load-media-file [server-snapshot file-name]
   (-> server-snapshot :page-store (.load-media-file file-name)))
+
+(defn- append-to-page!
+  [^Atom card-server page-name source-data]
+  (let [server-snapshot @card-server
+        page-store (.page-store server-snapshot)
+        page-body (.load-page page-store page-name)
+        new-body (str page-body "\n\n" "----" "\n\n" (str/trim source-data) "\n\n")]
+    (write-page-to-file! card-server page-name new-body)))
+
+(defn- append-to-new-page!
+  [^Atom card-server page-name source-data]
+  (let [server-snapshot @card-server
+        page-body (try
+                    (pagestore/read-page server-snapshot page-name)
+                    (catch Exception _ (str "Automatically created a new page : " page-name "\n\n")))
+        new-body (str page-body "\n\n" "----" "\n\n" (str/trim source-data) "\n\n")]
+    (write-page-to-file! card-server page-name new-body)))
+
+(defn append-page!
+  [^Atom card-server destination-name source-data]
+  (let [server-snapshot @card-server
+        page-store (.page-store server-snapshot)
+        source-data (str/trim source-data)]
+    (if (.page-exists? page-store destination-name)
+      (append-to-page! card-server destination-name source-data)
+      (append-to-new-page! card-server destination-name source-data))))
