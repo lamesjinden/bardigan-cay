@@ -1258,3 +1258,16 @@ header a {
 }
 
 /* #endregion */
+
+/* #region plotly */
+
+.graph-root {
+  background-color: var(--primary-background-color);
+}
+
+.plotly-container {
+  height: 100%;
+  width: 100%;
+}
+
+/* #endregion */

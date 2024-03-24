@@ -12,6 +12,7 @@
             [clj-ts.keyboard :as keyboard]
             [clj-ts.theme :as theme]
             [clj-ts.view :refer [->display]]
+            [clj-ts.views.graph :as graph]
             ["date-fns" :as date-fns]))
 
 ;; region eval/rewrite
@@ -96,6 +97,8 @@
 (defn create-sci-opts [state root-element-ref sci-opts-ref]
   (-> base-sci-opts
       (assoc-in [:namespaces 'util 'get-element-by-id] (fn [id] (.querySelector @root-element-ref (str "#" id))))
+      (assoc-in [:namespaces 'view] {})
+      (assoc-in [:namespaces 'view 'graph] graph/graph)
       (assoc-in [:namespaces 'cb] {})
       (assoc-in [:namespaces 'cb 'update-card] (fn [replacements & {:keys [with-eval]
                                                                     :or   {with-eval true}}]
