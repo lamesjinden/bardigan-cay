@@ -4,11 +4,13 @@ Cards in [[CardiganBay]] have types :
 For example, the next card after this has a :raw type.
 
 ----
+
 :raw
 
 This card has a :raw type. 
 
 We treat it as plain-text and **don't** interpret it as markdown.
+
 ----
 
 ### Current Types
@@ -31,8 +33,8 @@ We will be adding more types over time, but the current types are
 
 There's some work-in progress towards these types, but they are not guaranteed to work or stay 
 * **:network** - These are still an experimental feature. But it's always been the intention for Cardigan Bay to support a type of card which is a hand-drawn network diagram of boxes and arrows. Each node is, itself, a link to a page. So you can make graphical overviews of topics that are then covered on their own pages. There's currently no graphical editor for this card type. But this version of CB does at least now have a reasonable looking rendering. (The graphical editor is being worked on, but not yet enabled) This is still an experimental feature that isn't officially supported. And the format might change.
+* **:graph** - Wrapper for `Plotly.js` graphs. See [[GraphExamples]].
 
- 
 ----
 
 ### Future Types
@@ -44,4 +46,3 @@ These are currently in the "ideation" phase. They seem like cool ideas, and will
 * *:outline*
 * *:spreadsheet* (grid data with embeddable clojure functionality)
 * *:widget* (full embedded interactive widgets written in clientside clojurescript.)
-

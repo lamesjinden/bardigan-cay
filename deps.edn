@@ -2,7 +2,8 @@
  :deps  {org.clojure/core.async        {:mvn/version "1.6.673"}
          markdown-clj/markdown-clj     {:mvn/version "1.11.4"}
          io.replikativ/hasch           {:mvn/version "0.3.94"}
-         com.alchemyislands/patterning {:mvn/version "0.5.4-SNAPSHOT"}
+         com.alchemyislands/patterning {:git/url "https://github.com/interstar/Patterning-Core.git"
+                                        :sha "c22baf29cf33be1dd83dde3d0226b38ae96f77fa"}
          org.babashka/sci              {:mvn/version "0.8.41"}
          org.slf4j/slf4j-nop           {:mvn/version "2.0.5"}}
 

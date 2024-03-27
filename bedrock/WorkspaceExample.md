@@ -7,6 +7,28 @@ Note that the output of the code is expected to be either:
   * see 'Advanced' example below
 
 ----
+
+{:card/type :workspace
+ :eval-on-load true
+ :layout :vertical
+ :workspace/title "Graphing Example"}
+
+;; Write some code
+(let [data (->> (range 10)
+                (map-indexed (fn [x i] {:x x :y i}))
+                (reduce (fn [acc {:keys [x y]}]
+                          (-> acc
+                              (update :x conj x)
+                              (update :y conj y)))
+                        {:x []
+                         :y []
+                         :type "scatter"})
+                (vector))]
+  [:div
+   [view/graph data]])
+
+----
+
 :workspace
 
 ;; Write some code
@@ -31,6 +53,7 @@ The following configuration options are supported:
 * `:code-visibility` [true | false] - causes the 'code' section of the workspace to be visible or hidden
 * `:result-visibility` [true | false] - causes the 'result' section of the workspace to be visible or hidden
 * `:editor-size` [:small | :medium | :large] - controls the default editor height (respectively: 25 lines, 50 lines, all lines)
+* `:workspace/title` [string] - causes the workspace header to display a title element
 
 ----
 
@@ -41,9 +64,9 @@ In addition to the default SCI execution environment, the following functions ar
 * `js/*` - exposes the global javascript object to the execution environment
 * `prn` - exposes cljs.core/prn to the execution environment
 * `println` - exposes cljs.core/println to the execution environment
-* `util/parse-boolean` - exposes cljs.core/parse-boolean to the execution environment
-* `util/parse-double` - exposes cljs.core/parse-double to the execution environment
-* `util/parse-long` - exposes cljs.core/parse-long to the execution environment
+* `parse-boolean` - exposes cljs.core/parse-boolean to the execution environment
+* `parse-double` - exposes cljs.core/parse-double to the execution environment
+* `parse-long` - exposes cljs.core/parse-long to the execution environment
 * `util/pad2` - stringifies the argument and pads the string to 2 places with '0'
 * `util/pad3` - stringifies the argument and pads the string to 3 places with '0'
 * `util/pad4` - stringifies the argument and pads the string to 4 places with '0'
@@ -55,7 +78,9 @@ In addition to the default SCI execution environment, the following functions ar
 * `util/set-display-none` - accepts an (DOM) element; sets the display style of the element to 'none'
 * `util/set-display-block` - accepts an (DOM) element; sets the display style of the element to 'block'
 * `util/get-element-by-id` - performs an element query using the provided argument id (do not prefix with '#' as this will be done for you) and returns the result; note - the query is scoped to the container element for the Workspace.
+* `view/graph` - (experimental) - exposes the `graph` component (that underlies `:graph` cards); intended to be used with hiccup literal with 2 additional parameters: the `data` parameter, followed by the `layout` parameter.
 * `cb/update-card` - (experimental) - accepts a clojure map where keys represent the names of symbols within the containing workspace; for each pair in the map parameter, attempts to locate a top-level symbol named by the pair; if found, replaces the symbol's value provided by the pair. An optional keyword-arg, :with-eval, can be provided. When `true` (default), the updated workspace code will be evaluated; when `false` the updated workspace code is not evaluated.
+* `r/atom` - (experimental) - exposes `reagent.core/atom` to the execution environment
 
 ----
 
@@ -74,6 +99,7 @@ In an *exported* Workspace, hiccup isn't available. So if you want to write a pr
 Look at the example in the Workspace below. Note that if you run it in a live Cardigan Bay, the tags won't render correctly. But in an exported page they will.
 
 ----
+
 :workspace
 
 ;; Code that renders as expected in exported pages.
@@ -115,6 +141,7 @@ Clojure ignores this line, as it's justs a comment. But the exporter treats it a
 See the following example in the exported page to understand how it works
 
 ----
+
 :workspace
 
 (defn tag [t s] (str "<" t ">" s "</" t ">"))
@@ -146,6 +173,7 @@ See the following example in the exported page to understand how it works
 see below
 
 ----
+
 :workspace
 
 {:result-visibility true

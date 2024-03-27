@@ -1,6 +1,7 @@
 (ns clj-ts.views.graph
   (:require [reagent.core :as r]
-            ["react-plotly.js$default" :as plotly]))
+            ["react-plotly.js$default" :as plotly]
+            [clj-ts.card :as cards]))
 
 (defn- ->fgcolor []
   (let [document-element (.-documentElement js/document)
@@ -24,3 +25,9 @@
                                      :config {:display-mode-bar false}}]]))
   ([data]
    (graph data default-layout)))
+
+(defn graph-card [_db card]
+  (let [card-configuration (or (cards/->card-configuration card) {})
+        data (or (:data card-configuration) [])
+        layout (or (:layout card-configuration) {})]
+    [graph data layout]))

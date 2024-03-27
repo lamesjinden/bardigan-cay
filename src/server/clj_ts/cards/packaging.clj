@@ -6,6 +6,7 @@
             [clj-ts.cards.packaging.evalraw :as evalraw]
             [clj-ts.cards.packaging.evalmd :as evalmd]
             [clj-ts.cards.packaging.filelink :as filelink]
+            [clj-ts.cards.packaging.graph :as graph]
             [clj-ts.cards.packaging.markdown :as markdown]
             [clj-ts.cards.packaging.manual-copy :as manual-copy]
             [clj-ts.cards.packaging.network :as network]
@@ -69,6 +70,9 @@
 
        :todo
        (todo/package id source_data render-context)
+
+       :graph
+       (graph/package id source_data render-context)
 
        :system
        (system/package id card-map render-context server-snapshot)

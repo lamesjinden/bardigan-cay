@@ -3,6 +3,7 @@
             [clj-ts.view :as view]
             [clj-ts.views.inner-html-card :refer [inner-html]]
             [clj-ts.views.card-shell :refer [card-shell]]
+            [clj-ts.views.graph :refer [graph-card]]
             [clj-ts.views.todo-card :refer [todo]]
             [clj-ts.views.workspace-card :refer [workspace]]))
 
@@ -45,6 +46,9 @@
 
                           "todo"
                           [todo db card]
+
+                          "graph"
+                          [graph-card db card]
 
                           "html"
                           [inner-html data]
