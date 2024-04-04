@@ -1,3 +1,11 @@
+@font-face {
+  font-family: "Roboto";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local("Roboto"), url("/css/vendor/roboto/Roboto-Regular.ttf");
+}
+
 /* #region css variables */
 
 :root {
@@ -93,7 +101,7 @@ html {
 }
 
 body {
-  font-family: Roboto, Noto, sans-serif;
+  font-family: Roboto;
   font-size: 1.6rem;
   margin: auto;
   overflow-wrap: break-word;

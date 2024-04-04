@@ -1427,6 +1427,11 @@ map-limit@0.0.1:
     tinyqueue "^2.0.3"
     vt-pbf "^3.1.1"
 
+material-symbols@^0.17.1:
+  version "0.17.1"
+  resolved "https://registry.npmjs.org/material-symbols/-/material-symbols-0.17.1.tgz"
+  integrity sha512-1kJan8t3U3Fmuu/YPu2MVsL/ODSja71o+J7ODROQfMaCzzal0izY4SATafEKgXUXU+jL0zIiBQdyzsno7vXBvA==
+
 math-log2@^1.0.1:
   version "1.0.1"
   resolved "https://registry.npmjs.org/math-log2/-/math-log2-1.0.1.tgz"
