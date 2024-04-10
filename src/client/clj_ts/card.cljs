@@ -54,9 +54,7 @@
     (-> snapshot
         (assoc :raw raw)
         (update-in [:cards matching-index] merge new-card))
-    (do
-      (js/console.debug (str "no matching index; replaced-hash=" replaced-hash))
-      snapshot)))
+    snapshot))
 
 (defn replace-card-async!
   [db  current-hash new-card-body]
@@ -102,3 +100,12 @@
       (js/console.warn "unable to replace transluded card lacking :card/id"))
     (let [hash (get card "hash")]
       (replace-card-async! db hash new-body))))
+
+(defn ->key [card current-page]
+  (str current-page "/" (get card "hash")))
+
+(defn scroll-card-into-view [card current-page]
+  (let [data-card-id (->key card current-page)
+        element (js/document.querySelector (str "*[data-card-id=\"" data-card-id "\"]"))]
+    (when element
+      (.scrollIntoView element))))

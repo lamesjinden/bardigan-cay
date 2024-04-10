@@ -1,5 +1,6 @@
 (ns clj-ts.views.card-list
   (:require [reagent.core :as r]
+            [clj-ts.card :as cards]
             [clj-ts.view :as view]
             [clj-ts.views.inner-html-card :refer [inner-html]]
             [clj-ts.views.card-shell :refer [card-shell]]
@@ -69,13 +70,14 @@
 (defn card-list [db db-cards db-system-cards]
   (fn [_this]
     (let [current-page (:current-page @db)
-          key-fn (fn [card]
-                   (str current-page "/" (get card "hash")))]
+          key-fn (fn [card] (cards/->key card current-page))]
       [:<>
        [:div.user-card-list
         (let [cards @db-cards]
-          (for [card (filter view/not-blank? cards)]
-            [:div.user-card-list-item {:key (key-fn card)}
+          (for [card (filter view/not-blank? cards)
+                :let [key (key-fn card)]]
+            [:div.user-card-list-item {:key key
+                                       :data-card-id key}
              (try
                [card-shell db card
                 [error-boundary
@@ -89,7 +91,7 @@
         (try
           (let [system-cards @db-system-cards]
             (for [system-card system-cards]
-              [:div.system-card-list-item {:key (key-fn system-card)}
+              [:div.system-card-list-item {:key key}
                [card-shell db system-card
                 [error-boundary
                  [card->component db system-card]]]]))

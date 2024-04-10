@@ -11,9 +11,11 @@
    [clj-ts.events.editing :as e-editing]
    [clj-ts.events.navigation :as e-nav]
    [clj-ts.events.progression :as e-progress]
+   [clj-ts.events.rendering :as e-rendering]
    [clj-ts.events.transcript :as e-transcript]
    [clj-ts.mode :as mode]
    [clj-ts.navigation :as nav]
+   [clj-ts.rendering.render-process :as rendering-render]
    [clj-ts.theme :as theme]
    [clj-ts.views.app :refer [app]]
    [clj-ts.transcript :as transcript]))
@@ -53,6 +55,8 @@
         _transcript-process (confirm-transcript/<create-transcript-process
                              (e-transcript/create-transcript-navigating$)
                              (e-editing/create-editing$))
+
+        _render-process (rendering-render/<create-render-process (e-rendering/create-rendering$))
 
         confirmation-request$ (e-confirm/create-confirmation-request$)
         progress$ (e-progress/create-progress$)]

@@ -1,7 +1,9 @@
-(ns clj-ts.views.card-bar
+(ns clj-ts.views.card-gutter
   (:require [cljs.core.async :as a]
             [clojure.string :as str]
             [reagent.core :as r]
+            [clj-ts.card :as cards]
+            [clj-ts.events.rendering :as e-rendering]
             [clj-ts.http :as http]
             [clj-ts.navigation :as nav]
             [clj-ts.view :as view]))
@@ -35,7 +37,12 @@
                       :direction direction})]
     (a/go
       (when-let [response (a/<! (http/<http-post "/api/reordercard" body))]
-        (nav/load-page-response db response)))))
+        ;; reload the page content
+        (nav/load-page-response db response)
+        ;; wait for the next render of the parent component
+        (a/<! (e-rendering/<notify-scroll-into-view page-name hash))
+        ;; request that the newly rendered parent component be scrolled into view
+        (cards/scroll-card-into-view card page-name)))))
 
 (defn- toggle! [state]
   (if (= (-> @state :toggle) "none")
@@ -50,7 +57,7 @@
 
 (defn- on-navigate-clicked [db input-value card]
   (let [input-value (-> (or input-value "")
-                        (clojure.string/trim))]
+                        (str/trim))]
     (when (not (str/blank? input-value))
       (<card-send-to-page! db card input-value))))
 
@@ -71,7 +78,7 @@
      {:on-click (fn [] (on-navigate-clicked db @value card))}
      [:span {:class [:material-symbols-sharp :clickable]} "navigate_next"]]]])
 
-(defn card-bar [_db _card]
+(defn card-gutter [_db _card]
   (let [state (r/atom {:toggle "none"})
         input-value (r/atom nil)]
     (fn [db card]
@@ -107,4 +114,12 @@
              [:div.details-pair
               [:div.details-label "page"]
               [:div.details-value source-page]])]
-          [send-elsewhere-input db input-value card]])])))
+          (when (get card "user_authored?")
+            [:div.card-gutter-toolbar
+             [:button.big-btn.reorder-top-button {:class    [:material-symbols-sharp :clickable]
+                                                  :on-click (fn [] (<card-reorder! db card "start"))}
+              "low_priority"]
+             [send-elsewhere-input db input-value card]
+             [:button.big-btn.reorder-bottom-button {:class    [:material-symbols-sharp :clickable]
+                                                     :on-click (fn [] (<card-reorder! db card "end"))}
+              "low_priority"]])])])))

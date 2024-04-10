@@ -344,6 +344,24 @@ div textarea {
   padding: 8px;
 }
 
+.card-gutter .card-gutter-toolbar {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  padding-top: 8px;
+}
+
+.card-gutter .reorder-top-button {
+  margin: 0;
+  transform: scale(1, -1);
+}
+
+.card-gutter .reorder-bottom-button {
+  margin: 0;
+  transform: scale(-1, 1);
+}
+
 .details-container {
   display: grid;
   grid-auto-rows: 1fr;
@@ -370,16 +388,17 @@ div textarea {
 }
 
 .send-elsewhere-input-container {
-  background-color: var(--header-input-background-color);
-  display: flex;
-  justify-content: center;
   align-items: center;
-  margin-top: 8px;
-  height: 35px;
+  background-color: var(--header-input-background-color);
+  border: 1px solid transparent;
   border-radius: 24px;
+  display: flex;
+  flex: 1 1 auto;
+  height: 35px;
+  justify-content: center;
+
   padding-left: 15px;
   padding-right: 15px;
-  border: 1px solid transparent;
 }
 
 .send-elsewhere-input-container:has(> input:focus-visible),

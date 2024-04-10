@@ -3,10 +3,11 @@
             [reagent.core :as r]
             [clj-ts.card :as cards]
             [clj-ts.events.expansion :as e-expansion]
+            [clj-ts.events.rendering :as e-rendering]
             [clj-ts.highlight :as highlight]
             [clj-ts.navigation :as nav]
             [clj-ts.view :refer [->display]]
-            [clj-ts.views.card-bar :refer [card-bar]]
+            [clj-ts.views.card-gutter :refer [card-gutter]]
             [clj-ts.views.editor-single :refer [single-editor]]))
 
 (def expanded-states #{:expanded :collapsed})
@@ -89,11 +90,14 @@
                             (js/Array.from)
                             (array-seq))]
           (doseq [selected selecteds]
-             ;; carefully apply highlighting to children; avoids extra calls to highlightAll, which writes warnings to console
+             ;; carefully apply highlighting to children; 
+             ;; avoids extra calls to highlightAll, which writes warnings to console
             (highlight/highlight-element selected))))
 
       :reagent-render
       (fn [db card component]
+        (e-rendering/notify-render (-> @db :current-page) (-> @local-db :hash))
+
         [:div.card-shell (as-> {:ref (fn [element] (reset! !root-element element))} $
                            (cond
                              (and transcluded editable?)
@@ -122,5 +126,5 @@
               [:div.card-child.container
                component]
               [:div.card-child.overlay {:style {:display (->display (collapsed? local-db))}}]]]
-            [card-bar db card]]
+            [card-gutter db card]]
            [single-editor db rx-theme local-db !editor-element])])})))

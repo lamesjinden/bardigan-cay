@@ -89,6 +89,23 @@
                          (rest after)))]
         res))))
 
+(defn move-card-to-start
+  "Move a card (id by hash) to the start of cards"
+  [cards hash]
+  (let [card (find-card-by-hash cards hash)]
+    (if (nil? card)
+      cards
+      (cons card
+            (filter (fn [x] (neh x hash)) cards)))))
+
+(defn move-card-to-end
+  "Move a card (id by hash) to the end of cards"
+  [cards hash]
+  (let [card (find-card-by-hash cards hash)]
+    (if (nil? card)
+      cards
+      (concat (filter (fn [x] (neh x hash)) cards) [card]))))
+
 (defn cards->raw [cards]
   (->> cards
        (map card->raw)

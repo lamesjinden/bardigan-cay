@@ -163,9 +163,12 @@ If you would *like* to create a page with this name, simply click the [Edit] but
   (let [server-snapshot @card-server
         page-store (.page-store server-snapshot)
         cards (.get-page-as-card-maps page-store page-name)
-        new-cards (if (= "up" direction)
-                    (cards/move-card-up cards hash)
-                    (cards/move-card-down cards hash))]
+        new-cards (condp = direction
+                    "up" (cards/move-card-up cards hash)
+                    "down" (cards/move-card-down cards hash)
+                    "start" (cards/move-card-to-start cards hash)
+                    "end" (cards/move-card-to-end cards hash)
+                    :else cards)]
     (write-page-to-file! card-server page-name (cards/cards->raw new-cards))))
 
 (defn replace-card!
