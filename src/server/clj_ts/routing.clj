@@ -2,6 +2,7 @@
   (:require [clojure.data.json :as json]
             [clojure.edn :as edn]
             [clojure.java.io :as io]
+            [clojure.zip :as zip]
             [ring.util.codec :as codec]
             [ring.util.response :as resp]
             [selmer.parser]
@@ -63,34 +64,26 @@
       (util/create-not-available "export all pages is not available")
       (util/->zip-file-response result))))
 
-;; using custom tag to take advantage of overriding :tag-second
-;; as simple variable substitution is not as customizable
-(selmer.parser/add-tag! :identity (fn [args context-map]
-                                    (let [kw (keyword (first args))]
-                                      (get context-map kw))))
-
 (def index-local-path "public/index.html")
 
 (defn render-page-config
   ([card-server subject-file page-name]
-   (let [subject-content (slurp (io/resource subject-file))]
+   (let [file-content (slurp (io/resource subject-file))]
      (if page-name
        (let [server-snapshot @card-server
              page-config (get-page-data server-snapshot {:page_name page-name})
-             workspace-card? (as-> (get-in page-config [:server_prepared_page :cards]) $
-                               (some (fn [card] (= :workspace (:source_type card))) $)
-                               (if $ "" "defer"))
              page-config-str (json/write-str page-config)
-             rendered (selmer.util/without-escaping
-                       (-> (selmer.parser/render
-                            subject-content
-                            {:page-config page-config-str}
-                            {:tag-open   \[
-                             :tag-close  \]
-                             :tag-second \"})
-                           (selmer.parser/render {:has-workspace? workspace-card?})))]
+             init-loc (render/find-init-loc file-content)
+             init-content-loc (zip/down init-loc)
+             init-content (zip/node init-content-loc)
+             rendered-content (selmer.util/without-escaping
+                               (selmer.parser/render
+                                init-content
+                                {:page-config page-config-str}))
+             updated (zip/replace init-content-loc rendered-content)
+             rendered (render/loc->html-string updated)]
          rendered)
-       subject-content))))
+       file-content))))
 
 (defn handle-root-request [{:keys [card-server] :as _request}]
   (let [server-snapshot @card-server]

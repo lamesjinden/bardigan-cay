@@ -1,5 +1,6 @@
 (ns build
-  (:require [clojure.tools.build.api :as b])
+  (:require [clojure.tools.build.api :as b]
+            [inline])
   (:import [java.time LocalDateTime]
            [java.time.format DateTimeFormatter]))
 
@@ -16,12 +17,13 @@
                    (DateTimeFormatter/ofPattern "yyyy-MM-dd"))))
 
 (defn uber [_]
-      (b/copy-dir {:src-dirs   ["src" "resources"]
-                   :target-dir class-dir})
-      (b/compile-clj {:basis     basis
-                      :src-dirs  ["src"]
-                      :class-dir class-dir})
-      (b/uber {:class-dir class-dir
-               :uber-file uber-file
-               :basis     basis
-               :main      'clj-ts.app}))
+  (b/copy-dir {:src-dirs   ["src" "resources"]
+               :target-dir class-dir})
+  (inline/inline-assets class-dir)
+  (b/compile-clj {:basis     basis
+                  :src-dirs  ["src"]
+                  :class-dir class-dir})
+  (b/uber {:class-dir class-dir
+           :uber-file uber-file
+           :basis     basis
+           :main      'clj-ts.app}))

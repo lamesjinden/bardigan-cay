@@ -13,6 +13,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "lightningcss-cli": "^1.24.1",
     "shadow-cljs": "^2.26.0"
   },
   "dependencies": {
