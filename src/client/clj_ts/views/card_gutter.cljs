@@ -8,12 +8,13 @@
             [clj-ts.navigation :as nav]
             [clj-ts.view :as view]))
 
-(defn clip-hash [from-page hash]
-  (view/send-to-clipboard
-   (str "----
+(defn clip-hash [from-page card]
+  (let [hash-or-id (cards/->hash-or-id card)]
+    (view/send-to-clipboard
+     (str "----
 {:card/type :transclude
  :from \"" from-page "\"
- :ids [\"" hash "\"]}\n")))
+ :ids [\"" hash-or-id "\"]}\n"))))
 
 (defn- <card-send-to-page! [db card new-page-name]
   (let [page-name (-> @db :current-page)
@@ -105,7 +106,7 @@
             [:div.details-value (get card "source_type")]]
            [:div.details-pair
             [:div.details-label "hash:"]
-            [:div.details-value.clickable {:on-click (fn [] (clip-hash (-> @db :current-page) (get card "hash")))}
+            [:div.details-value.clickable {:on-click (fn [] (clip-hash (-> @db :current-page) card))}
              (get card "hash")]]
            [:div.details-pair.right
             [:div.details-label "render:"]

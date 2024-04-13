@@ -20,9 +20,6 @@
 (defn collapsed? [local-db]
   (not (expanded? local-db)))
 
-(defn editing? [local-db]
-  (= :editing (:mode @local-db)))
-
 (defn viewing? [local-db]
   (= :viewing (:mode @local-db)))
 
@@ -57,20 +54,12 @@
 
 (defn card-shell [db card _component]
   (let [card-configuration (or (cards/->card-configuration card) {})
-        {transcluded "transcluded"
-         user-authored? "user_authored?"} card
-
-        editable? (if user-authored?
-                    (if transcluded
-                      (= (get transcluded "locator") "id")
-                      true)
-                    false)
-        local-db (r/atom {:expanded-state (->initial-expanded-state card-configuration)
-                          :mode           :viewing
-                          :card           card
-                          :hash           (get card "hash")
+        local-db (r/atom {:card           card
                           :editor         nil
-                          :editable?      editable?})
+                          :editable?      (cards/editable? card)
+                          :expanded-state (->initial-expanded-state card-configuration)
+                          :hash           (cards/->hash card)
+                          :mode           :viewing})
         !editor-element (clojure.core/atom nil)
         !root-element (clojure.core/atom nil)
         rx-theme (r/cursor db [:theme])
@@ -98,33 +87,30 @@
       (fn [db card component]
         (e-rendering/notify-render (-> @db :current-page) (-> @local-db :hash))
 
-        [:div.card-shell (as-> {:ref (fn [element] (reset! !root-element element))} $
-                           (cond
-                             (and transcluded editable?)
-                             (assoc $ :class ["transcluded editable"])
-
-                             (and transcluded (not editable?))
-                             (assoc $ :class ["transcluded"])
-
-                             :else
-                             $))
-         (if (viewing? local-db)
-           [:article.card-outer {:on-double-click (fn [] (on-card-double-clicked local-db))}
-            [:div.card-meta-parent
-             [:div.card-meta
-              (when transcluded
-                [:span {:class [:material-symbols-sharp :clickable]
-                        :on-click (fn [e] (on-transclude-link-clicked db e transcluded))} "step_over"])
-              [:span.toggle-container {:on-click (fn [e] (toggle-local-expanded-state! local-db e))}
-               (if (collapsed? local-db)
-                 [:span {:class [:material-symbols-sharp :clickable]} "unfold_more"]
-                 [:span {:class [:material-symbols-sharp :clickable]} "unfold_less"])]]]
-            [:div.card
-             {:on-click     (fn [e] (on-link-clicked db e false))
-              :on-aux-click (fn [e] (on-link-clicked db e true))}
-             [:div.card-parent {:class (when (collapsed? local-db) :collapsed)}
-              [:div.card-child.container
-               component]
-              [:div.card-child.overlay {:style {:display (->display (collapsed? local-db))}}]]]
-            [card-gutter db card]]
-           [single-editor db rx-theme local-db !editor-element])])})))
+        (let [editable? (:editable? @local-db)
+              transcluded-data (cards/->transcluded-data card)
+              card-shell-attributes (cond-> {:ref (fn [element] (reset! !root-element element))
+                                             :class []}
+                                      transcluded-data (update :class conj "transcluded")
+                                      editable? (update :class conj "editable"))]
+          [:div.card-shell card-shell-attributes
+           (if (viewing? local-db)
+             [:article.card-outer {:on-double-click (fn [] (on-card-double-clicked local-db))}
+              [:div.card-meta-parent
+               [:div.card-meta
+                (when transcluded-data
+                  [:span {:class [:material-symbols-sharp :clickable]
+                          :on-click (fn [e] (on-transclude-link-clicked db e transcluded-data))} "step_over"])
+                [:span.toggle-container {:on-click (fn [e] (toggle-local-expanded-state! local-db e))}
+                 (if (collapsed? local-db)
+                   [:span {:class [:material-symbols-sharp :clickable]} "unfold_more"]
+                   [:span {:class [:material-symbols-sharp :clickable]} "unfold_less"])]]]
+              [:div.card
+               {:on-click     (fn [e] (on-link-clicked db e false))
+                :on-aux-click (fn [e] (on-link-clicked db e true))}
+               [:div.card-parent {:class (when (collapsed? local-db) :collapsed)}
+                [:div.card-child.container
+                 component]
+                [:div.card-child.overlay {:style {:display (->display (collapsed? local-db))}}]]]
+              [card-gutter db card]]
+             [single-editor db rx-theme local-db !editor-element])]))})))
