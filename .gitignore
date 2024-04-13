@@ -14,3 +14,5 @@ out
 resources/public/js
 resources/out
 target
+
+report.html

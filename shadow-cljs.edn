@@ -5,7 +5,10 @@
            :modules    {:main {:entries [clj-ts.client]
                                :init-fn clj-ts.client/init}}
            :devtools   {:preloads  [devtools.preload]
-                        :watch-dir "resources/public"}}
+                        :watch-dir "resources/public"}
+           :build-hooks
+           [(shadow.cljs.build-report/hook
+             {:output-to "report.html"})]}
 
           :tests {:target    :node-test
                   :output-to "out/node-tests.js"}}}
