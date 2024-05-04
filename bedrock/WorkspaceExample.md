@@ -10,22 +10,18 @@ Note that the output of the code is expected to be either:
 
 {:card/type :workspace
  :eval-on-load true
- :layout :vertical
- :workspace/title "Graphing Example"}
+ :layout :horizontal
+ :workspace/title "Graphing Example w/ Stats"}
 
 ;; Write some code
-(let [data (->> (range 10)
-                (map-indexed (fn [x i] {:x x :y i}))
-                (reduce (fn [acc {:keys [x y]}]
-                          (-> acc
-                              (update :x conj x)
-                              (update :y conj y)))
-                        {:x []
-                         :y []
-                         :type "scatter"})
-                (vector))]
+(let [data (->> (range -100 100)
+                (map  (fn [x] [x (* x x x)]))
+                (stats/xy-pairs->map {:type "scatter" :name "data"}))
+      {xs :x ys :y} data
+      lin-reg (->> (stats/linear-regression xs ys)
+                   (stats/xy-pairs->map {:type "scatter" :name "linear-regression"}))]
   [:div
-   [view/graph data]])
+   [view/graph [data lin-reg] nil]])
 
 ----
 
@@ -67,6 +63,8 @@ In addition to the default SCI execution environment, the following functions ar
 * `parse-boolean` - exposes cljs.core/parse-boolean to the execution environment
 * `parse-double` - exposes cljs.core/parse-double to the execution environment
 * `parse-long` - exposes cljs.core/parse-long to the execution environment
+* `stats/linear-regression` - given a sequence of x point values and a sequence of y point values, computes the linear-regression; the result has the shape: `[[x1 y1] [x2 y2] ...]`
+* `stats/xy-pairs->map` - given a sequence of x,y vectors (i.e. [x y]), returns a map: {:x [x1 x2 ... xn] :y [y1 y2 ... yn]}; a 2-arity version is available, with the first argument as a 'seed' map and second argument as a sequence of x,y vectors
 * `util/pad2` - stringifies the argument and pads the string to 2 places with '0'
 * `util/pad3` - stringifies the argument and pads the string to 3 places with '0'
 * `util/pad4` - stringifies the argument and pads the string to 4 places with '0'

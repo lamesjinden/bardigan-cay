@@ -10,6 +10,7 @@
             [clj-ts.ace :as ace]
             [clj-ts.card :as cards]
             [clj-ts.keyboard :as keyboard]
+            [clj-ts.stats :as stats]
             [clj-ts.theme :as theme]
             [clj-ts.view :refer [->display]]
             [clj-ts.views.graph :as graph]
@@ -71,7 +72,10 @@
         sci-math-ns (update-vals math-publics #(sci/copy-var* % math-ns))
         combo-ns (sci/create-ns 'clojure.math.combinatorics)
         combo-publics (ns-publics 'clojure.math.combinatorics)
-        sci-combo-ns (update-vals combo-publics #(sci/copy-var* % combo-ns))]
+        sci-combo-ns (update-vals combo-publics #(sci/copy-var* % combo-ns))
+        stats-ns (sci/create-ns 'stats)
+        stats-publics (ns-publics 'clj-ts.stats)
+        sci-stats-ns (update-vals stats-publics #(sci/copy-var* % stats-ns))]
     {:classes    {'js js/globalThis :allow :all}
      :js-libs {"date-fns" date-fns}
      :namespaces {'clojure.core {'println println
@@ -81,6 +85,7 @@
                                  'parse-boolean parse-boolean}
                   'math sci-math-ns
                   'combo sci-combo-ns
+                  'stats sci-stats-ns
                   'util     {'pad2 pad2
                              'pad3 pad3
                              'pad4 pad4
