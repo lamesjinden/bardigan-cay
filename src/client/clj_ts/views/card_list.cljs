@@ -4,9 +4,10 @@
             [clj-ts.view :as view]
             [clj-ts.views.inner-html-card :refer [inner-html]]
             [clj-ts.views.card-shell :refer [card-shell]]
-            [clj-ts.views.graph :refer [graph-card]]
-            [clj-ts.views.todo-card :refer [todo]]
-            [clj-ts.views.workspace-card :refer [workspace]]))
+            [clj-ts.views.lazy-graph :refer [suspended-graph-card-component]]
+            [clj-ts.views.lazy-workspace-card :refer [suspended-workspace-component]]
+            [clj-ts.views.manual-copy-card :refer [manual-copy]]
+            [clj-ts.views.todo-card :refer [todo]]))
 
 (defn error-boundary
   [& _children]
@@ -31,10 +32,7 @@
                           [inner-html (view/card->html card)]
 
                           "manual-copy"
-                          [inner-html
-                           (str "<div class='manual-copy'>"
-                                (view/card->html card)
-                                "</div>")]
+                          [manual-copy card]
 
                           "raw"
                           [inner-html (str "<pre>" data "</pre>")]
@@ -43,13 +41,13 @@
                           [inner-html (str "<code>" data "</code>")]
 
                           "workspace"
-                          [workspace db card]
+                          (suspended-workspace-component {:db db :card card})
 
                           "todo"
                           [todo db card]
 
                           "graph"
-                          [graph-card db card]
+                          (suspended-graph-card-component {:db db :card card})
 
                           "html"
                           [inner-html data]

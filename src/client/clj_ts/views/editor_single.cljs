@@ -72,3 +72,6 @@
                                                         :on-key-down (fn [e] (single-editor-on-key-down db parent-db local-db e))
                                                         :on-key-up   (fn [e] (single-editor-on-key-up parent-db e))}
                                   (get-in @parent-db [:card "source_data"])]])})))
+
+(defn single-editor-component [{:keys [db dbTheme parentDb editorElement] :as _args}]
+  (single-editor db dbTheme parentDb editorElement))

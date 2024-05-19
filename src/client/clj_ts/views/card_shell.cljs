@@ -8,7 +8,7 @@
             [clj-ts.navigation :as nav]
             [clj-ts.view :refer [->display]]
             [clj-ts.views.card-gutter :refer [card-gutter]]
-            [clj-ts.views.editor-single :refer [single-editor]]))
+            [clj-ts.views.lazy-editor-single :refer [suspended-editor-component]]))
 
 (def expanded-states #{:expanded :collapsed})
 
@@ -113,4 +113,4 @@
                  component]
                 [:div.card-child.overlay {:style {:display (->display (collapsed? local-db))}}]]]
               [card-gutter db card]]
-             [single-editor db rx-theme local-db !editor-element])]))})))
+             (suspended-editor-component db rx-theme local-db !editor-element))]))})))

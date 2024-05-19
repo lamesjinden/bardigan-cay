@@ -57,6 +57,8 @@
   --progress-bar-completed-animation-duration: 200ms;
   --progress-bar-failed-animation-duration: 500ms;
   --blockquote-inset-color: var(--primary-accent-color);
+  --muted: 240 4.8% 95.9%;
+  --radius: 0.5rem;
 }
 
 .theme-dark {
@@ -79,6 +81,7 @@
   --input-background-color: var(--secondary-background-color);
   --input-border-color: var(--off-primary-color);
   --progress-bar-background-color: #0078d7;
+  --muted: 240 3.7% 15.9%;
 }
 
 /* #endregion */
@@ -255,6 +258,36 @@ div textarea {
 /* #endregion */
 
 /* #region utility */
+
+@keyframes pulse {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0.2;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 1s linear infinite alternate;
+}
+
+.rounded-md {
+  border-radius: calc(var(--radius) - 2px);
+}
+
+.bg-muted {
+  background-color: hsl(var(--muted));
+}
+
+.skeleton-root {
+  display: flex;
+  flex-direction: column;
+  height: 5em;
+  padding: 8px;
+  width: 100%;
+}
 
 /* todo - shared by card_list and card_shell; code smell? */
 .card {

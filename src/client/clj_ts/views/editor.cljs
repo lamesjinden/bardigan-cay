@@ -83,3 +83,6 @@
                                         :on-key-down (fn [e] (editor-on-key-down db e))
                                         :on-key-up   (fn [e] (editor-on-key-up db e))}
                                        @db-raw]])})))
+
+(defn editor-component [{:keys [db dbRaw] :as _args}]
+  (editor db dbRaw))

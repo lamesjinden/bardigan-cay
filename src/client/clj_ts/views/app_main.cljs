@@ -1,7 +1,7 @@
 (ns clj-ts.views.app-main
   (:require [reagent.core :as r]
-            [clj-ts.views.editor :refer [editor]]
             [clj-ts.views.card-list :refer [card-list]]
+            [clj-ts.views.lazy-editor :refer [suspended-editor-component]]
             [clj-ts.views.transcript :refer [transcript]]
             [clj-ts.networks :refer [network-canvas]]))
 
@@ -15,7 +15,7 @@
      (condp = mode
 
        :editing
-       [editor db rx-raw]
+       (suspended-editor-component {:db db :db-raw rx-raw})
 
        :viewing
        [card-list db rx-cards rx-system-cards]

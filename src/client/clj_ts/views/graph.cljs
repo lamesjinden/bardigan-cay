@@ -31,3 +31,6 @@
         data (or (:data card-configuration) [])
         layout (or (:layout card-configuration) {})]
     [graph data layout]))
+
+(defn graph-card-component [{:keys [db card] :as _args}]
+  (graph-card db (js->clj card)))

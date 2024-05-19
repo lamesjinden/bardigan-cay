@@ -2,8 +2,18 @@
  :builds {:app
           {:target     :browser
            :output-dir "resources/public/js"
-           :modules    {:main {:entries [clj-ts.client]
-                               :init-fn clj-ts.client/init}}
+           :module-loader true
+           :modules    {:main {:init-fn clj-ts.client/init}
+                        :graph {:entries [clj-ts.views.graph]
+                                :depends-on #{:main}}
+                        :ace {:entries [clj-ts.ace]
+                              :depends-on #{:main}}
+                        :editor {:entries [clj-ts.views.editor]
+                                 :depends-on #{:main :ace}}
+                        :single-editor {:entries [clj-ts.views.editor-single]
+                                        :depends-on #{:main :ace}}
+                        :workspace {:entries [clj-ts.views.workspace-card]
+                                    :depends-on #{:main :graph :ace}}}
            :devtools   {:preloads  [devtools.preload]
                         :watch-dir "resources/public"}
            :build-hooks
