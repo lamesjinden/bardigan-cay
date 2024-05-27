@@ -66,9 +66,18 @@
 
 (def index-local-path "public/index.html")
 
+(def ^:private index-html-content (atom nil))
+
+(defn get-index-content []
+  (if-let [content @index-html-content]
+    content
+    (let [content (slurp (io/resource index-local-path))]
+      (reset! index-html-content content)
+      @index-html-content)))
+
 (defn render-page-config
-  ([card-server subject-file page-name]
-   (let [file-content (slurp (io/resource subject-file))]
+  ([card-server subject-file-content page-name]
+   (let [file-content subject-file-content]
      (if page-name
        (let [server-snapshot @card-server
              page-config (get-page-data server-snapshot {:page_name page-name})
@@ -86,8 +95,9 @@
        file-content))))
 
 (defn handle-root-request [{:keys [card-server] :as _request}]
-  (let [server-snapshot @card-server]
-    (-> (render-page-config card-server index-local-path (.start-page server-snapshot))
+  (let [server-snapshot @card-server
+        index-content (get-index-content)]
+    (-> (render-page-config card-server index-content (.start-page server-snapshot))
         (util/->html-response))))
 
 (defn handle-api-init [{:keys [card-server] :as _request}]
@@ -129,7 +139,7 @@
         page-name (codec/url-decode (get match 1))
         server-snapshot @card-server]
     (if (clj-ts.card-server/page-exists? server-snapshot page-name)
-      (-> (render-page-config card-server index-local-path page-name)
+      (-> (render-page-config card-server (get-index-content) page-name)
           (util/->html-response))
       (-> (resp/not-found (str "Page not found " page-name))
           (resp/content-type "text")))))

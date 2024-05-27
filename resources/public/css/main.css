@@ -5,6 +5,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
+  /* note: the following line is MATCHED and replaced during release builds */
   src: local("Roboto"), url("/css/vendor/roboto/Roboto-Regular.ttf");
 }
 
@@ -17,6 +18,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
+  /* note: the following line is MATCHED and replaced during release builds */
   src: url("/css/vendor/material-symbols/material-symbols-sharp.woff2")
     format("woff2");
 }
@@ -138,7 +140,7 @@ html {
 }
 
 body {
-  font-family: Roboto;
+  font-family: Roboto, Noto, sans-serif;
   font-size: 1.6rem;
   margin: auto;
   overflow-wrap: break-word;
