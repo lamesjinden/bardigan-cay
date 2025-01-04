@@ -14,7 +14,8 @@
             [clj-ts.theme :as theme]
             [clj-ts.view :refer [->display]]
             [clj-ts.views.graph :refer [graph]]
-            ["date-fns" :as date-fns]))
+            ["date-fns" :as date-fns])
+  (:import [goog.net XhrIo]))
 
 ;; region eval/rewrite
 
@@ -61,6 +62,25 @@
 (defn set-display-none [element] (set-display element "none"))
 (defn set-display-block [element] (set-display element "block"))
 
+(defn http-send [{:keys [url callback method body headers timeout with-credentials?]
+                  :or {body nil
+                       headers #js {}
+                       timeout 0
+                       with-credentials? false}}]
+  (.send XhrIo url callback method body (clj->js headers) timeout with-credentials?))
+
+(defn http-get [request]
+  (http-send (merge request {:method "GET"
+                             :body nil})))
+
+(defn http-post [request body]
+  (http-send (merge request {:method "POST"
+                             :body (clj->js body)})))
+
+(defn http-put [request body]
+  (http-send (merge request {:method "PUT"
+                             :body (clj->js body)})))
+
 (defn bind-ratom [ratom]
   (fn [event]
     (let [value (-> event .-target .-value)]
@@ -82,7 +102,12 @@
                                  'prn prn
                                  'parse-long parse-long
                                  'parse-double parse-double
-                                 'parse-boolean parse-boolean}
+                                 'parse-boolean parse-boolean
+                                 'clj->js clj->js
+                                 'js->clj js->clj}
+                  'http {'get http-get
+                         'post http-post
+                         'put http-put}
                   'math sci-math-ns
                   'combo sci-combo-ns
                   'stats sci-stats-ns
