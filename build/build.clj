@@ -14,7 +14,7 @@
           artifact-name
           version
           (.format (LocalDateTime/now)
-                   (DateTimeFormatter/ofPattern "yyyy-MM-dd"))))
+                   (DateTimeFormatter/ofPattern "yyyy-MM-dd-HH-mm-ss"))))
 
 (defn uber [_]
   (b/copy-dir {:src-dirs   ["src" "resources"]

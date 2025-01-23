@@ -36,12 +36,34 @@
                                (println "Compiling Clojure")
                                (clojure "-T:uberjar uber"))
 
+         export {:requires ([babashka.fs :as fs]
+                            [babashka.process :as p])
+                 :task (let [export-destination (fs/path "/media/sf_Share/artifacts/packages/bardigan-cay")]
+                    ;; copy to Share
+                         (let [bb-dir (fs/parent (System/getProperty "babashka.config"))
+                               target-dir (fs/path bb-dir "target")
+                               latest-jar (->> (fs/glob target-dir "clj-ts*.jar")
+                                               (sort-by fs/creation-time)
+                                               (last))]
+                           (fs/create-dirs export-destination)
+                           (fs/copy latest-jar export-destination {:replace-existing true}))
+
+                  ;; prune artifacts
+                         (let [retain-count 5
+                               prunable-jars (->> (fs/glob export-destination "**/clj-ts*.jar" {:follow-links true})
+                                                  (map fs/parent)
+                                                  (sort-by fs/creation-time)
+                                                  (drop-last retain-count))]
+                           (doseq [prunable-jar prunable-jars]
+                             (fs/delete-if-exists prunable-jar))))}
+
          all                 (do
                                (run 'test)
                                (run 'clean-client)
                                (run 'build-client)
                                (run 'clean-server)
-                               (run 'build-server))
+                               (run 'build-server)
+                               (run 'export))
 
          run-dev-client      (shell "npx shadow-cljs watch app")
          run-dev-client-repl (run 'run-dev-client)          ;; shadow provides nrepl

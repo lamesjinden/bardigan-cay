@@ -75,11 +75,15 @@
 
 (defn http-post [request body]
   (http-send (merge request {:method "POST"
-                             :body (clj->js body)})))
+                             :body body})))
 
 (defn http-put [request body]
   (http-send (merge request {:method "PUT"
-                             :body (clj->js body)})))
+                             :body body})))
+
+(defn http-delete [request body]
+  (http-send (merge request {:method "DELETE"
+                             :body body})))
 
 (defn bind-ratom [ratom]
   (fn [event]
@@ -100,6 +104,7 @@
      :js-libs {"date-fns" date-fns}
      :namespaces {'clojure.core {'println println
                                  'prn prn
+                                 'pprint pprint
                                  'parse-long parse-long
                                  'parse-double parse-double
                                  'parse-boolean parse-boolean
@@ -107,7 +112,8 @@
                                  'js->clj js->clj}
                   'http {'get http-get
                          'post http-post
-                         'put http-put}
+                         'put http-put
+                         'delete http-delete}
                   'math sci-math-ns
                   'combo sci-combo-ns
                   'stats sci-stats-ns
