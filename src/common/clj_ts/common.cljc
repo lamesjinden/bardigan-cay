@@ -3,13 +3,13 @@
 
 ;; region Rendering / special Markup
 
-;; note - auto-links _probably_ never has an effect
 (defn auto-links [text]
-  (string/replace text #"(http(s)?\\/\\/(\S+))"
-                  (str "<a href=\"$1\">$1</a>")))
+  (let [url-pattern #?(:clj #"((https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([a-zA-Z0-9\.-\/]*)*\/?)"
+                       :cljs #"(http(s)?\\/\\/(\S+))")]
+    (string/replace text url-pattern (str "<a href=\"$1\">$1</a>"))))
 
-(def double-link-pattern #"\[\[(.+?)\]\]")
-(def double-link-pattern-ext #"\[\[(.+?)\|(.+?)\]\]")
+(def double-link-pattern #"\[\[([\w\s]+?)\]\]")
+(def double-link-pattern-ext  #"\[\[([\w\s]+?)\|([\w\s]+?)\]\]")
 
 (defn double-bracket-links [text]
   (-> text

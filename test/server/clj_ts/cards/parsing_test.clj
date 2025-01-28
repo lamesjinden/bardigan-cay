@@ -1,5 +1,8 @@
 (ns clj-ts.cards.parsing-test
-  (:require [clojure.test :refer [deftest is]]
+  (:require [clj-ts.common]
+            [clj-ts.render]
+            [clojure.string :as s]
+            [clojure.test :refer [deftest is]]
             [clj-ts.cards.parsing :as parsing]))
 
 (deftest partition-raw-card-text_simple-card-text
@@ -86,3 +89,19 @@
     (is (= (boolean source_type_implicit?) false))
     (is (.contains source_data "{:card/type :workspace\n:eval-on-load false\n:code-visibility true\n:result-visibility true\n:layout :horizontal}"))
     (is (.contains source_data "[:div (str \"Hello Teenage America\")]"))))
+
+(deftest auto-links-test
+  (let [example-md-string "### A Heading
+                           
+                           a string referencing https://google.com should become a link
+                           "
+        rendered (clj-ts.common/auto-links example-md-string)
+        expected "<a href=\"https://google.com\">https://google.com</a>"]
+    (is (s/includes? rendered expected))))
+
+(deftest double-bracket-links-test
+  (let [example-md-string
+        "<ul><li>a broken link [[orphan]]</li><li>a link to [[test02|test with a alt title]]</li></ul>"
+        rendered (clj-ts.common/double-bracket-links example-md-string)]
+    (is (s/includes? rendered "<a class='wikilink' data='orphan' href='/pages/orphan'>orphan</a>"))
+    (is (s/includes? rendered "<a class='wikilink' data='test02' href='/pages/test02'>test with a alt title</a>"))))
