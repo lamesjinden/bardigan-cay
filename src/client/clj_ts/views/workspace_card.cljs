@@ -104,7 +104,9 @@
      :js-libs {"date-fns" date-fns}
      :namespaces {'clojure.core {'println println
                                  'prn prn
+                                 'pr-str pr-str
                                  'pprint pprint
+                                 'pprint-str (fn [object] (with-out-str (pprint object)))
                                  'parse-long parse-long
                                  'parse-double parse-double
                                  'parse-boolean parse-boolean
@@ -203,12 +205,14 @@
     (.setValue editor formatted)))
 
 (defn- on-save-clicked [db state]
+  (format-workspace state)
   (let [card (-> @state :card)
         new-body (-> @state :editor (.getValue))]
     (cards/replace-async! db card new-body)))
 
 (defn- workspace-editor-on-key-s-press [db local-db e]
   (.preventDefault e)
+  (format-workspace local-db)
   (let [card (-> @local-db :card)
         new-body (->> @local-db :editor (.getValue))]
     (cards/replace-async! db card new-body)))
