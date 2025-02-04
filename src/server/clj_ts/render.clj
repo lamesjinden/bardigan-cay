@@ -15,7 +15,7 @@
   (-> markdown-str
       (common/double-comma-table)
       (md/md-to-html-string)
-      (common/auto-links)
+      #_(common/auto-links)
       (common/double-bracket-links)))
 
 (defn missing-page [page-name]

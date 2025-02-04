@@ -9,7 +9,7 @@
   (-> s
       (double-comma-table)
       (md/md->html)
-      (auto-links)
+      #_(auto-links)
       (double-bracket-links)))
 
 (defn card->html [card]
