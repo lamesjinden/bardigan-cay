@@ -1,22 +1,24 @@
 (ns clj-ts.cards.packaging
-  (:require [clj-ts.cards.parsing :as parsing]
-            [clj-ts.cards.packaging.bookmark :as bookmark]
-            [clj-ts.cards.packaging.code :as code]
-            [clj-ts.cards.packaging.embed :as embed]
-            [clj-ts.cards.packaging.evalraw :as evalraw]
-            [clj-ts.cards.packaging.evalmd :as evalmd]
-            [clj-ts.cards.packaging.filelink :as filelink]
-            [clj-ts.cards.packaging.graph :as graph]
-            [clj-ts.cards.packaging.markdown :as markdown]
-            [clj-ts.cards.packaging.manual-copy :as manual-copy]
-            [clj-ts.cards.packaging.network :as network]
-            [clj-ts.cards.packaging.patterning :as patterning]
-            [clj-ts.cards.packaging.raw :as raw]
-            [clj-ts.cards.packaging.system :as system]
-            [clj-ts.cards.packaging.todo :as todo]
-            [clj-ts.cards.packaging.workspace :as workspace]
-            [clj-ts.render :as render]
-            [clj-ts.util :as util]))
+  (:require
+   [clj-ts.cards.packaging.bookmark :as bookmark]
+   [clj-ts.cards.packaging.code :as code]
+   [clj-ts.cards.packaging.embed :as embed]
+   [clj-ts.cards.packaging.evalmd :as evalmd]
+   [clj-ts.cards.packaging.evalraw :as evalraw]
+   [clj-ts.cards.packaging.filelink :as filelink]
+   [clj-ts.cards.packaging.graph :as graph]
+   [clj-ts.cards.packaging.manual-copy :as manual-copy]
+   [clj-ts.cards.packaging.markdown :as markdown]
+   [clj-ts.cards.packaging.network :as network]
+   [clj-ts.cards.packaging.patterning :as patterning]
+   [clj-ts.cards.packaging.raw :as raw]
+   [clj-ts.cards.packaging.scheduling :as scheduling]
+   [clj-ts.cards.packaging.system :as system]
+   [clj-ts.cards.packaging.todo :as todo]
+   [clj-ts.cards.packaging.workspace :as workspace]
+   [clj-ts.cards.parsing :as parsing]
+   [clj-ts.render :as render]
+   [clj-ts.util :as util]))
 
 ;; Card Processing
 
@@ -30,8 +32,7 @@
 
 ;; todo - Q: why does process-card-map return a vector of 1 element?
 ;;        A: b/c transclude (used to return) a header card and the subject card, and the array unifies the result type
-(defn process-card-map
-  [server-snapshot id {:keys [source_type source_data] :as card-map} render-context]
+(defn process-card-map [server-snapshot id {:keys [source_type source_data] :as card-map} render-context]
   (try
     [(condp = source_type
 
@@ -79,6 +80,9 @@
 
        :embed
        (embed/package id card-map render-context server-snapshot)
+
+       :deadline
+       (scheduling/package-deadline id card-map render-context server-snapshot)
 
        ;; not recognized
        (util/package-card id source_type source_type source_data source_data render-context))]

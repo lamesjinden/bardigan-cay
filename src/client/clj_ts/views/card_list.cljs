@@ -4,6 +4,7 @@
             [clj-ts.view :as view]
             [clj-ts.views.inner-html-card :refer [inner-html]]
             [clj-ts.views.card-shell :refer [card-shell]]
+            [clj-ts.views.deadline-card :refer [deadline]]
             [clj-ts.views.lazy-graph :refer [suspended-graph-card-component]]
             [clj-ts.views.lazy-workspace-card :refer [suspended-workspace-component]]
             [clj-ts.views.manual-copy-card :refer [manual-copy]]
@@ -45,6 +46,9 @@
 
                           "todo"
                           [todo db card]
+
+                          "deadline"
+                          [deadline db card]
 
                           "graph"
                           (suspended-graph-card-component {:db db :card card})

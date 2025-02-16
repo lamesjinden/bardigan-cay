@@ -7,7 +7,9 @@
   (:import (java.io PrintWriter PushbackReader StringWriter)
            (java.nio.file Path)
            (java.util.regex Pattern)
-           (java.util.zip ZipEntry ZipOutputStream)))
+           (java.util.zip ZipEntry ZipOutputStream)
+           (java.time LocalDate LocalDateTime ZonedDateTime)
+           (java.time.format DateTimeFormatter)))
 
 ;; Helpful for print debugging ... diffs two strings
 (defn replace-whitespace [char]
@@ -128,3 +130,39 @@
       (char-array)
       (io/reader)
       (PushbackReader.)))
+
+(def iso-formatter DateTimeFormatter/ISO_DATE_TIME)
+
+(def date-formatters
+  [(DateTimeFormatter/ofPattern "yyyy/M/d")
+   (DateTimeFormatter/ofPattern "M/d/yyyy")
+   (DateTimeFormatter/ofPattern "yyyy-M-d")
+   (DateTimeFormatter/ofPattern "M-d-yyyy")])
+
+(defn try-parse-datetime [s]
+  (if-let [parsed (try
+                    (ZonedDateTime/parse s iso-formatter)
+                    (catch Exception _
+                      nil))]
+    parsed
+    (if-let [parsed (try
+                      (LocalDateTime/parse s iso-formatter)
+                      (catch Exception _
+                        nil))]
+      parsed
+      nil)))
+
+(defn try-parse-date [s]
+  (try
+    (some #(try
+             (LocalDate/parse s %)
+             (catch Exception _ nil)) date-formatters)
+    (catch Exception _
+      nil)))
+
+(defn parse-datetime [s]
+  (if-let [datetime (try-parse-datetime s)]
+    datetime
+    (if-let [date (try-parse-date s)]
+      date
+      nil)))
