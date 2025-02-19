@@ -17,7 +17,7 @@
     "shadow-cljs": "^2.26.0"
   },
   "dependencies": {
-    "ace-builds": "^1.31.2",
+    "ace-builds": "^1.38.0",
     "date-fns": "^3.0.6",
     "highlight.js": "^11.9.0",
     "material-symbols": "^0.17.1",
