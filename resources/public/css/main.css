@@ -76,6 +76,7 @@
   --paste-bar-padding: 5px;
   --card-border-radius: 5px;
   --card-min-height: 50px;
+  --card-outer-min-height: 90px;
   --card-box-shadow: 0 3px 10px rgb(0 0 0 / 0.2);
   --card-box-shadow-transcluded: 0 0 10px rgba(0, 120, 215, 0.3);
   --card-outer-padding: 5px;
@@ -103,8 +104,6 @@
   --blockquote-inset-color: var(--primary-accent-color);
   --muted: 240 4.8% 95.9%;
   --radius: 0.5rem;
-
-  --card-min-height: 90px;
 }
 
 .theme-dark {
@@ -561,7 +560,7 @@ ul.system-card-list {
   border-radius: var(--card-border-radius);
   padding: 0 var(--card-outer-padding);
   background-color: var(--primary-background-color);
-  min-height: var(--card-min-height);
+  min-height: var(--card-outer-min-height);
 }
 
 .card-meta-parent {
@@ -628,7 +627,7 @@ ul.system-card-list {
   border-bottom-style: solid;
   border-bottom-width: calc(var(--big-btn-margin) + var(--paste-bar-padding));
   margin: 0;
-  min-height: var(--card-min-height);
+  min-height: var(--card-outer-min-height);
   padding: 0;
 }
 
@@ -655,7 +654,7 @@ ul.system-card-list {
   border-bottom-style: solid;
   border-bottom-width: calc(var(--big-btn-margin) + var(--paste-bar-padding));
   margin: 0;
-  min-height: var(--card-min-height);
+  min-height: var(--card-outer-min-height);
   padding: 0;
 }
 
