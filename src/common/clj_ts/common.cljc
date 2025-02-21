@@ -8,8 +8,8 @@
                        :cljs #"(http(s)?:\\/\\/(\S+))")]
     (string/replace text url-pattern (str "<a href=\"$1\">$1</a>"))))
 
-(def double-link-pattern #"\[\[([\w\s]+?)\]\]")
-(def double-link-pattern-ext  #"\[\[([\w\s]+?)\|([\w\s\-:]+?)\]\]")
+(def double-link-pattern #"\[\[([\w\s-:]+?)\]\]")
+(def double-link-pattern-ext  #"\[\[([\w\s-:]+?)\|([\w\s\-:]+?)\]\]")
 
 (defn double-bracket-links [text]
   (-> text
