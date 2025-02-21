@@ -627,7 +627,7 @@ ul.system-card-list {
   border-bottom-style: solid;
   border-bottom-width: calc(var(--big-btn-margin) + var(--paste-bar-padding));
   margin: 0;
-  min-height: var(--card-outer-min-height);
+  min-height: var(--card-min-height);
   padding: 0;
 }
 
@@ -654,7 +654,7 @@ ul.system-card-list {
   border-bottom-style: solid;
   border-bottom-width: calc(var(--big-btn-margin) + var(--paste-bar-padding));
   margin: 0;
-  min-height: var(--card-outer-min-height);
+  min-height: var(--card-min-height);
   padding: 0;
 }
 
