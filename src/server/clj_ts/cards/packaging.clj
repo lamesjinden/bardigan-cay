@@ -64,7 +64,7 @@
        (patterning/package id source_data render-context)
 
        :filelink
-       (filelink/package id source_data render-context)
+       (filelink/package id card-map render-context)
 
        :network
        (network/package id card-map render-context)
