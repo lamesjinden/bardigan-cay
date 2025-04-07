@@ -1,10 +1,10 @@
 (ns dev-server
   (:require
-    [clojure.pprint]
-    [ring.middleware.reload :as reload]
-    [ring.middleware.cors :as cors]
-    [clj-ts.server :as server]
-    [clj-ts.app :as app]))
+   [clojure.pprint]
+   [ring.middleware.reload :as reload]
+   [ring.middleware.cors :as cors]
+   [clj-ts.server :as server]
+   [clj-ts.app :as app]))
 
 (set! *warn-on-reflection* true)
 
@@ -45,12 +45,12 @@
 (comment
 
   (create-server
-    "--directory" "../../Documents/wiki/bedrock/"
-    "--export-dir" "../../Documents/wiki/bedrock/exported/"
-    "-v")
+   "--directory" "../../Documents/wiki/bedrock/"
+   "--export-dir" "../../Documents/wiki/bedrock/exported/"
+   "--ip=0.0.0.0"
+   "-v")
 
   (stop-server)
 
   ;
   )
-
