@@ -1368,3 +1368,25 @@ header a {
 }
 
 /* #endregion */
+
+/* #region deadline */
+
+.deadlines-container .deadline {
+  align-items: center;
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+}
+
+.deadline.past-due .deadline-link {
+  color: red;
+}
+
+.deadline.due-now .deadline-link {
+  color: orange;
+}
+.deadline.due-soon .deadline-link {
+  color: yellow;
+}
+
+/* #endregion */

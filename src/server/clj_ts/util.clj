@@ -8,7 +8,7 @@
            (java.nio.file Path)
            (java.util.regex Pattern)
            (java.util.zip ZipEntry ZipOutputStream)
-           (java.time LocalDate LocalDateTime ZonedDateTime)
+           (java.time LocalDate LocalDateTime ZonedDateTime ZoneId)
            (java.time.format DateTimeFormatter)))
 
 ;; Helpful for print debugging ... diffs two strings
@@ -166,3 +166,25 @@
     (if-let [date (try-parse-date s)]
       date
       nil)))
+
+(defn datetime->iso-time [datetime]
+  (when datetime
+    (cond
+      ;; For ZonedDateTime, convert to Instant and format using ISO_INSTANT
+      (instance? java.time.ZonedDateTime datetime)
+      (.format datetime DateTimeFormatter/ISO_INSTANT)
+
+      ;; For LocalDateTime, we need a zone to convert to Instant, so use a standard format
+      (instance? java.time.LocalDateTime datetime)
+      (let [zoned-datetime (.atZone datetime (ZoneId/of "UTC"))]
+        (.format zoned-datetime DateTimeFormatter/ISO_INSTANT))
+
+      ;; For LocalDate, format as ISO 8601 date only
+      (instance? java.time.LocalDate datetime)
+      (let [zoned-datetime (-> datetime
+                               (.atStartOfDay)
+                               (.atZone (ZoneId/of "UTC")))]
+        (.format zoned-datetime DateTimeFormatter/ISO_INSTANT))
+
+      ;; Default case - return nil for unsupported types
+      :else nil)))

@@ -1,6 +1,5 @@
 (ns clj-ts.cards.packaging.scheduling
   (:require [clojure.string :as s]
-            [clj-ts.render :as render]
             [clj-ts.storage.page-store :as pagestore]
             [clj-ts.util :as util]))
 
@@ -22,43 +21,26 @@
                           (some (fn [pattern] (re-find pattern token))))]
       (util/parse-datetime found))))
 
-(defn- strip-pre-formatting [pre]
-  (let [strip-leading-bullets (fn [s]
-                                (if-some [match (re-matches #"^\s*[\*\+\-]\s+(.+)$" s)]
-                                  (get match 1)
-                                  s))
-        strip-leading-numerals (fn [s]
-                                 (if-some [match (re-matches #"^\s*\d+\.\s+(.+)$" s)]
-                                   (get match 1)
-                                   s))]
-    (->> [strip-leading-bullets strip-leading-numerals]
-         (reduce (fn [acc f]
-                   (f acc))
-                 pre))))
+(defn- page->matches [server-snapshot page-name]
+  (let [page-text (pagestore/read-page server-snapshot page-name)]
+    (->> (s/split-lines page-text)
+         (keep (fn [line] (re-matches (re-pattern (str "^(.*?)(" deadline-pattern-str ")(.*?)$")) line)))
+         (map (fn [[_ _ _ post :as match]]
+                {:match match
+                 :source-page page-name
+                 :datetime (post-match->datetime post)})))))
 
 (defn package-deadline [id card-map render-context server-snapshot]
   (let [source-body (:source-body card-map)
-        server-prepared-data (let [page->matches (fn [page-name]
-                                                   (let [page-text (pagestore/read-page server-snapshot page-name)]
-                                                     (->> (s/split-lines page-text)
-                                                          (keep (fn [line] (re-matches (re-pattern (str "^(.*?)(" deadline-pattern-str ")(.*?)$"))  line)))
-                                                          (map (fn [[_ _ _ post :as match]] {:match match
-                                                                                             :source-page page-name
-                                                                                             :datetime (post-match->datetime post)})))))
-                                   hit->display (fn [{:keys [match source-page]}]
-                                                  (let [[_ pre _ post] match
-                                                        pre (strip-pre-formatting pre)]
-                                                    (format "%s[[%s|deadline:]]%s" pre source-page post)))
-                                   hits->source-data (fn [hits]
-                                                       (or (seq (map hit->display hits))
-                                                           ["_no deadlines_"]))
-                                   all-pages (-> server-snapshot :facts-db .all-pages)
+        server-prepared-data (let [all-pages (-> server-snapshot :facts-db .all-pages)
                                    pages (pagestore/text-search server-snapshot all-pages (re-pattern deadline-pattern-str))]
                                (->> pages
-                                    (map page->matches)
-                                    (flatten)
+                                    (map (partial page->matches server-snapshot))
+                                    (mapcat identity)
+                                    (map (fn [{:keys [match source-page datetime]}]
+                                           {:match match
+                                            :source-page source-page
+                                            :datetime (util/datetime->iso-time datetime)}))
                                     (sort-by :datetime)
-                                    (hits->source-data)
-                                    (s/join "\n</br>\n")
-                                    (render/md->html)))]
-    (util/package-card id :markdown :deadline source-body server-prepared-data render-context)))
+                                    (pr-str)))]
+    (util/package-card id :edn :deadline source-body server-prepared-data render-context)))
