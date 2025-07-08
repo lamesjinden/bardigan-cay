@@ -50,12 +50,14 @@
         (nav/<navigate! db name)
         (swap! local-db assoc :autocomplete-visible? false)))))
 
-(defn autocomplete-on-key-up-arrow [_db local-db _e]
+(defn autocomplete-on-key-up-arrow [_db local-db e]
+  (.preventDefault e)
   (when-let [selected-index (:selected-index @local-db)]
     (let [next-index (max (dec selected-index) 0)]
       (swap! local-db assoc :selected-index next-index))))
 
-(defn autocomplete-on-key-down-arrow [_db local-db _e]
+(defn autocomplete-on-key-down-arrow [_db local-db e]
+  (.preventDefault e)
   (when-let [selected-index (:selected-index @local-db)]
     (let [suggestions (:suggestions @local-db)
           next-index (min (inc selected-index) (dec (count suggestions)))]
