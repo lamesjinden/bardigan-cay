@@ -69,6 +69,18 @@
         out (search/search server-snapshot query-pattern-str query_string)]
     {:result_text out}))
 
+(defn resolve-autocomplete-search [server-snapshot _context arguments _value]
+  (let [{:keys [query_string]} arguments
+        query-pattern-str (util/string->pattern-string query_string)
+        db (-> server-snapshot :facts-db)
+        all-pages (.all-pages db)
+        name-matches (pagestore/name-search all-pages (re-pattern query-pattern-str))]
+    (->> name-matches
+         (take 10)
+         (map (fn [page-name]
+                {:name page-name
+                 :path page-name})))))
+
 (defn resolve-source-page
   [server-snapshot _context arguments _value]
   (let [{:keys [page_name]} arguments

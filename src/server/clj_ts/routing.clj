@@ -131,6 +131,13 @@
         (json/write-str)
         (util/->json-response))))
 
+(defn handle-api-search-autocomplete [{:keys [card-server] :as request}]
+  (let [{{query :q} :params} request
+        server-snapshot @card-server]
+    (-> (clj-ts.card-server/resolve-autocomplete-search server-snapshot nil {:query_string query} nil)
+        (json/write-str)
+        (util/->json-response))))
+
 (def pages-request-pattern #"/pages/(.+)")
 
 (defn handle-pages-request [{:keys [card-server] :as request}]
@@ -199,6 +206,7 @@
              :pages                  {:get handle-pages-request}
              :api-system-db          {:get handle-api-system-db}
              :api-search             {:get handle-api-search}
+             :api-search-autocomplete {:get handle-api-search-autocomplete}
              :api-save               {:post handle-api-save}
              :api-append             {:post handle-api-append}
              :api-move-card          {:post handle-api-move-card}
@@ -217,6 +225,7 @@
     (re-matches pages-request-pattern uri) :pages
     (= uri "/api/system/db") :api-system-db
     (= uri "/api/search") :api-search
+    (= uri "/api/search/autocomplete") :api-search-autocomplete
     (= uri "/api/save") :api-save
     (= uri "/api/append") :api-append
     (= uri "/api/movecard") :api-move-card
