@@ -6,7 +6,8 @@
             [clj-ts.events.rendering :as e-rendering]
             [clj-ts.http :as http]
             [clj-ts.navigation :as nav]
-            [clj-ts.view :as view]))
+            [clj-ts.view :as view]
+            [clj-ts.views.autocomplete-input :refer [autocomplete-input]]))
 
 (defn clip-hash [from-page card]
   (let [hash-or-id (cards/->hash-or-id card)]
@@ -45,43 +46,61 @@
         ;; request that the newly rendered parent component be scrolled into view
         (cards/scroll-card-into-view card page-name)))))
 
-(defn- toggle! [state]
-  (if (= (-> @state :toggle) "none")
-    (swap! state #(conj % {:toggle "block"}))
-    (swap! state #(conj % {:toggle "none"}))))
+(defn- toggle! [local-db]
+  (if (= (-> @local-db :toggle) "none")
+    (swap! local-db assoc :toggle "block")
+    (swap! local-db assoc :toggle "none")))
 
-(defn- clear-input! [input-value]
-  (reset! input-value nil))
+(defn- clear-input! [local-db]
+  (swap! local-db assoc :input-value nil))
 
-(defn- on-clear-clicked [^Atom input-value]
-  (clear-input! input-value))
+(defn- on-clear-clicked [local-db]
+  (clear-input! local-db))
 
-(defn- on-navigate-clicked [db input-value card]
-  (let [input-value (-> (or input-value "")
+(defn- on-navigate-clicked [db local-db card]
+  (let [input-value (-> (or (:input-value @local-db) "")
                         (str/trim))]
     (when (not (str/blank? input-value))
       (<card-send-to-page! db card input-value))))
 
-(defn send-elsewhere-input [db value card]
-  [:div.send-elsewhere-input-container
-   [:input.send-elsewhere-input {:type        "text"
-                                 :placeholder "Send to another page"
-                                 :value       @value
-                                 :on-change   (fn [e] (reset! value (-> e .-target .-value)))}]
+(defn- card-on-submit [card]
+  (fn [db _local-db _e input-value]
+    (<card-send-to-page! db card input-value)))
+
+(defn- card-on-clicked [card]
+  (fn [db _local-db _e name]
+    (<card-send-to-page! db card name)))
+
+(defn- card-on-key-up-enter [card]
+  (fn [db _local-db _e name]
+    (<card-send-to-page! db card name)))
+
+(defn send-elsewhere-input [db local-db card]
+  [:div.send-elsewhere-container
+   [autocomplete-input {:db db
+                        :local-db local-db
+                        :placeholder "Send to another page"
+                        :on-submit (card-on-submit card)
+                        :on-clicked (card-on-clicked card)
+                        :on-key-up-enter (card-on-key-up-enter card)
+                        :class-name "send-elsewhere-input"
+                        :container-class "send-elsewhere-input-container"}]
    [:div.send-elsewhere-input-actions
-    (when (not (nil? @value))
+    (when (not (nil? (:input-value @local-db)))
       [:button
-       {:on-click (fn [] (on-clear-clicked value))}
+       {:on-click (fn [] (on-clear-clicked local-db))}
        [:span {:class [:material-symbols-sharp :clickable]} "close"]])
-    (when (not (nil? @value))
+    (when (not (nil? (:input-value @local-db)))
       [:div.input-separator])
     [:button
-     {:on-click (fn [] (on-navigate-clicked db @value card))}
+     {:on-click (fn [] (on-navigate-clicked db local-db card))}
      [:span {:class [:material-symbols-sharp :clickable]} "navigate_next"]]]])
 
 (defn card-gutter [_db _card]
-  (let [state (r/atom {:toggle "none"})
-        input-value (r/atom nil)]
+  (let [local-db (r/atom {:toggle "none"
+                          :input-value nil
+                          :suggestions []
+                          :autocomplete-visible? false})]
     (fn [db card]
       [:div.card-gutter
        [:div.actions-container
@@ -91,11 +110,11 @@
         [:div {:class    [:material-symbols-sharp :clickable]
                :on-click (fn [] (<card-reorder! db card "down"))}
          "expand_more"]
-        [:span.expansion-toggle {:on-click (fn [] (toggle! state))}
-         (if (= (-> @state :toggle) "none")
+        [:span.expansion-toggle {:on-click (fn [] (toggle! local-db))}
+         (if (= (-> @local-db :toggle) "none")
            [:span {:class [:material-symbols-sharp :clickable]} "expand_circle_down"]
            [:span {:class [:material-symbols-sharp :clickable]} "expand_circle_up"])]]
-       (when-not (= "none" (:toggle @state))
+       (when-not (= "none" (:toggle @local-db))
          [:div.card-gutter-inner
           [:div.details-container
            [:div.details-pair
@@ -120,7 +139,7 @@
              [:button.big-btn.reorder-top-button {:class    [:material-symbols-sharp :clickable]
                                                   :on-click (fn [] (<card-reorder! db card "start"))}
               "low_priority"]
-             [send-elsewhere-input db input-value card]
+             [send-elsewhere-input db local-db card]
              [:button.big-btn.reorder-bottom-button {:class    [:material-symbols-sharp :clickable]
                                                      :on-click (fn [] (<card-reorder! db card "end"))}
               "low_priority"]])])])))
