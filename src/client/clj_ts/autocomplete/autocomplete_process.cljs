@@ -12,6 +12,14 @@
             (let [trimmed-query (str/trim (or query ""))]
               (>= (count trimmed-query) min-length)))))
 
+(defn sexp-filter-transducer
+  "Transducer that filters out queries that start with an opening parenthesis
+   Useful for ignoring incomplete S-expressions"
+  []
+  (filter (fn [query]
+            (let [trimmed-query (str/trim (or query ""))]
+              (not (str/starts-with? trimmed-query "("))))))
+
 (defn create-debounced-channel
   "Creates a debounced channel that only emits values after delay-ms of inactivity
    Returns a channel that should be used as the target for puts

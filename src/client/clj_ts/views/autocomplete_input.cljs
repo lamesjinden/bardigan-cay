@@ -40,7 +40,7 @@
 (defn- initialize-autocomplete-system! [local-db min-query-length debounce-ms]
   (let [raw-input$ (a/chan 1 (comp
                               (map (fn [term] (str/trim term)))
-                              (filter (fn [term] (not (str/blank? term))))
+                              (autocomplete/sexp-filter-transducer)
                               (autocomplete/distinct-until-changed-transducer)
                               (autocomplete/query-length-filter-transducer min-query-length)))
         debounced$ (autocomplete/create-debounced-channel raw-input$ debounce-ms)
