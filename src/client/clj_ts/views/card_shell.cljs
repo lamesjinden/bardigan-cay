@@ -4,7 +4,6 @@
             [clj-ts.card :as cards]
             [clj-ts.events.expansion :as e-expansion]
             [clj-ts.events.rendering :as e-rendering]
-            [clj-ts.highlight :as highlight]
             [clj-ts.navigation :as nav]
             [clj-ts.view :refer [->display]]
             [clj-ts.views.card-gutter :refer [card-gutter]]
@@ -71,19 +70,7 @@
       (recur))
 
     (r/create-class
-     {:component-did-mount
-      (fn [_this]
-        (let [child-selector "pre code"
-              selecteds (-> @!root-element
-                            (.querySelectorAll child-selector)
-                            (js/Array.from)
-                            (array-seq))]
-          (doseq [selected selecteds]
-             ;; carefully apply highlighting to children; 
-             ;; avoids extra calls to highlightAll, which writes warnings to console
-            (highlight/highlight-element selected))))
-
-      :reagent-render
+     {:reagent-render
       (fn [db card component]
         (e-rendering/notify-render (-> @db :current-page) (-> @local-db :hash))
 
