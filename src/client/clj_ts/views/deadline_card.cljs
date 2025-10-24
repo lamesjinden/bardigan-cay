@@ -42,21 +42,18 @@
         pre' (strip-pre-formatting pre)]
     (cond
       (datetime-past-due? datetime)
-        ;; todo
       [:div.deadline.past-due {:key (str source-page (first match))}
        [:span.pre pre']
        [:a.deadline-link {:href (str "/pages/" source-page)} "deadline:"]
        [:span.post post]]
 
       (datetime-due-now? datetime)
-        ;; todo
       [:div.deadline.due-now {:key (str source-page (first match))}
        [:span.pre pre']
        [:a.deadline-link {:href (str "/pages/" source-page)} "deadline:"]
        [:span.post post]]
 
       (datetime-due-soon? datetime)
-        ;; todo
       [:div.deadline.due-soon {:key (str source-page (first match))}
        [:span.pre pre']
        [:a.deadline-link {:href (str "/pages/" source-page)} "deadline:"]
@@ -68,14 +65,49 @@
        [:a.deadline-link {:href (str "/pages/" source-page)} "deadline:"]
        [:span.post post]])))
 
+(defn ->operator [x]
+  (case x
+    :> date-fns/isAfter
+    :< date-fns/isBefore
+    nil))
+
+(defn ->long [x]
+  (cond
+    (string? x) (parse-long x)
+    (number? x) x
+    :else nil))
+
+(defn ->units [x]
+  (case x
+    :days date-fns/addDays
+    :hours date-fns/addHours
+    :minutes date-fns/addMinutes
+    nil))
+
+(defn ->deadline-filter [[operator-token operand-token units-token]]
+  (let [operator (->operator operator-token)
+        magnitude (->long operand-token)
+        add-units (->units units-token)]
+    (when (and operator magnitude add-units)
+      (fn [{:keys [_ datetime] :as _hit}]
+        (let [now (js/Date)
+              deadline-date datetime
+              adjusted-date (add-units now magnitude)]
+          (operator deadline-date adjusted-date))))))
+
 (defn deadline [_db card]
   (let [card-configuration (merge deadline-defaults (card/->card-configuration card))
         hits (-> (get card "server_prepared_data")
-                 (edn/read-string))]
+                 (edn/read-string))
+        deadline-filter (-> (:deadline/filter card-configuration)
+                            (->deadline-filter)
+                            (or identity))]
     [:div.deadline-root-container
      (when (:deadline/title-visible? card-configuration)
        [:h3 (:deadline/title card-configuration)])
      [:div.deadlines.container
       (if (seq hits)
-        (map render-hit hits)
+        (->> hits
+             (filter deadline-filter)
+             (map render-hit))
         [:div.no-deadlines [:i "no deadlines"]])]]))
