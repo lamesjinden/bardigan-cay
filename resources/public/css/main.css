@@ -68,6 +68,7 @@
   --input-border-color: var(--secondary-foreground-color);
   --input-focus-color: var(--primary-accent-color);
   --wikilink-color: #85144b;
+  --quake-active-color: #ff0066;
   --double-comma-table-border-color: #808080;
   --manual-copy-background-color: #fafcf2;
   --page-control-pull-outside-margin: 6px;
@@ -881,6 +882,14 @@ dialog::backdrop {
   border: 1px solid transparent;
 }
 
+.quake-mode #header-input {
+  height: auto;
+  min-height: 44px;
+  align-items: center;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
 #header-input:has(input:focus-visible),
 #header-input:has(input:focus:not(:focus-visible)) {
   border-color: var(--input-focus-color);
@@ -1299,6 +1308,12 @@ header {
   background-color: var(--primary-background-color);
 }
 
+.app-container.quake-mode header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
 header a {
   color: var(--primary-accent-color);
 }
@@ -1412,6 +1427,83 @@ header a {
 .plotly-container {
   height: 100%;
   width: 100%;
+}
+
+/* #endregion */
+
+/* #region quake console */
+
+.nav-container.quake-mode {
+  height: 33vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.nav-container.quake-mode #header-nav {
+  display: none;
+}
+
+.quake-results-panel {
+  flex: 1;
+  min-height: 0;
+  padding: 10px 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.quake-results {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+  font-family: monospace;
+  font-size: 1rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+}
+
+.quake-result-item {
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.quake-result-item:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.quake-expr {
+  color: rgba(255, 255, 255, 0.7);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.quake-result {
+  color: #fff;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.quake-result.error {
+  color: #ff6b6b;
+}
+
+.quake-input-container {
+  flex: 1;
+}
+
+.quake-input-container .ace_editor {
+  background: transparent !important;
+}
+
+.quake-input-container .ace_content {
+  background: transparent !important;
+}
+
+#lambda-button.quake-active span {
+  color: var(--quake-active-color);
 }
 
 /* #endregion */

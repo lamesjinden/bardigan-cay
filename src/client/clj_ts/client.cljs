@@ -32,7 +32,8 @@
               :initialized? false
               :mode         :viewing
               :theme        (theme/get-initial-theme :light)
-              :env-port     4545}))
+              :env-port     4545
+              :quake-mode?  false}))
 
 ;; endregion
 

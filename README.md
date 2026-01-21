@@ -29,6 +29,7 @@
 - Allow transclusion using 'stable card IDs' - to enable in-place editing of transcluded content
 - Transcript content is persisted via localStorage
 - Transcript content can be cleared or moved to a new/existing page
+- Added 'Quake Mode' for evaluating expressions without jumping to the Transcript view
 
 ### Development
 

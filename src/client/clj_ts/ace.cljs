@@ -8,6 +8,7 @@
             ["ace-builds/src-min-noconflict/mode-markdown" :as mode-markdown]
             ["ace-builds/src-min-noconflict/theme-cloud9_day"]
             ["ace-builds/src-min-noconflict/theme-cloud9_night"]
+            [clj-ts.ace.core :as ace-core]
             [clj-ts.events.editing :as editing-events]
             [clj-ts.theme :as theme]))
 
@@ -16,8 +17,8 @@
                           :autoScrollEditorIntoView true
                           :enableLiveAutocompletion true})
 
-(def ace-theme "ace/theme/cloud9_day")
-(def ace-theme-dark "ace/theme/cloud9_night")
+(def ace-theme ace-core/ace-theme)
+(def ace-theme-dark ace-core/ace-theme-dark)
 (def ace-mode-clojure (.-Mode mode-clojure))
 (def ace-mode-markdown (.-Mode mode-markdown))
 
@@ -37,23 +38,6 @@
 (defn set-theme! [^js ace-instance theme]
   (when ace-instance
     (.setTheme ace-instance theme)))
-
-(defn- <defer
-  "executes `callback` via 'post message trick'; i.e. Posts a message to a MessageChannel via requestAnimationFrame, 
-   callback is executed by the MessageChannel callback.
-   
-   Returns a channel that contains the result of the callback. If the result is `nil`, the channel will contain `:nil`."
-  [callback]
-  (let [chan (a/promise-chan)
-        channel (js/MessageChannel.)
-        port1 (.-port1 channel)
-        port2 (.-port2 channel)]
-    (set! (.-onmessage port1)
-          (fn []
-            (let [callback-result (callback)]
-              (a/put! chan (if (nil? callback-result) :nil callback-result)))))
-    (js/requestAnimationFrame (fn [] (.postMessage port2 js/undefined)))
-    chan))
 
 (defn- <editor-dirty$ [ace-instance original-state]
   (let [chan (a/promise-chan)]
@@ -84,7 +68,7 @@
         (.disconnect observer)))))
 
 (defn- <setup-editor [db-theme source-data editor-element edit-box-container on-edit-begin]
-  (<defer   (fn []
+  (ace-core/<defer (fn []
               (let [ace-instance (create-edit editor-element)]
 
                 ;; configure ace

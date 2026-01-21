@@ -11,8 +11,9 @@
 (defn app [db confirmation-request$ progress$]
   (reagent.core/track! (partial theme/toggle-app-theme db))
 
-  (let [rx-mode (r/cursor db [:mode])]
-    [:<>
+  (let [rx-mode (r/cursor db [:mode])
+        rx-quake-mode? (r/cursor db [:quake-mode?])]
+    [:div.app-container {:class (when @rx-quake-mode? "quake-mode")}
      [confirmation-dialog confirmation-request$]
      [app-progress-bar db progress$]
      [app-header db]
