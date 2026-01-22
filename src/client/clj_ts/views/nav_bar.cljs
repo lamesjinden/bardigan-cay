@@ -10,6 +10,7 @@
             ["ace-builds/src-min-noconflict/theme-cloud9_night"]
             [clj-ts.ace.core :as ace-core]
             [clj-ts.events.transcript :as transcript-events]
+            [clj-ts.highlight :as highlight]
             [clj-ts.http :as http]
             [clj-ts.navigation :as nav]
             [clj-ts.theme :as theme]
@@ -130,7 +131,44 @@
                                   :showGutter false
                                   :highlightActiveLine false
                                   :showPrintMargin false
-                                  :enableLiveAutocompletion true})
+                                  :enableLiveAutocompletion true
+                                  :showFoldWidgets false})
+
+;; Commands to remove from quake editor to make it behave like a simple input
+(def ^:private quake-disabled-commands
+  ["showSettingsMenu"
+   "openCommandPalette"
+   "openCommandPallete"         ; both spellings exist
+   "gotoline"
+   "find"
+   "findnext"
+   "findprevious"
+   "replace"
+   "replaceall"
+   "movelinesup"
+   "movelinesdown"
+   "copylinesup"
+   "copylinesdown"
+   "del"                        ; Ctrl+D - delete/duplicate
+   "selectMoreBefore"
+   "selectMoreAfter"
+   "selectOrFindNext"
+   "selectOrFindPrevious"
+   "splitIntoLines"
+   "togglecomment"
+   "toggleBlockComment"
+   "sortlines"
+   "touppercase"
+   "tolowercase"
+   "foldall"
+   "unfoldall"
+   "fold"
+   "unfold"
+   "toggleFoldWidget"
+   "toggleParentFoldWidget"
+   "foldOther"
+   "jumptomatching"
+   "expandSnippet"])
 
 (defn- <setup-quake-editor [db-theme editor-element]
   (ace-core/<defer
@@ -139,11 +177,17 @@
            ace-theme (if (theme/light-theme? db-theme)
                        ace-core/ace-theme
                        ace-core/ace-theme-dark)
-           ^js ace-session (.getSession ace-instance)]
+           ^js ace-session (.getSession ace-instance)
+           commands (.-commands ace-instance)]
        (.setTheme ace-instance ace-theme)
        (.setOptions ace-instance (clj->js quake-ace-options))
        (.setShowInvisibles ace-instance false)
        (.setMode ace-session (new quake-ace-mode-clojure))
+       ;; Remove non-essential commands to make editor behave like a simple input
+       (doseq [cmd quake-disabled-commands]
+         (.removeCommand commands cmd))
+       ;; Override theme background to blend with nav container
+       (set! (.. ace-instance -container -style -background) "transparent")
        ace-instance))))
 
 (defn- on-container-click [db-quake-mode? e]
@@ -151,10 +195,16 @@
     (.preventDefault e)
     (swap! db-quake-mode? not)))
 
+(defn- scroll-quake-results-to-bottom! [local-db]
+  (ace-core/<defer
+   (fn []
+     (when-let [results-el (:quake-results-ref @local-db)]
+       (set! (.-scrollTop results-el) (.-scrollHeight results-el))))))
+
 (defn- quake-eval! [db local-db]
   (when-let [editor (:quake-editor @local-db)]
     (let [code (.getValue editor)
-          display-expr (str/trimr code)]
+          display-expr (str/trim code)]
       (when (not (str/blank? code))
         (try
           (let [result (sci/eval-string* quake-sci-ctx code)]
@@ -170,11 +220,7 @@
             (.setValue editor "" -1)
             (swap! local-db assoc :input-value nil)
             ;; Scroll results to bottom
-            (js/setTimeout
-             (fn []
-               (when-let [results-el (.querySelector js/document ".quake-results")]
-                 (set! (.-scrollTop results-el) (.-scrollHeight results-el))))
-             50))
+            (scroll-quake-results-to-bottom! local-db))
           (catch :default e
             ;; Update *e with the error
             (update-repl-error! e)
@@ -214,12 +260,22 @@
             (.setValue editor expr -1)
             (.navigateLineEnd editor)))))))
 
-(defn- quake-results-view [results]
-  [:div.quake-results
+(defn- highlighted-expr [expr]
+  (let [!element (clojure.core/atom nil)]
+    (r/create-class
+     {:component-did-mount
+      (fn [_] (when-let [el @!element] (highlight/highlight-element el)))
+      :reagent-render
+      (fn [expr]
+        [:code.language-clojure.quake-expr {:ref (fn [el] (reset! !element el))} expr])})))
+
+(defn- quake-results-view [local-db results]
+  [:div.quake-results {:ref (fn [el] (swap! local-db assoc :quake-results-ref el))}
    (for [[idx {:keys [expr result error?]}] (map-indexed vector results)]
      ^{:key idx}
      [:div.quake-result-item
-      [:span.quake-expr expr " => "]
+      [highlighted-expr expr]
+      [:span.quake-separator " => "]
       [:span {:class (if error? "quake-result error" "quake-result")} result]])])
 
 (defn- quake-theme-tracker [local-db db]
@@ -228,7 +284,9 @@
           ace-theme (if (theme/light-theme? db-theme)
                       ace-core/ace-theme
                       ace-core/ace-theme-dark)]
-      (.setTheme editor ace-theme))))
+      (.setTheme editor ace-theme)
+      ;; Override theme background to blend with nav container
+      (set! (.. editor -container -style -background) "transparent"))))
 
 (defn- quake-editor-component [db local-db]
   (let [!editor (clojure.core/atom nil)
@@ -252,17 +310,19 @@
                                     :exec (fn [_] (quake-eval! db local-db))})
                   (.addCommand commands
                                #js {:name "historyPrev"
-                                    :bindKey #js {:win "Up" :mac "Up"}
+                                    :bindKey #js {:win "Ctrl-Up" :mac "Ctrl-Up"}
                                     :exec (fn [_] (quake-history-prev! local-db))})
                   (.addCommand commands
                                #js {:name "historyNext"
-                                    :bindKey #js {:win "Down" :mac "Down"}
+                                    :bindKey #js {:win "Ctrl-Down" :mac "Ctrl-Down"}
                                     :exec (fn [_] (quake-history-next! local-db))}))
                 ;; Populate with input from normal mode if present
                 (when-let [input-value (:input-value @local-db)]
                   (.setValue ace-instance input-value -1)
                   (.navigateLineEnd ace-instance))
-                (.focus ace-instance))))))
+                (.focus ace-instance)
+                ;; Scroll results to bottom when entering quake mode
+                (scroll-quake-results-to-bottom! local-db))))))
       :component-will-unmount
       (fn [_]
         (swap! local-db assoc :quake-editor nil)
@@ -275,7 +335,7 @@
 
 (defn- quake-results-panel [local-db]
   [:div.quake-results-panel
-   [quake-results-view (:quake-results @local-db)]])
+   [quake-results-view local-db (:quake-results @local-db)]])
 
 ;; endregion
 

@@ -26,15 +26,15 @@ To evaluate an expression:
 - Type your Clojure code in the editor
 - Press `Ctrl+Enter` (or `Cmd+Enter` on Mac), or click the lambda button
 
-Results are displayed in the format `expression => result` and accumulate in the results area. They also appear in [[TheTranscript]].
+Results are displayed in the format `expression => result` and accumulate in the results area. Expressions are syntax-highlighted for readability. Results also appear in [[TheTranscript]].
 
 ----
 
 ### History Navigation
 
-Use the arrow keys to navigate through previously evaluated expressions:
-- **Up arrow**: Load the previous expression
-- **Down arrow**: Load the next expression (or clear if at the end)
+Use `Ctrl` + arrow keys to navigate through previously evaluated expressions:
+- **Ctrl+Up**: Load the previous expression
+- **Ctrl+Down**: Load the next expression (or clear if at the end)
 
 ----
 

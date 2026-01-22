@@ -884,9 +884,7 @@ dialog::backdrop {
 
 .quake-mode #header-input {
   height: auto;
-  min-height: 44px;
   align-items: center;
-  padding-top: 4px;
   padding-bottom: 4px;
 }
 
@@ -1458,13 +1456,21 @@ header a {
   padding: 10px;
   font-family: monospace;
   font-size: 1rem;
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--secondary-background-color);
   border-radius: 8px;
+}
+
+.theme-dark .quake-results {
+  background: rgba(0, 0, 0, 0.2);
 }
 
 .quake-result-item {
   margin-bottom: 8px;
   padding-bottom: 8px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.theme-dark .quake-result-item {
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -1475,15 +1481,28 @@ header a {
 }
 
 .quake-expr {
-  color: rgba(255, 255, 255, 0.7);
+  display: inline !important;
+  white-space: pre-wrap;
+  word-break: break-all;
+  background: transparent !important;
+}
+
+.quake-separator {
+  color: #666;
+}
+
+.quake-result {
+  color: var(--primary-foreground-color);
   white-space: pre-wrap;
   word-break: break-all;
 }
 
-.quake-result {
+.theme-dark .quake-separator {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.theme-dark .quake-result {
   color: #fff;
-  white-space: pre-wrap;
-  word-break: break-all;
 }
 
 .quake-result.error {
@@ -1494,10 +1513,8 @@ header a {
   flex: 1;
 }
 
-.quake-input-container .ace_editor {
-  background: transparent !important;
-}
-
+.quake-input-container .ace_editor,
+.quake-input-container .ace_scroller,
 .quake-input-container .ace_content {
   background: transparent !important;
 }
