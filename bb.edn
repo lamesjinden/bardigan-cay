@@ -46,7 +46,7 @@
                                                (sort-by fs/creation-time)
                                                (last))]
                            (fs/create-dirs export-destination)
-                           (fs/copy latest-jar export-destination {:replace-existing true}))
+                           (fs/copy latest-jar export-destination #_{:replace-existing true}))
 
                          ;; prune artifacts
                          (let [retain-count 5
