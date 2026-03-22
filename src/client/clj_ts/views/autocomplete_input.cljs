@@ -171,7 +171,8 @@
                   :value       (:input-value @local-db)
                   :on-change   #(swap! local-db assoc :input-value (-> % .-target .-value))
                   :on-key-up   #(autocomplete-input-on-key-up db local-db % on-submit)
-                  :placeholder placeholder}]
+                  :placeholder placeholder
+                  :ref         #(swap! local-db assoc :input-element %)}]
          [autocomplete-dropdown db local-db on-clicked on-key-up-enter]])})))
 
 ;; endregion

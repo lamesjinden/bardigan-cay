@@ -994,17 +994,7 @@ dialog::backdrop {
   border-bottom: none;
 }
 
-.autocomplete-suggestion:hover {
-  background-color: rgb(from var(--input-focus-color) r g b / 0.9);
-  color: var(--inverted-foreground-color);
-}
-
 .autocomplete-suggestion.selected {
-  background-color: var(--input-focus-color);
-  color: var(--inverted-foreground-color);
-}
-
-.autocomplete-suggestion.selected:hover {
   background-color: var(--input-focus-color);
   color: var(--inverted-foreground-color);
 }
