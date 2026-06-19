@@ -38,7 +38,11 @@
 
          export {:requires ([babashka.fs :as fs]
                             [babashka.process :as p])
-                 :task (let [export-destination (fs/path "/media/sf_Share/artifacts/packages/bardigan-cay")]
+                 :task (let [default-export-destination "/media/sf_Share/artifacts/packages/bardigan-cay"
+                             export-dir-arg (some->> *command-line-args*
+                                                     (drop-while (fn [arg] (not= "--export-dir" arg)))
+                                                     second)
+                             export-destination (fs/path (or export-dir-arg default-export-destination))]
                          ;; copy to Share
                          (let [bb-dir (fs/parent (System/getProperty "babashka.config"))
                                target-dir (fs/path bb-dir "target")
@@ -63,7 +67,8 @@
                                (run 'build-client)
                                (run 'clean-server)
                                (run 'build-server)
-                               (when (.exists (java.io.File. "/media/sf_Share"))
+                               (when (or (some #{"--export-dir"} *command-line-args*)
+                                         (.exists (java.io.File. "/media/sf_Share")))
                                  (run 'export)))
 
          run-dev-client      (shell "npx shadow-cljs watch app")
