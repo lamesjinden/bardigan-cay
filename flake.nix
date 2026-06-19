@@ -3,12 +3,17 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
+    nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
   };
 
-  outputs = { self, nixpkgs }:
+  outputs = { self, nixpkgs, nixpkgs-unstable }:
     let
       system = "x86_64-linux";
-      pkgs = import nixpkgs { 
+      pkgs = import nixpkgs {
+        inherit system;
+        config.allowUnfree = true;
+      };
+      pkgs-unstable = import nixpkgs-unstable {
         inherit system;
         config.allowUnfree = true;
       };
@@ -16,15 +21,15 @@
       devShells.${system}.default = pkgs.mkShell {
         packages = with pkgs; [
           # Clojure ecosystem
-          jdk25_headless
-          clojure
           babashka
+          jdk25_headless    # verify with: nix search nixpkgs jdk25
+          clojure
 
           # Node.js for shadow-cljs and npm dependencies
           nodejs_22
 
           # AI tooling
-          claude-code
+          pkgs-unstable.claude-code
         ];
 
         shellHook = ''
