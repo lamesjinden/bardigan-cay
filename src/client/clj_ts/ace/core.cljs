@@ -5,10 +5,18 @@
    functionality for the quake console, but cannot depend on clj-ts.ace (in :ace)
    since :ace already depends on :main. Placing shared code here avoids circular
    module dependencies while eliminating duplication."
-  (:require [cljs.core.async :as a]))
+  (:require [cljs.core.async :as a]
+            [clj-ts.theme :as theme]))
 
 (def ace-theme "ace/theme/cloud9_day")
 (def ace-theme-dark "ace/theme/cloud9_night")
+(def ace-theme-synthwave84 "ace/theme/tomorrow_night_eighties")
+
+(defn pick-ace-theme [db-or-theme]
+  (cond
+    (theme/synthwave84-theme? db-or-theme) ace-theme-synthwave84
+    (theme/light-theme? db-or-theme) ace-theme
+    :else ace-theme-dark))
 
 (defn <defer
   "Executes `callback` via 'post message trick'; i.e. Posts a message to a MessageChannel via requestAnimationFrame,

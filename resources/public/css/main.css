@@ -129,6 +129,45 @@
   --muted: 240 3.7% 15.9%;
 }
 
+.theme-synthwave84 {
+  --primary-color: #241b2f;
+  --primary-accent-color: #ff7edb;
+  --primary-background-color: #262335;
+  --primary-foreground-color: #f4eee4;
+  --secondary-background-color: #1f1730;
+  --secondary-foreground-color: #495495;
+  --inverted-foreground-color: #f4eee4;
+  --off-primary-color: #34294f;
+  /* custom, per-element colors */
+  --base-button-border-color: #34294f;
+  --base-button-hover-brightness: 100%;
+  --base-button-active-brightness: 100%;
+  --base-button-hover-invert: 5%;
+  --base-button-active-invert: 10%;
+  --base-a-tag-color: #36f9f6;
+  --card-gutter-background-color: #1a1226;
+  --card-details-label-color: #ff8b39;
+  --header-input-background-color: var(--secondary-background-color);
+  --header-input-separator-color: #34294f;
+  --input-background-color: var(--secondary-background-color);
+  --input-border-color: var(--off-primary-color);
+  --manual-copy-background-color: #2e2545;
+  --double-comma-table-border-color: #495495;
+  --wikilink-color: var(--red);
+  --quake-active-color: var(--red-light);
+  --progress-bar-background-color: #ff7edb;
+  --red: #fe4450;
+  --red-light: #f97e72;
+  --muted: 270 30% 20%;
+}
+
+.theme-synthwave84 .card-meta .material-symbols-sharp,
+.theme-synthwave84 .card-gutter .material-symbols-sharp,
+.theme-synthwave84 #app-menu > .material-symbols-sharp,
+.theme-synthwave84 #header-nav a {
+  color: #ff7edb;
+}
+
 /* #endregion */
 
 /* #region base element styling */
@@ -445,7 +484,7 @@ div textarea {
 }
 
 .details-container .details-label {
-  color: var(--card-details-label-color) inset;
+  color: var(--card-details-label-color);
   display: inline-flex;
   font-size: small;
   font-style: italic;
@@ -1121,6 +1160,19 @@ dialog::backdrop {
   text-decoration: none;
   white-space: nowrap;
   word-wrap: none;
+}
+
+.app-menu-container>.menu-list .theme-submenu-chevron,
+.app-menu-container>.menu-list .theme-submenu-check {
+  margin-left: auto;
+}
+
+.app-menu-container>.menu-list>li.theme-submenu-item .label {
+  padding-left: 30px;
+}
+
+.app-menu-container>.menu-list>li.theme-submenu-item.active {
+  background-color: var(--secondary-background-color);
 }
 
 /* #endregion */

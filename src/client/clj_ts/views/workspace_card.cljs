@@ -11,7 +11,6 @@
             [clj-ts.card :as cards]
             [clj-ts.keyboard :as keyboard]
             [clj-ts.stats :as stats]
-            [clj-ts.theme :as theme]
             [clj-ts.view :refer [->display]]
             [clj-ts.views.graph :refer [graph]]
             ["date-fns" :as date-fns])
@@ -182,7 +181,7 @@
                        (get ->next-size))
         editor-max-lines (get size->editor-max-lines next-size)
         editor-options (assoc ace/default-ace-options :maxLines editor-max-lines)
-        theme (if (theme/light-theme? db) ace/ace-theme ace/ace-theme-dark)]
+        theme (ace/pick-ace-theme db)]
     (swap! state assoc :code-editor-size next-size)
     (ace/configure-ace-instance! editor ace/ace-mode-clojure theme editor-options)))
 
@@ -232,10 +231,7 @@
       :vertical)))
 
 (defn- theme-tracker [db local-db]
-  (ace/set-theme! (:editor @local-db)
-                  (if (theme/light-theme? db)
-                    ace/ace-theme
-                    ace/ace-theme-dark)))
+  (ace/set-theme! (:editor @local-db) (ace/pick-ace-theme db)))
 
 (defn- setup-editor [db local-db editor-element-ref]
   (let [editor-element @editor-element-ref
@@ -243,7 +239,7 @@
         max-lines (->> (:code-editor-size @local-db)
                        (get size->editor-max-lines))
         editor-options (assoc ace/default-ace-options :maxLines max-lines)
-        theme (if (theme/light-theme? db) ace/ace-theme ace/ace-theme-dark)]
+        theme (ace/pick-ace-theme db)]
     (ace/configure-ace-instance! ace-instance ace/ace-mode-clojure theme editor-options)
     (swap! local-db assoc :editor ace-instance)))
 

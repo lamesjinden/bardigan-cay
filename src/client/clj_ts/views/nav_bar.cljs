@@ -8,12 +8,12 @@
             ["ace-builds/src-min-noconflict/mode-clojure" :as mode-clojure]
             ["ace-builds/src-min-noconflict/theme-cloud9_day"]
             ["ace-builds/src-min-noconflict/theme-cloud9_night"]
+            ["ace-builds/src-min-noconflict/theme-tomorrow_night_eighties"]
             [clj-ts.ace.core :as ace-core]
             [clj-ts.events.transcript :as transcript-events]
             [clj-ts.highlight :as highlight]
             [clj-ts.http :as http]
             [clj-ts.navigation :as nav]
-            [clj-ts.theme :as theme]
             [clj-ts.transcript :as transcript]
             [clj-ts.view :as view]
             [clj-ts.views.app-menu :refer [app-menu]]
@@ -174,9 +174,7 @@
   (ace-core/<defer
    (fn []
      (let [ace-instance (.edit ace editor-element)
-           ace-theme (if (theme/light-theme? db-theme)
-                       ace-core/ace-theme
-                       ace-core/ace-theme-dark)
+           ace-theme (ace-core/pick-ace-theme db-theme)
            ^js ace-session (.getSession ace-instance)
            commands (.-commands ace-instance)]
        (.setTheme ace-instance ace-theme)
@@ -281,9 +279,7 @@
 (defn- quake-theme-tracker [local-db db]
   (when-let [editor (:quake-editor @local-db)]
     (let [db-theme (:theme @db)
-          ace-theme (if (theme/light-theme? db-theme)
-                      ace-core/ace-theme
-                      ace-core/ace-theme-dark)]
+          ace-theme (ace-core/pick-ace-theme db-theme)]
       (.setTheme editor ace-theme)
       ;; Override theme background to blend with nav container
       (set! (.. editor -container -style -background) "transparent"))))

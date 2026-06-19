@@ -5,7 +5,6 @@
             [clj-ts.card :as cards]
             [clj-ts.keyboard :as keyboard]
             [clj-ts.events.editing :as e-editing]
-            [clj-ts.theme :as theme]
             [clj-ts.views.paste-bar-single :refer [paste-bar-single]]))
 
 (defn- single-editor-on-key-s-press [db parent-db local-db e]
@@ -36,10 +35,7 @@
       (single-editor-on-escape-press parent-db))))
 
 (defn- theme-tracker [db-theme local-db]
-  (ace/set-theme! (:editor @local-db)
-                  (if (theme/light-theme? @db-theme)
-                    ace/ace-theme
-                    ace/ace-theme-dark)))
+  (ace/set-theme! (:editor @local-db) (ace/pick-ace-theme @db-theme)))
 
 (defn- destroy-editor [local-db]
   (let [editor (:editor @local-db)]
@@ -50,7 +46,7 @@
   (let [local-db (r/atom {:editor nil
                           :editor-configured? false})
         !edit-box-container (clojure.core/atom nil)
-        track-theme (r/track! (partial theme-tracker db-theme parent-db))]
+        track-theme (r/track! (partial theme-tracker db-theme local-db))]
     (r/create-class
      {:component-did-mount    (fn []
                                 (a/go

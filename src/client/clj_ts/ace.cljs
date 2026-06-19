@@ -8,9 +8,9 @@
             ["ace-builds/src-min-noconflict/mode-markdown" :as mode-markdown]
             ["ace-builds/src-min-noconflict/theme-cloud9_day"]
             ["ace-builds/src-min-noconflict/theme-cloud9_night"]
+            ["ace-builds/src-min-noconflict/theme-tomorrow_night_eighties"]
             [clj-ts.ace.core :as ace-core]
-            [clj-ts.events.editing :as editing-events]
-            [clj-ts.theme :as theme]))
+            [clj-ts.events.editing :as editing-events]))
 
 (def default-ace-options {:fontSize                 "1.2rem"
                           :minLines                 5
@@ -19,6 +19,8 @@
 
 (def ace-theme ace-core/ace-theme)
 (def ace-theme-dark ace-core/ace-theme-dark)
+(def ace-theme-synthwave84 ace-core/ace-theme-synthwave84)
+(def pick-ace-theme ace-core/pick-ace-theme)
 (def ace-mode-clojure (.-Mode mode-clojure))
 (def ace-mode-markdown (.-Mode mode-markdown))
 
@@ -69,26 +71,24 @@
 
 (defn- <setup-editor [db-theme source-data editor-element edit-box-container on-edit-begin]
   (ace-core/<defer (fn []
-              (let [ace-instance (create-edit editor-element)]
+                     (let [ace-instance (create-edit editor-element)]
 
                 ;; configure ace
-                (let [ace-options (assoc default-ace-options :maxLines "Infinity")
-                      theme (if (theme/light-theme? db-theme)
-                              ace-theme
-                              ace-theme-dark)]
-                  (configure-ace-instance! ace-instance ace-mode-markdown theme ace-options))
+                       (let [ace-options (assoc default-ace-options :maxLines "Infinity")
+                             theme (pick-ace-theme db-theme)]
+                         (configure-ace-instance! ace-instance ace-mode-markdown theme ace-options))
 
                 ;; watch for the first change; notify app
-                (a/go
-                  (when-some [_delta (a/<! (<editor-dirty$ ace-instance source-data))]
-                    (on-edit-begin)))
+                       (a/go
+                         (when-some [_delta (a/<! (<editor-dirty$ ace-instance source-data))]
+                           (on-edit-begin)))
 
                 ;; after ace is visible
-                (a/go
-                  (when-some [mutation (a/<! (<css-class-change$ edit-box-container))]
-                    (focus-editor-on-mutation ace-instance edit-box-container mutation)))
+                       (a/go
+                         (when-some [mutation (a/<! (<css-class-change$ edit-box-container))]
+                           (focus-editor-on-mutation ace-instance edit-box-container mutation)))
 
-                ace-instance))))
+                       ace-instance))))
 
 (defn <setup-global-editor [db-theme source-data editor-element edit-box-container]
   (<setup-editor db-theme source-data editor-element edit-box-container editing-events/notify-global-editing-start))

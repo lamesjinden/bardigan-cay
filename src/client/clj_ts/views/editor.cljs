@@ -6,7 +6,6 @@
             [clj-ts.keyboard :as keyboard]
             [clj-ts.navigation :as nav]
             [clj-ts.page :as page]
-            [clj-ts.theme :as theme]
             [clj-ts.views.paste-bar :refer [paste-bar]]))
 
 (defn- editor-on-key-s-press [db e]
@@ -46,10 +45,7 @@
         (editor-on-escape-press db)))))
 
 (defn- theme-tracker [db]
-  (ace/set-theme! (:editor @db)
-                  (if (theme/light-theme? db)
-                    ace/ace-theme
-                    ace/ace-theme-dark)))
+  (ace/set-theme! (:editor @db) (ace/pick-ace-theme db)))
 
 (defn destroy-editor [db]
   (let [editor (:editor @db)]
