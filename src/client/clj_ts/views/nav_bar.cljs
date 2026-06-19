@@ -339,6 +339,27 @@
 
 ;; endregion
 
+(defn- editable-target? [target]
+  (when target
+    (let [tag (.-tagName target)]
+      (or (= tag "INPUT")
+          (= tag "TEXTAREA")
+          (= tag "SELECT")
+          (.-isContentEditable target)
+          (and (.-closest target) (.closest target ".ace_editor"))))))
+
+(defn- focus-search-input! [local-db]
+  (when-let [el (:input-element @local-db)]
+    (.focus el)))
+
+(defn- focus-quake-editor! [local-db]
+  (when-let [editor (:quake-editor @local-db)]
+    (.focus editor)))
+
+(defn- quake-active? [!quake-mode-cursor]
+  (when-let [cursor @!quake-mode-cursor]
+    @cursor))
+
 (defn nav-bar [_db _db-nav-links _db-quake-mode?]
   (let [local-db (r/atom {:input-value nil
                           :suggestions []
@@ -348,11 +369,22 @@
                           :quake-history-index nil})
         !quake-mode-cursor (clojure.core/atom nil)
         global-keydown-handler (fn [e]
-                                 (when (and (.-ctrlKey e)
-                                            (= (.-code e) "Backquote"))
-                                   (.preventDefault e)
-                                   (when-let [cursor @!quake-mode-cursor]
-                                     (swap! cursor not))))]
+                                 (cond
+                                   (and (.-ctrlKey e)
+                                        (= (.-code e) "Backquote"))
+                                   (do (.preventDefault e)
+                                       (when-let [cursor @!quake-mode-cursor]
+                                         (swap! cursor not)))
+
+                                   (and (= (.-key e) "/")
+                                        (not (.-ctrlKey e))
+                                        (not (.-altKey e))
+                                        (not (.-metaKey e))
+                                        (not (editable-target? (.-target e))))
+                                   (do (.preventDefault e)
+                                       (if (quake-active? !quake-mode-cursor)
+                                         (focus-quake-editor! local-db)
+                                         (focus-search-input! local-db)))))]
     (r/create-class
      {:component-did-mount
       (fn [_]
