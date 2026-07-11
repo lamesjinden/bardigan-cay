@@ -1,12 +1,103 @@
 (ns clj-ts.cards.parsing
   (:require [clojure.edn :as edn]
             [clojure.string :as str]
-            [clj-ts.util :as util]))
+            [clj-ts.util :as util])
+  (:import [org.commonmark.ext.gfm.tables TableBlock TablesExtension]
+           [org.commonmark.node Code FencedCodeBlock IndentedCodeBlock Node SourceSpan]
+           [org.commonmark.parser IncludeSourceSpans Parser]))
 
-(defn split-by-hyphens [input]
-  (->> (str/split input #"-{4,}")
-       (map str/trim)
-       (remove str/blank?)))
+;; -----------------------------------------------------------------------------
+;; Card splitting
+;;
+;; A page is split into cards at delimiter lines: lines consisting solely of
+;; four or more hyphens (trailing whitespace allowed). A delimiter line is
+;; ignored when it falls inside a protected markdown element -- a code block
+;; (fenced or indented), an inline code span, or a table -- so that standard
+;; markdown inside a card survives splitting.
+;;
+;; Protected regions are found by parsing the page with commonmark-java, which
+;; records the source span (character offsets) of every parsed node.
+;; -----------------------------------------------------------------------------
+
+(def ^:private ^Parser markdown-parser
+  (.. (Parser/builder)
+      (extensions [(TablesExtension/create)])
+      (includeSourceSpans IncludeSourceSpans/BLOCKS_AND_INLINES)
+      (build)))
+
+(defn- node-children [^Node node]
+  (->> (.getFirstChild node)
+       (iterate (fn [^Node n] (.getNext n)))
+       (take-while some?)))
+
+(def ^:private protected-node-classes
+  #{Code FencedCodeBlock IndentedCodeBlock TableBlock})
+
+(defn- node->range
+  "The [start end) character range covered by a node's source spans."
+  [^Node node]
+  (when-let [spans (seq (.getSourceSpans node))]
+    [(reduce min (map (fn [^SourceSpan span] (.getInputIndex span)) spans))
+     (reduce max (map (fn [^SourceSpan span] (+ (.getInputIndex span) (.getLength span))) spans))]))
+
+(defn find-protected-ranges
+  "Find all [start end) character ranges protected from card splitting:
+   code blocks (fenced and indented), inline code spans, and tables."
+  [text]
+  (->> (.parse markdown-parser text)
+       (tree-seq some? node-children)
+       (filter #(contains? protected-node-classes (class %)))
+       (keep node->range)))
+
+(defn in-protected-range?
+  "Check if a position falls within any protected range."
+  [pos ranges]
+  (some (fn [[start end]]
+          (and (>= pos start) (< pos end)))
+        ranges))
+
+(defn find-delimiter-positions
+  "Find all card delimiter lines -- lines consisting solely of four or more
+   hyphens, with optional trailing whitespace -- and their character positions.
+   Returns a sequence of {:start :end} maps."
+  [text]
+  (let [matcher (re-matcher #"(?m)^-{4,}[ \t]*$" text)]
+    (loop [positions []]
+      (if (.find matcher)
+        (recur (conj positions {:start (.start matcher)
+                                :end   (.end matcher)}))
+        positions))))
+
+(defn split-at-positions
+  "Split text at the given delimiter positions.
+   Returns a sequence of trimmed, non-blank strings."
+  [text positions]
+  (if (empty? positions)
+    (let [trimmed (str/trim text)]
+      (if (str/blank? trimmed) [] [trimmed]))
+    (let [;; Add implicit start and end positions
+          all-positions (concat [{:end 0}]
+                                positions
+                                [{:start (count text)}])
+          ;; Extract segments between delimiters
+          segments (map (fn [[prev curr]]
+                          (subs text (:end prev) (:start curr)))
+                        (partition 2 1 all-positions))]
+      (->> segments
+           (map str/trim)
+           (remove str/blank?)))))
+
+(defn split-by-hyphens
+  "Split input text into cards at delimiter lines (four or more hyphens),
+   ignoring delimiter lines that fall inside protected markdown elements
+   (code blocks, inline code spans, tables).
+   Returns a sequence of trimmed, non-blank card texts."
+  [input]
+  (let [protected-ranges (find-protected-ranges input)
+        all-delimiters (find-delimiter-positions input)
+        valid-delimiters (remove #(in-protected-range? (:start %) protected-ranges)
+                                 all-delimiters)]
+    (split-at-positions input valid-delimiters)))
 
 (defn try-read [reader]
   (try
@@ -44,7 +135,7 @@
                       {:type :unknown
                        :value (str/trim (slurp reader))}]}
 
-            ;; support card-configuration maps without types; 
+            ;; support card-configuration maps without types;
             ;; still allows :markdown to be implicit
             (map? first-token)
             {:source-body card-text
