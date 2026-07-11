@@ -1,26 +1,26 @@
 (ns clj-ts.views.deadline-card
   (:require [clojure.edn :as edn]
             [clj-ts.card :as card]
-            ["date-fns" :as date-fns]))
+            [clj-ts.temporal :as temporal]))
 
 (def deadline-defaults {:deadline/title-visible? true
                         :deadline/title "deadlines"})
 
 (defn- datetime-past-due? [datetime]
-  (date-fns/isPast datetime))
+  (temporal/past? datetime))
 
 (defn- datetime-due-now? [datetime]
   ;; now == within 2 days
   (let [later-date datetime
-        earlier-date (js/Date)
-        difference (date-fns/differenceInDays later-date earlier-date)]
+        earlier-date (js/Date.)
+        difference (temporal/difference-in-days later-date earlier-date)]
     (<= 0 difference 2)))
 
 (defn- datetime-due-soon? [datetime]
   ;; soon == within 1 week
   (let [later-date datetime
-        earlier-date (js/Date)
-        difference (date-fns/differenceInDays later-date earlier-date)]
+        earlier-date (js/Date.)
+        difference (temporal/difference-in-days later-date earlier-date)]
     (<= 0 difference 7)))
 
 (defn- strip-pre-formatting [pre]
@@ -67,8 +67,8 @@
 
 (defn ->operator [x]
   (case x
-    :> date-fns/isAfter
-    :< date-fns/isBefore
+    :> temporal/after?
+    :< temporal/before?
     nil))
 
 (defn ->long [x]
@@ -79,9 +79,9 @@
 
 (defn ->units [x]
   (case x
-    :days date-fns/addDays
-    :hours date-fns/addHours
-    :minutes date-fns/addMinutes
+    :days temporal/add-days
+    :hours temporal/add-hours
+    :minutes temporal/add-minutes
     nil))
 
 (defn ->deadline-filter [[operator-token operand-token units-token]]
@@ -90,7 +90,7 @@
         add-units (->units units-token)]
     (when (and operator magnitude add-units)
       (fn [{:keys [_ datetime] :as _hit}]
-        (let [now (js/Date)
+        (let [now (js/Date.)
               deadline-date datetime
               adjusted-date (add-units now magnitude)]
           (operator deadline-date adjusted-date))))))

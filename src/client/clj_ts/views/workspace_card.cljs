@@ -13,7 +13,7 @@
             [clj-ts.stats :as stats]
             [clj-ts.view :refer [->display]]
             [clj-ts.views.graph :refer [graph]]
-            ["date-fns" :as date-fns])
+            [clj-ts.date-fns :as date-fns])
   (:import [goog.net XhrIo]))
 
 ;; region eval/rewrite
@@ -100,7 +100,7 @@
         stats-publics (ns-publics 'clj-ts.stats)
         sci-stats-ns (update-vals stats-publics #(sci/copy-var* % stats-ns))]
     {:classes    {'js js/globalThis :allow :all}
-     :js-libs {"date-fns" date-fns}
+     :js-libs {"date-fns" date-fns/module}
      :namespaces {'clojure.core {'println println
                                  'prn prn
                                  'pr-str pr-str
