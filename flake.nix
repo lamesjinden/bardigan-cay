@@ -30,6 +30,8 @@
 
           # AI tooling
           pkgs-unstable.claude-code
+
+          github-cli
         ];
 
         shellHook = ''
