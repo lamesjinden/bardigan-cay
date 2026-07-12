@@ -5,7 +5,7 @@
             [inline]))
 
 (def artifact-name "bardigan-cay")
-(def version "1.0.1")
+(def version "1.0.2")
 (def class-dir "target/classes")
 (def basis (b/create-basis {:project "deps.edn"
                             :aliases [:server]}))
