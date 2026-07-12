@@ -47,17 +47,23 @@
   (a/go
     (let [completed$ (nav-events/<notify-navigating page-name)
           response (a/<! completed$)]
-      (when (and (not (nil? response))
-                 (not (= :canceled response)))
-        (load-page-response db response)))))
+      (cond
+        (= :canceled response) :canceled
+        (nil? response) :failed
+        :else (do
+                (load-page-response db response)
+                :loaded)))))
 
 (defn <reload-page! [db]
   (<load-page! db (:current-page @db)))
 
 (defn- <go-new! [db page-name]
   (a/go
-    (a/<! (<load-page! db page-name))
-    (swap! db assoc :mode :viewing)))
+    (let [outcome (a/<! (<load-page! db page-name))]
+      ;; a canceled navigation must not yank the user out of an edit session
+      (when (not= :canceled outcome)
+        (swap! db assoc :mode :viewing))
+      outcome)))
 
 (defn page-name->url [page-name]
   (if (= "/" page-name)
@@ -82,16 +88,19 @@
 
 (defn <navigate! [db page-name]
   (a/go
-    (a/<! (<go-new! db page-name))
-    (navigate-to page-name)))
+    (let [outcome (a/<! (<go-new! db page-name))]
+      ;; canceled or failed loads must not push a url the user never reached
+      (when (= :loaded outcome)
+        (navigate-to page-name))
+      outcome)))
 
 (defn <on-link-clicked [db e target aux-clicked?]
   (.preventDefault e)
   (cond
     (or (.-ctrlKey e) aux-clicked?)
-    (let [chan (a/put! (a/promise-chan) :open)]
+    (do
       (js/window.open (page-name->url target))
-      chan)
+      (doto (a/promise-chan) (a/put! :open)))
 
     :else
     (<navigate! db target)))
