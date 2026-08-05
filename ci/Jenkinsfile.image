@@ -38,7 +38,7 @@ pipeline {
       // Without this the plugin only pulls when the tag is absent on the host,
       // so a republished :latest would never be picked up.
       alwaysPull true
-      args '-u root -v /etc/ssl/certs/root.pem:/etc/bardigan-cay/ca.pem:ro'
+      args '-u root -v /etc/ssl/certs/ca-certificates.crt:/etc/bardigan-cay/ca.pem:ro'
     }
   }
 
