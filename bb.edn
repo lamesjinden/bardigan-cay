@@ -1,4 +1,6 @@
-{:tasks {:init               (do (def global "global")
+{:paths ["build/bb"]
+ :tasks {:requires           ([image :as img])
+         :init               (do (def global "global")
                                  (def client-test-out-dir "out"))
 
          clean-client        {:requires ([babashka.fs :as fs])
@@ -90,5 +92,15 @@
          test-server         (clojure "-M:test-server:server:server-tests")
          test                (do
                                (run 'test-client)
-                               (run 'test-server))}}
+                               (run 'test-server))
+
+         image-build         {:doc "Build the bardigan-cay-build OCI image (docker-archive tarball)"
+                              :task (img/build-oci-image)}
+
+         image-load          {:doc "Build the bardigan-cay-build OCI image and load it into the local Docker daemon"
+                              :task (img/load-oci-image)}
+
+         image-publish       {:doc "Build and publish the bardigan-cay-build OCI image to the registry (latest + git sha)"
+                              :depends [image-build]
+                              :task (img/publish-oci-image)}}}
 

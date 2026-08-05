@@ -64,7 +64,6 @@
 
     replaced))
 
-
 (defn inline-fonts [css-string css-directory-path]
   (-> css-string
       (inline-material-symbols-font css-directory-path)
@@ -77,7 +76,10 @@
     ; inline fonts into main.css
     (spit main-css-file-path inline-font-css)
     ; minify modified css
-    (let [minified-css (-> (shell {:out :string} "npx" "lightningcss" "--minify" main-css-file-path)
+    ; lightningcss is provided by the nix toolchain (nix/toolchain.nix), not
+    ; node_modules: the npm package's prebuilt binary cannot execute in the
+    ; from-scratch build image.
+    (let [minified-css (-> (shell {:out :string} "lightningcss" "--minify" main-css-file-path)
                            (:out))
           final-css minified-css
           ; inline css into index.html

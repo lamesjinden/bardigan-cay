@@ -17,34 +17,19 @@
         inherit system;
         config.allowUnfree = true;
       };
+
+      # Shared language toolchain (babashka + JDK + clojure + node), imported
+      # by both leaves so the dev shell and the toolchain image build against
+      # identical pinned versions. A plain Nix value — not a NixOS module.
+      toolchain = import ./nix/toolchain.nix { inherit pkgs; };
     in {
-      devShells.${system}.default = pkgs.mkShell {
-        packages = with pkgs; [
-          # Clojure ecosystem
-          babashka
-          jdk25_headless    # verify with: nix search nixpkgs jdk25
-          clojure
+      # LEAF 1 — interactive development (AI tooling, gh, skopeo).
+      devShells.${system}.default =
+        import ./nix/dev-shell.nix { inherit pkgs pkgs-unstable toolchain; };
 
-          # Node.js for shadow-cljs and npm dependencies
-          nodejs_22
-
-          # AI tooling
-          pkgs-unstable.claude-code
-
-          github-cli
-        ];
-
-        shellHook = ''
-          echo "bardigan-cay dev environment loaded"
-          echo "  Java:    $(java --version 2>&1 | head -1)"
-          echo "  Clojure: $(clojure --version)"
-          echo "  Node:    $(node --version)"
-
-          if [ ! -d "node_modules" ]; then
-            echo ""
-            echo "Note: node_modules not found. Run 'npm install' to install dependencies."
-          fi
-        '';
-      };
+      # LEAF 2 — the bardigan-cay-build toolchain image (pure toolchain + the
+      # tools to rebuild and publish itself; no CI-system specifics).
+      packages.${system}.bardigan-cay-build =
+        import ./nix/build-image.nix { inherit pkgs toolchain; };
     };
 }

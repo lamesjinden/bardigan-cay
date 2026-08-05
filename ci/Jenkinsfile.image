@@ -1,0 +1,66 @@
+// bardigan-cay CI — build & publish the `bardigan-cay-build` toolchain image
+// (self-bootstrap).
+//
+// Runs inside the CURRENT bardigan-cay-build image and produces its successor:
+// `bb image-publish` nix-builds the image defined by flake.nix + nix/ and
+// pushes it to Nexus with skopeo — both daemonless. The same task works on a
+// developer workstation (the dev shell provides skopeo for the genesis push).
+//
+// Docker Pipeline specifics (all Jenkins knowledge lives here, not in the image):
+//   -u root             nix requires a real uid and a root-writable /nix store;
+//                       the plugin's default -u <agent-uid> is a passwd-less
+//                       uid under which nix refuses to start.
+//   NO volume at /nix   deliberately. The image bakes a Nix database
+//                       (includeNixDB), so its runtime closure is already
+//                       registered and only build-time deps are fetched per
+//                       run. A persistent volume would seed from one image
+//                       version and then shadow the userland of every later
+//                       version (the whole image lives under /nix/store) —
+//                       breaking the container after each image upgrade.
+//   CA mount + SSL_CERT_FILE
+//                       skopeo's HTTPS push to Nexus must trust the internal
+//                       CA. nix keeps fetching cache.nixos.org via its own
+//                       NIX_SSL_CERT_FILE (baked public roots), so overriding
+//                       SSL_CERT_FILE affects only the push.
+//   The tarball lands in container-local /tmp (see build/bb/image.clj), so no
+//   root-owned files touch the bind-mounted host workspace.
+//
+// Trigger this job manually when the image inputs change (flake.nix, nix/*.nix).
+// Configure as a Pipeline job: "Pipeline script from SCM" → same repo/credentials,
+// branch `*/master`, Script Path `ci/Jenkinsfile.image`.
+pipeline {
+  agent {
+    docker {
+      image 'docker.nexus.internal/bardigan-cay-build:latest'
+      registryUrl 'https://docker.nexus.internal'
+      registryCredentialsId 'nexus-docker'
+      label 'docker'
+      // Without this the plugin only pulls when the tag is absent on the host,
+      // so a republished :latest would never be picked up.
+      alwaysPull true
+      args '-u root -v /etc/ssl/certs/root.pem:/etc/bardigan-cay/ca.pem:ro'
+    }
+  }
+
+  environment {
+    NEXUS_DOCKER_REGISTRY = 'docker.nexus.internal'
+    SSL_CERT_FILE         = '/etc/bardigan-cay/ca.pem'
+    NEXUS_DOCKER_CREDS    = credentials('nexus-docker')
+  }
+
+  options {
+    timestamps()
+    disableConcurrentBuilds()
+    buildDiscarder(logRotator(numToKeepStr: '20'))
+    timeout(time: 60, unit: 'MINUTES')
+  }
+
+  stages {
+    stage('Build & publish image') {
+      steps {
+        // Map the credentials() outputs to the names publish-oci-image reads
+        sh 'NEXUS_DOCKER_USER="$NEXUS_DOCKER_CREDS_USR" NEXUS_DOCKER_PASS="$NEXUS_DOCKER_CREDS_PSW" bb image-publish'
+      }
+    }
+  }
+}
