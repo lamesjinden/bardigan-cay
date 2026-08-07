@@ -2,15 +2,17 @@
   (:require [clojure.data.json :as json]
             [clojure.edn :as edn]
             [clojure.java.io :as io]
+            [clojure.string :as str]
             [clojure.zip :as zip]
             [ring.util.codec :as codec]
             [ring.util.response :as resp]
             [selmer.parser]
             [selmer.util]
+            [taoensso.timbre :refer [warn]]
             [clj-ts.util :as util]
             [clj-ts.render :as render]
             [clj-ts.card-server :as card-server]
-            [clj-ts.export.static-export :as export]))
+            [clj-ts.export.tiddlywiki :as tiddlywiki]))
 
 (defn handle-api-system-db [{:keys [card-server] :as _request}]
   (-> @card-server
@@ -49,20 +51,25 @@
             (json/write-str)
             (util/->json-response))))))
 
-(defn export-page-handler [{:keys [card-server] :as request}]
-  (let [page-name (-> request :params :page)
-        server-snapshot @card-server
-        result (export/export-one-page server-snapshot page-name)]
-    (if (= result :not-found)
-      (util/create-not-found page-name)
-      (util/->zip-file-response result))))
+(defn- export-file-name [wiki-name]
+  (let [base (-> (str wiki-name)
+                 (str/replace #"[^A-Za-z0-9_-]+" "-")
+                 (str/replace #"^-+|-+$" ""))]
+    (str (if (str/blank? base) "wiki" base) ".html")))
 
 (defn export-all-pages-handler [{:keys [card-server] :as _request}]
   (let [server-snapshot @card-server
-        result (export/export-all-pages server-snapshot)]
-    (if (= result :not-exported)
-      (util/create-not-available "export all pages is not available")
-      (util/->zip-file-response result))))
+        result (tiddlywiki/export-wiki server-snapshot)]
+    (if (= result :not-available)
+      (util/create-not-available "export is not available until the page database has been generated")
+      (let [{:keys [html failures]} result]
+        (when (seq failures)
+          (warn "pages failed to export:" (mapv :page failures)))
+        (-> (resp/response html)
+            (resp/content-type "text/html; charset=utf-8")
+            (util/content-disposition
+             (format "attachment; filename=\"%s\""
+                     (export-file-name (:wiki-name server-snapshot)))))))))
 
 (def index-local-path "public/index.html")
 
@@ -178,9 +185,7 @@
     (-> (card-server/rss-recent-changes
          server-snapshot
          (fn [page-name]
-           (str (-> server-snapshot
-                    :page-exporter
-                    (.page-name->exported-link page-name)))))
+           (str (:site-url server-snapshot) "pages/" page-name)))
         (resp/response)
         (resp/content-type "application/rss+xml"))))
 
@@ -213,8 +218,7 @@
              :api-reorder-card       {:post handle-api-reorder-card}
              :api-replace-card       {:post handle-api-replace-card}
              :api-rss-recent-changes {:get handle-api-rss-recent-changes}
-             :api-export-page        {:get export-page-handler}
-             :api-export-all-ages    {:get export-all-pages-handler}
+             :api-export-all-pages   {:get export-all-pages-handler}
              :media                  {:get handle-media}})
 
 (defn router [uri]
@@ -232,8 +236,7 @@
     (= uri "/api/reordercard") :api-reorder-card
     (= uri "/api/replacecard") :api-replace-card
     (= uri "/api/rss/recentchanges") :api-rss-recent-changes
-    (= uri "/api/exportpage") :api-export-page
-    (= uri "/api/exportallpages") :api-export-all-ages
+    (= uri "/api/exportallpages") :api-export-all-pages
     (re-matches media-request-pattern uri) :media
     :else :not-found))
 

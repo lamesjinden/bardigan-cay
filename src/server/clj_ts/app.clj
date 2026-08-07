@@ -18,9 +18,6 @@
    :name       "Yet Another CardiganBay Wiki"
    :site       "/"
    :init       "HelloWorld"
-   :links      "./"
-   :extension  ".html"
-   :export-dir "./bedrock/exported/"
    :config     "./bedrock/system/config.edn"
    :nav-links  ["HelloWorld" "InQueue" "Transcript" "RecentChanges" "Help"]})
 
@@ -42,10 +39,7 @@
    [nil "--init INIT" "Start Page"]
    [nil "--navlinks NAVLINKS" "Navigation Header Links"
     :id :nav-links
-    :parse-fn (fn [arg] (mapv str/trim (str/split arg #",")))]
-   [nil "--links LINK" "Export Links"]
-   [nil "--extension EXPORTED_EXTENSION" "Exported Extension"]
-   ["-e" "--export-dir DIR" "Export Directory"]])
+    :parse-fn (fn [arg] (mapv str/trim (str/split arg #",")))]])
 
 (defn args->opts [args]
   (cli/parse-opts args cli-options))

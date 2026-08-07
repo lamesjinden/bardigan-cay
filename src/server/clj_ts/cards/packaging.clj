@@ -14,7 +14,6 @@
    [clj-ts.cards.packaging.raw :as raw]
    [clj-ts.cards.packaging.scheduling :as scheduling]
    [clj-ts.cards.packaging.system :as system]
-   [clj-ts.cards.packaging.todo :as todo]
    [clj-ts.cards.packaging.workspace :as workspace]
    [clj-ts.cards.parsing :as parsing]
    [clj-ts.render :as render]
@@ -68,9 +67,6 @@
 
        :network
        (network/package id card-map render-context)
-
-       :todo
-       (todo/package id source_data render-context)
 
        :graph
        (graph/package id source_data render-context)

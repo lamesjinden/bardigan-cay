@@ -5,9 +5,7 @@
             [ring.util.response :as resp]
             [sci.core :as sci])
   (:import (java.io PrintWriter PushbackReader StringWriter)
-           (java.nio.file Path)
            (java.util.regex Pattern)
-           (java.util.zip ZipEntry ZipOutputStream)
            (java.time LocalDate LocalDateTime ZonedDateTime ZoneId)
            (java.time.format DateTimeFormatter)))
 
@@ -65,36 +63,15 @@
   [resp content-disposition]
   (ring.util.response/header resp "Content-Disposition" content-disposition))
 
-(defn ->zip-file-response [^Path zip-file-path]
-  (let [content-type "application/zip"
-        fileName (str (.getFileName zip-file-path))
-        content-disposition-value (format "attachment; filename=%s" fileName)]
-    (-> (str zip-file-path)
-        (resp/file-response)
-        (resp/content-type content-type)
-        (content-disposition content-disposition-value))))
-
 (defn server-eval
   "Evaluate Clojure code embedded in a card. Evaluated with SCI
    but on the server. I hope there's no risk for this ...
    BUT ..."
   [data]
-  (let [code data
-        evaluated (#(apply str (sci/eval-string code)))]
-    evaluated))
-
-(defn zip-directory
-  "see https://stackoverflow.com/a/27066626
-  modifications made such that the resulting hierarchy within the zip is relative to relative-to-path,
-  otherwise zip entries were nested in absolute system paths"
-  [source-directory-str destination-file-str relative-to-path]
-  (with-open [zip (ZipOutputStream. (io/output-stream destination-file-str))]
-    (doseq [f (file-seq (io/file source-directory-str)) :when (.isFile f)]
-      (let [f-absolute-path (.toPath f)
-            f-relative-path (.relativize relative-to-path f-absolute-path)]
-        (.putNextEntry zip (ZipEntry. (str f-relative-path)))
-        (io/copy f zip)
-        (.closeEntry zip)))))
+  (let [result (sci/eval-string data)]
+    (if (seqable? result)
+      (apply str result)
+      (str result))))
 
 (defn nonblank [x & args]
   (if (not (str/blank? x))

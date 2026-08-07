@@ -37,16 +37,13 @@
 
            :viewing
            [:span.button-container
-            [:button.big-btn.big-btn-left
+            [:button.big-btn
              {:on-click (fn []
                           (a/go
                             (when-let [response (a/<! (e-editing/<notify-global-editing-starting))]
                               (when (= response :ok)
                                 (swap! db assoc :mode :editing)))))}
-             [:span {:class [:material-symbols-sharp :clickable]} "edit"]]
-            [:button.big-btn.big-btn-right
-             [:a {:href (str "/api/exportpage?page=" @db-current-page)}
-              [:span {:class [:material-symbols-sharp :clickable]} "deployed_code_update"]]]]
+             [:span {:class [:material-symbols-sharp :clickable]} "edit"]]]
 
            :transcript
            [:span.button-container

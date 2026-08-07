@@ -5,7 +5,6 @@
             [clj-ts.cards.packaging :as packaging]
             [clj-ts.cards.parsing :as parsing]
             [clj-ts.cards.system :as system]
-            [clj-ts.export.page-exporter]
             [clj-ts.query.card-server-record :as server-record]
             [clj-ts.query.facts-db :as facts]
             [clj-ts.query.logic :as ldb]
@@ -16,12 +15,10 @@
   (:import (clojure.lang Atom)))
 
 ;; Card Server state is just a defrecord.
-;; But two components : the page-store and page-exporter are
-;; deftypes in their own right.
+;; But one component, the page-store, is a deftype in its own right.
 ;; page-store has all the file-system information that the wiki reads and writes.
-;; page-exporter the other info for exporting flat files
 
-(defn create-card-server ^Atom [wiki-name site-url port-no start-page nav-links logic-db page-store page-exporter]
+(defn create-card-server ^Atom [wiki-name site-url port-no start-page nav-links logic-db page-store]
   (atom (server-record/->CardServerRecord
          wiki-name
          site-url
@@ -29,8 +26,7 @@
          start-page
          nav-links
          logic-db
-         page-store
-         page-exporter)))
+         page-store)))
 
 (defn- set-state!
   [^Atom card-server key val]

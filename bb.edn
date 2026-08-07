@@ -77,8 +77,7 @@
          run-dev-client-repl (run 'run-dev-client)          ;; shadow provides nrepl
          run-dev-server      {:requires ([babashka.fs :as fs])
                               :task     (let [project-root (fs/parent (System/getProperty "babashka.config"))
-                                              default-args ["--directory" (format "'%s'" (fs/path project-root "bedrock"))
-                                                            "--export-dir" "'/tmp'"]
+                                              default-args ["--directory" (format "'%s'" (fs/path project-root "bedrock"))]
                                               args (concat default-args *command-line-args*)
                                               base-command "-M:run-dev-server:dev-server:server:dev"
                                               command (format "%s %s" base-command (clojure.string/join " " args))]

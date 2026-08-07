@@ -8,7 +8,7 @@
        (. db# ~m ~@args))))
 
 (defrecord CardServerRecord
-  [wiki-name site-url port-no start-page nav-links facts-db page-store page-exporter]
+           [wiki-name site-url port-no start-page nav-links facts-db page-store]
 
   facts/IFactsDb
   (raw-db [this] (dnn this raw-db))

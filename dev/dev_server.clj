@@ -57,7 +57,6 @@
 
   (create-server
    "--directory" "../../Documents/wiki/bedrock/"
-   "--export-dir" "../../Documents/wiki/bedrock/exported/"
    "--ip=0.0.0.0"
    "-v")
 

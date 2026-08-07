@@ -2,14 +2,12 @@
   (:require [clojure.string :as str]
             [markdown.core :as md]
             [clj-ts.common :refer [double-comma-table
-                                   double-bracket-links
-                                   auto-links]]))
+                                   double-bracket-links]]))
 
 (defn string->html [s]
   (-> s
       (double-comma-table)
       (md/md->html)
-      #_(auto-links)
       (double-bracket-links)))
 
 (defn card->html [card]

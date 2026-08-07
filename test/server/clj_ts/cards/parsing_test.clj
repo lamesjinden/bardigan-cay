@@ -164,15 +164,6 @@
 
 ;; endregion
 
-(deftest auto-links-test
-  (let [example-md-string "### A Heading
-                           
-                           a string referencing https://google.com should become a link
-                           "
-        rendered (clj-ts.common/auto-links example-md-string)
-        expected "<a href=\"https://google.com\">https://google.com</a>"]
-    (is (s/includes? rendered expected))))
-
 (deftest double-bracket-links-test
   (let [example-md-string
         "<ul><li>a broken link [[orphan]]</li><li>a link to [[test02|test with a alt title]]</li></ul>"

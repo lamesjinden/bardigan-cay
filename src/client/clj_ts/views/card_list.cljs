@@ -7,8 +7,7 @@
             [clj-ts.views.deadline-card :refer [deadline]]
             [clj-ts.views.lazy-graph :refer [suspended-graph-card-component]]
             [clj-ts.views.lazy-workspace-card :refer [suspended-workspace-component]]
-            [clj-ts.views.manual-copy-card :refer [manual-copy]]
-            [clj-ts.views.todo-card :refer [todo]]))
+            [clj-ts.views.manual-copy-card :refer [manual-copy]]))
 
 (defn error-boundary
   [& _children]
@@ -43,9 +42,6 @@
 
                           "workspace"
                           (suspended-workspace-component {:db db :card card})
-
-                          "todo"
-                          [todo db card]
 
                           "deadline"
                           [deadline db card]

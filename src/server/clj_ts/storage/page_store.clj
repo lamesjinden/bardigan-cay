@@ -10,16 +10,15 @@
 
 ;; Data structures / types
 
-;; page-path, system-path, export-path are Java nio Paths
+;; page-path and system-path are Java nio Paths
 ;; git-repo? is boolean
 
-(deftype PageStore [page-path system-path export-path git-repo?]
+(deftype PageStore [page-path system-path git-repo?]
   page-storage/IPageStore
 
   (as-map [_this]
     {:page-path   page-path
      :system-path system-path
-     :export-path export-path
      :git-repo?   git-repo?})
 
   (page-name->path [_this page-name]
@@ -77,7 +76,6 @@
   (report [_this]
     (str "Page Directory:  \t" (str page-path) "\n"
          "System Directory:\t" (str system-path) "\n"
-         "Export Directory:\t" (str export-path) "\n"
          "Within Git Repo?:\t" (str git-repo?) "\n"))
 
   (similar-page-names [this page-name]
@@ -119,21 +117,18 @@
 ;; Constructing
 
 ;; note - used externally
-(defn make-page-store [page-dir-as-string export-dir-as-string]
+(defn make-page-store [page-dir-as-string]
   (let [page-dir-path (-> (Paths/get page-dir-as-string (make-array String 0))
                           (.toAbsolutePath)
                           (.normalize))
         system-dir-path (-> (Paths/get page-dir-as-string (into-array String ["system"]))
                             (.toAbsolutePath)
                             (.normalize))
-        export-dir-path (-> (Paths/get export-dir-as-string (make-array String 0))
-                            (.toAbsolutePath)
-                            (.normalize))
         ;; note -- only verifies page-dir-path is a git root
         ;; todo -- check if within a git repo
         git-path (.resolve page-dir-path ".git")
         git-repo? (-> git-path .toFile .exists)
-        page-store (->PageStore page-dir-path system-dir-path export-dir-path git-repo?)]
+        page-store (->PageStore page-dir-path system-dir-path git-repo?)]
 
     (assert (-> page-dir-path .toFile .exists)
             (str "Given page-store directory " page-dir-as-string " does not exist."))
@@ -145,10 +140,6 @@
     (assert (-> system-dir-path .toFile .isDirectory)
             (str "There is a file called 'system' under " page-dir-as-string
                  " but it is not a directory. Please remove that file and create a directory with that name"))
-    (assert (-> export-dir-path .toFile .exists)
-            (str "Given export-dir-path " export-dir-as-string " does not exist."))
-    (assert (-> export-dir-path .toFile .isDirectory)
-            (str "export-path " export-dir-as-string " is not a directory."))
     page-store))
 
 ;; Basic functions

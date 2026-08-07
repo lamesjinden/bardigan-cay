@@ -1,0 +1,9 @@
+TiddlyWiki 5.3.8 (empty.html)
+
+Source: https://tiddlywiki.com/empty.html (downloaded 2026-08-07)
+
+This is the official pre-built empty TiddlyWiki, vendored so that export
+needs no Node.js at runtime. To upgrade: download a newer empty.html from
+tiddlywiki.com, replace this file, update this note, and re-run the
+export test suite (clj-ts.export.tiddlywiki-test exercises the splice
+against this file).

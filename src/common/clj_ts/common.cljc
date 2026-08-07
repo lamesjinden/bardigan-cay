@@ -3,11 +3,6 @@
 
 ;; region Rendering / special Markup
 
-(defn auto-links [text]
-  (let [url-pattern #?(:clj #"((http(s)?:\/\/)([\da-z\.-]+)\.([a-z\.]{2,6})([a-zA-Z0-9\.-\/]*)*\/?)"
-                       :cljs #"(http(s)?:\\/\\/(\S+))")]
-    (string/replace text url-pattern (str "<a href=\"$1\">$1</a>"))))
-
 (def double-link-pattern #"\[\[([\w\s-:]+?)\]\]")
 (def double-link-pattern-ext  #"\[\[([\w\s-:]+?)\|([\w\s\-:\.]+?)\]\]")
 

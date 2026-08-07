@@ -166,16 +166,12 @@ seamless><a href='" url "'>" description "</a></iframe></div></div>")
      (caption-renderer (apply str (doall entries)))
      caption-renderer)))
 
-(defn media-img [data render-context caption-renderer server-state]
+(defn media-img [data caption-renderer]
   (let [src (:src data)
         width (if (:width data) (:width data) "100%")]
     (generic-embed
      data
-     (if (:for-export? render-context)
-       (str "<img src='"
-            (-> server-state :page-exporter (.media-name->exported-link src))
-            "' class='embedded_image_for_export' width='" width "' />")
-       (str "<img src='/media/" src "' class='embedded_image' width='" width "' />"))
+     (str "<img src='/media/" src "' class='embedded_image' width='" width "' />")
      caption-renderer)))
 
 (defn img [data caption-renderer]
@@ -197,7 +193,7 @@ seamless><a href='" url "'>" description "</a></iframe></div></div>")
     (try
       (condp = (:type data)
         :media-img
-        (media-img data render-context caption-renderer server-state)
+        (media-img data caption-renderer)
 
         :img
         (img data caption-renderer)
