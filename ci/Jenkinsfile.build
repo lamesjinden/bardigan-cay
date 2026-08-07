@@ -1,0 +1,67 @@
+// bardigan-cay CI — build & archive the release artifact.
+//
+// Runs inside the bardigan-cay-build toolchain image: npm dependencies from
+// the lockfile, the full test suite (client + server), the shadow-cljs
+// release build, and the server uberjar — the same steps `bb all` performs
+// for a developer, split into stages for per-stage visibility. The uberjar
+// (target/bardigan-cay-<version>.jar) is archived on success.
+//
+// npm/clojure/gitlibs caches land under $HOME (/home/build, world-writable);
+// build containers are ephemeral, so every run restores cold from
+// registry.npmjs.org / Maven Central / Clojars. If restore time becomes
+// annoying, add a named volume to the agent args:
+//   args '-v bardigan-cay-home:/home/build'
+// (safe: unlike /nix, nothing in the image's userland lives under /home/build).
+pipeline {
+  agent {
+    docker {
+      image 'docker.nexus.internal/bardigan-cay-build:latest'
+      registryUrl 'https://docker.nexus.internal'
+      registryCredentialsId 'nexus-docker'
+      label 'docker'
+      // Without this the plugin only pulls when the tag is absent on the host,
+      // so a republished :latest would never be picked up.
+      alwaysPull true
+    }
+  }
+
+  options {
+    timestamps()
+    disableConcurrentBuilds()
+    buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '5'))
+    timeout(time: 45, unit: 'MINUTES')
+  }
+
+  stages {
+    stage('npm deps') {
+      steps {
+        // `npm ci` (not `npm install`): reproducible install strictly from
+        // package-lock.json, and fails on any lockfile drift.
+        sh 'npm ci --no-audit --no-fund'
+      }
+    }
+
+    stage('Test') {
+      steps {
+        // Client (shadow-cljs node tests) + server (clojure test-runner).
+        sh 'bb test'
+      }
+    }
+
+    stage('Build') {
+      steps {
+        // Mirrors the tail of `bb all`: clean, client release build,
+        // server uberjar (which inlines the client assets).
+        sh 'bb clean'
+        sh 'bb build-client'
+        sh 'bb build-server'
+      }
+    }
+
+    stage('Archive') {
+      steps {
+        archiveArtifacts artifacts: 'target/bardigan-cay-*.jar', fingerprint: true
+      }
+    }
+  }
+}
