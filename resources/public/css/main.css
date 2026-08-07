@@ -981,6 +981,10 @@ dialog::backdrop {
   margin-left: 10px;
   padding-top: var(--big-btn-padding-bottom) !important;
   padding-left: 0px !important;
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 #lambda-button>span {

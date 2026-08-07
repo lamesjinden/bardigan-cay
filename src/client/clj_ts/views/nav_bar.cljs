@@ -324,6 +324,11 @@
         (swap! local-db assoc :quake-editor nil)
         (r/dispose! track-theme)
         (when-let [editor @!editor]
+          ;; Carry the editor's content back into the nav input
+          (let [text (.getValue editor)]
+            (swap! local-db assoc :input-value (if (str/blank? text)
+                                                 nil
+                                                 text)))
           (.destroy editor)))
       :reagent-render
       (fn [_db _local-db]
@@ -350,11 +355,44 @@
 
 (defn- focus-quake-editor! [local-db]
   (when-let [editor (:quake-editor @local-db)]
-    (.focus editor)))
+    (.focus editor)
+    (.selectAll editor)))
 
 (defn- quake-active? [!quake-mode-cursor]
   (when-let [cursor @!quake-mode-cursor]
     @cursor))
+
+;; region long press
+
+(def ^:private long-press-ms 500)
+(def ^:private long-press-move-threshold-px 10)
+
+(defn- cancel-long-press! [!press]
+  (when-let [{:keys [timer]} @!press]
+    (js/clearTimeout timer))
+  (reset! !press nil))
+
+(defn- begin-long-press! [!press !fired? on-fire e]
+  (when (.-isPrimary e)
+    (cancel-long-press! !press)
+    (reset! !fired? false)
+    (let [timer (js/setTimeout
+                 (fn []
+                   (reset! !press nil)
+                   (reset! !fired? true)
+                   (on-fire))
+                 long-press-ms)]
+      (reset! !press {:timer timer
+                      :x     (.-clientX e)
+                      :y     (.-clientY e)}))))
+
+(defn- track-long-press-move! [!press e]
+  (when-let [{:keys [x y]} @!press]
+    (when (or (> (js/Math.abs (- (.-clientX e) x)) long-press-move-threshold-px)
+              (> (js/Math.abs (- (.-clientY e) y)) long-press-move-threshold-px))
+      (cancel-long-press! !press))))
+
+;; endregion
 
 (defn nav-bar [_db _db-nav-links _db-quake-mode?]
   (let [local-db (r/atom {:input-value nil
@@ -364,13 +402,18 @@
                           :quake-editor nil
                           :quake-history-index nil})
         !quake-mode-cursor (clojure.core/atom nil)
+        !long-press (clojure.core/atom nil)
+        !long-press-fired? (clojure.core/atom false)
         global-keydown-handler (fn [e]
                                  (cond
                                    (and (.-ctrlKey e)
                                         (= (.-code e) "Backquote"))
                                    (do (.preventDefault e)
                                        (when-let [cursor @!quake-mode-cursor]
-                                         (swap! cursor not)))
+                                         (let [editor (:quake-editor @local-db)]
+                                           (if (and @cursor editor (not (.isFocused editor)))
+                                             (focus-quake-editor! local-db)
+                                             (swap! cursor not)))))
 
                                    (and (= (.-key e) "/")
                                         (not (.-ctrlKey e))
@@ -438,10 +481,21 @@
                 [:span {:class [:material-symbols-sharp :clickable]} "search"]])
              [:button#lambda-button.header-input-button
               {:class (when quake-mode? "quake-active")
+               :on-pointer-down (fn [e]
+                                  (begin-long-press! !long-press !long-press-fired?
+                                                     (fn [] (swap! db-quake-mode? not))
+                                                     e))
+               :on-pointer-move (fn [e] (track-long-press-move! !long-press e))
+               :on-pointer-up (fn [_] (cancel-long-press! !long-press))
+               :on-pointer-cancel (fn [_] (cancel-long-press! !long-press))
+               :on-pointer-leave (fn [_] (cancel-long-press! !long-press))
+               :on-context-menu (fn [e] (.preventDefault e))
                :on-click (fn []
-                           (if quake-mode?
-                             (quake-eval! db local-db)
-                             (on-eval-clicked db local-db (:input-value @local-db))))}
+                           (if @!long-press-fired?
+                             (reset! !long-press-fired? false)
+                             (if quake-mode?
+                               (quake-eval! db local-db)
+                               (on-eval-clicked db local-db (:input-value @local-db)))))}
               [:span {:class [:material-symbols-sharp :clickable]} "λ"]]
              (when quake-mode?
                [:button.header-input-button

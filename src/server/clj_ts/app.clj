@@ -45,7 +45,7 @@
     :parse-fn (fn [arg] (mapv str/trim (str/split arg #",")))]
    [nil "--links LINK" "Export Links"]
    [nil "--extension EXPORTED_EXTENSION" "Exported Extension"]
-   [nil "--export-dir DIR" "Export Directory"]])
+   ["-e" "--export-dir DIR" "Export Directory"]])
 
 (defn args->opts [args]
   (cli/parse-opts args cli-options))
@@ -62,7 +62,7 @@
     (when (seq errors)
       (println))
     (doseq [e errors]
-      (println e e))))
+      (println e))))
 
 ;; endregion
 

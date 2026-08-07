@@ -40,7 +40,18 @@
       (reset! server (server/create-server application-settings request-pipeline)))))
 
 (defn -main [& args]
-  (apply create-server args))
+  (let [{:keys [options errors summary]} (app/args->opts args)]
+    (cond
+      (:help options)
+      (app/print-summary summary)
+
+      errors
+      (do
+        (app/print-errors errors)
+        (System/exit 1))
+
+      :else
+      (apply create-server args))))
 
 (comment
 
