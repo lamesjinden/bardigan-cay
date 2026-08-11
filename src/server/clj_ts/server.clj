@@ -1,11 +1,14 @@
 (ns clj-ts.server
-  (:require [org.httpkit.server :refer [run-server]]
+  (:require [clojure.core.async :as a]
+            [org.httpkit.server :refer [run-server]]
             [ring.middleware.defaults :refer [wrap-defaults api-defaults]]
-            [ring.middleware.json :refer [wrap-json-body]]
+            [ring.middleware.json :refer [wrap-json-body wrap-json-response]]
             [selmer.parser]
             [selmer.util]
             [taoensso.timbre :refer [debug]]
+            [job-server.middleware.server :as job-server]
             [clj-ts.card-server :as card-server]
+            [clj-ts.jobs :as jobs]
             [clj-ts.routing :as routing]
             [clj-ts.storage.page-store :as pagestore])
   (:import (clojure.lang Atom)))
@@ -53,14 +56,40 @@
     (let [request (assoc request :card-server card-server-ref)]
       (handler request))))
 
+;; closing the previous stop-chan on pipeline (re)creation shuts down the
+;; prior job-server processes -- keeps dev-server reloads leak-free
+(defonce ^:private job-server-stop-chan* (atom nil))
+
+(defn- next-job-server-stop-chan! []
+  (let [stop-chan (a/chan)]
+    (when-let [previous (first (reset-vals! job-server-stop-chan* stop-chan))]
+      (a/close! previous))
+
+    stop-chan))
+
+(defn- wrap-stringified-params
+  "api-defaults keywordizes params but job-server reads string keys; adds
+  string-keyed copies alongside so both styles resolve."
+  [handler]
+  (fn [request]
+    (handler (update request :params
+                     (fn [params]
+                       (merge params (update-keys params name)))))))
+
 (defn create-request-pipeline
   "returns the ring request-handling pipeline"
   [^Atom card-server-ref]
   (let [ring-defaults (-> api-defaults
-                          (assoc :static {:resources "public"}))]
+                          (assoc :static {:resources "public"}))
+        job-mapping (jobs/create-job-mapping card-server-ref)]
     (-> #'routing/request-handler
         (wrap-card-server card-server-ref)
         (wrap-json-body {:keywords? true})
+        (job-server/wrap-job-server job-mapping "/api" (next-job-server-stop-chan!))
+        (wrap-stringified-params)
+        ;; serializes the job-server's clojure-map response bodies;
+        ;; string/File bodies from BC's own handlers pass through untouched
+        (wrap-json-response)
         (wrap-defaults ring-defaults))))
 
 (defn gather-server-settings [application-settings]

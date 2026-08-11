@@ -9,10 +9,12 @@
    [clj-ts.confirmation.transcript-process :as confirm-transcript]
    [clj-ts.events.confirmation :as e-confirm]
    [clj-ts.events.editing :as e-editing]
+   [clj-ts.events.jobs :as e-jobs]
    [clj-ts.events.navigation :as e-nav]
    [clj-ts.events.progression :as e-progress]
    [clj-ts.events.rendering :as e-rendering]
    [clj-ts.events.transcript :as e-transcript]
+   [clj-ts.jobs.jobs-process :as jobs-process]
    [clj-ts.mode :as mode]
    [clj-ts.navigation :as nav]
    [clj-ts.rendering.render-process :as rendering-render]
@@ -33,7 +35,9 @@
               :mode         :viewing
               :theme        (theme/get-initial-theme :light)
               :env-port     4545
-              :quake-mode?  false}))
+              :quake-mode?  false
+              :jobs         {:entries []
+                             :local-failures []}}))
 
 ;; endregion
 
@@ -58,6 +62,8 @@
                              (e-editing/create-editing$))
 
         _render-process (rendering-render/<create-render-process (e-rendering/create-rendering$))
+
+        _jobs-process (jobs-process/<create-jobs-process db (e-jobs/create-jobs$))
 
         confirmation-request$ (e-confirm/create-confirmation-request$)
         progress$ (e-progress/create-progress$)]

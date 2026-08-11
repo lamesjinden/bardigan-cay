@@ -1179,6 +1179,95 @@ dialog::backdrop {
   background-color: var(--secondary-background-color);
 }
 
+.app-menu-container>.menu-list>li.jobs-section {
+  cursor: default;
+  display: block;
+  padding: 0;
+}
+
+.app-menu-container>.menu-list>li.jobs-section:hover,
+.app-menu-container>.menu-list>li.jobs-section:active {
+  filter: none;
+}
+
+.jobs-list {
+  list-style-type: none;
+  margin: 0;
+  max-height: 40vh;
+  overflow-y: auto;
+  padding: 5px 0;
+}
+
+.jobs-list .job-item {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  padding: 6px 10px 6px 30px;
+}
+
+.jobs-list .job-item-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.jobs-list .job-label {
+  color: var(--primary-foreground-color);
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.jobs-list .job-error,
+.jobs-list .job-warning {
+  font-size: 0.75rem;
+  max-width: 260px;
+  overflow-wrap: break-word;
+  white-space: normal;
+}
+
+.jobs-list .job-error {
+  color: #d9534f;
+}
+
+.jobs-list .job-warning {
+  color: #b58900;
+}
+
+.jobs-list .job-status-icon.accepted {
+  color: var(--secondary-foreground-color);
+}
+
+.jobs-list .job-status-icon.running {
+  animation: job-spin 1.2s linear infinite;
+  color: var(--primary-accent-color);
+}
+
+.jobs-list .job-status-icon.success {
+  color: #2ea44f;
+}
+
+.jobs-list .job-status-icon.failure {
+  color: #d9534f;
+}
+
+.jobs-list .job-download {
+  margin-left: auto;
+  text-decoration: none;
+}
+
+.jobs-empty {
+  color: var(--secondary-foreground-color);
+  font-size: 0.85rem;
+  padding: 10px 10px 10px 30px;
+}
+
+@keyframes job-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* #endregion */
 
 /* #region paste_bar */

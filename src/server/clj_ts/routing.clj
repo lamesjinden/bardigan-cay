@@ -2,17 +2,15 @@
   (:require [clojure.data.json :as json]
             [clojure.edn :as edn]
             [clojure.java.io :as io]
-            [clojure.string :as str]
             [clojure.zip :as zip]
             [ring.util.codec :as codec]
             [ring.util.response :as resp]
             [selmer.parser]
             [selmer.util]
-            [taoensso.timbre :refer [warn]]
             [clj-ts.util :as util]
             [clj-ts.render :as render]
             [clj-ts.card-server :as card-server]
-            [clj-ts.export.tiddlywiki :as tiddlywiki]))
+            [clj-ts.export.artifacts :as artifacts]))
 
 (defn handle-api-system-db [{:keys [card-server] :as _request}]
   (-> @card-server
@@ -51,25 +49,18 @@
             (json/write-str)
             (util/->json-response))))))
 
-(defn- export-file-name [wiki-name]
-  (let [base (-> (str wiki-name)
-                 (str/replace #"[^A-Za-z0-9_-]+" "-")
-                 (str/replace #"^-+|-+$" ""))]
-    (str (if (str/blank? base) "wiki" base) ".html")))
+(def export-artifact-pattern #"/api/export/artifact/([a-fA-F0-9\-]+)/?")
 
-(defn export-all-pages-handler [{:keys [card-server] :as _request}]
-  (let [server-snapshot @card-server
-        result (tiddlywiki/export-wiki server-snapshot)]
-    (if (= result :not-available)
-      (util/create-not-available "export is not available until the page database has been generated")
-      (let [{:keys [html failures]} result]
-        (when (seq failures)
-          (warn "pages failed to export:" (mapv :page failures)))
-        (-> (resp/response html)
-            (resp/content-type "text/html; charset=utf-8")
-            (util/content-disposition
-             (format "attachment; filename=\"%s\""
-                     (export-file-name (:wiki-name server-snapshot)))))))))
+(defn export-artifact-handler [{:keys [uri] :as _request}]
+  (let [artifact-id (second (re-matches export-artifact-pattern uri))
+        {:keys [file file-name]} (artifacts/lookup artifact-id)]
+    (if (and file (.exists ^java.io.File file))
+      ;; a File body is streamed from disk by http-kit; a String body
+      ;; would be held in heap in full
+      (-> (resp/response file)
+          (resp/content-type "text/html; charset=utf-8")
+          (util/content-disposition (format "attachment; filename=\"%s\"" file-name)))
+      (util/create-not-found uri))))
 
 (def index-local-path "public/index.html")
 
@@ -218,7 +209,7 @@
              :api-reorder-card       {:post handle-api-reorder-card}
              :api-replace-card       {:post handle-api-replace-card}
              :api-rss-recent-changes {:get handle-api-rss-recent-changes}
-             :api-export-all-pages   {:get export-all-pages-handler}
+             :api-export-artifact    {:get export-artifact-handler}
              :media                  {:get handle-media}})
 
 (defn router [uri]
@@ -236,7 +227,7 @@
     (= uri "/api/reordercard") :api-reorder-card
     (= uri "/api/replacecard") :api-replace-card
     (= uri "/api/rss/recentchanges") :api-rss-recent-changes
-    (= uri "/api/exportallpages") :api-export-all-pages
+    (re-matches export-artifact-pattern uri) :api-export-artifact
     (re-matches media-request-pattern uri) :media
     :else :not-found))
 

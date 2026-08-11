@@ -50,12 +50,16 @@
 (defn- tiddler-by-title [tiddlers title]
   (first (filter #(= title (get % "title")) tiddlers)))
 
+(defn- export [snapshot]
+  (let [{:keys [file failures]} (tiddlywiki/export-wiki! snapshot)]
+    {:html (slurp file) :failures failures}))
+
 (deftest export-produces-a-self-contained-wiki
   (let [dir (temp-wiki-dir {"Start" "# Hello\n\nsome **bold** text"
                             "Other" "plain content"
                             "AllPages" ":system\n\n{:command :ListPages}"}
                            {"dot.png" png-bytes})
-        {:keys [html failures]} (tiddlywiki/export-wiki (make-snapshot dir))
+        {:keys [html failures]} (export (make-snapshot dir))
         tiddlers (spliced-tiddlers html)]
     (testing "no failures"
       (is (= [] failures)))
@@ -82,7 +86,7 @@
 
 (deftest script-content-cannot-break-out-of-the-store
   (let [dir (temp-wiki-dir {"Start" ":raw\n\n</script><script>alert(1)</script>"} {})
-        {:keys [html]} (tiddlywiki/export-wiki (make-snapshot dir))
+        {:keys [html]} (export (make-snapshot dir))
         tiddlers (spliced-tiddlers html)]
     ;; if the </script> in the card body were not escaped, the store block
     ;; would terminate early and this parse would fail
@@ -95,7 +99,7 @@
                      ;; a page the db knows about but that has no file
                      (assoc :facts-db (reify facts/IFactsDb
                                         (all-pages [_] ["Start" "Doomed"]))))
-        {:keys [html failures]} (tiddlywiki/export-wiki snapshot)
+        {:keys [html failures]} (export snapshot)
         tiddlers (spliced-tiddlers html)]
     (is (= ["Doomed"] (mapv :page failures)))
     (is (some? (tiddler-by-title tiddlers "Start")))
