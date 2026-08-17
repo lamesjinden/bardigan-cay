@@ -1,15 +1,25 @@
 (ns clj-ts.views.autocomplete-dropdown
   (:require [clj-ts.keyboard :as keyboard]))
 
+(defn dismiss-autocomplete!
+  "Hides the autocomplete panel and suppresses any in-flight suggestion
+   results until the input value changes again."
+  [local-db]
+  (swap! local-db assoc
+         :autocomplete-visible? false
+         :suggestions []
+         :selected-index nil
+         :autocomplete-dismissed? true))
+
 (defn autocomplete-on-key-escape [_db local-db _e]
-  (swap! local-db assoc :autocomplete-visible? false))
+  (dismiss-autocomplete! local-db))
 
 (defn autocomplete-on-key-enter [db local-db e on-key-up-enter]
   (when-let [selected-index (:selected-index @local-db)]
     (let [{:keys [name] :as _selected-suggestion} (get-in @local-db [:suggestions selected-index])]
       (when name
         (on-key-up-enter db local-db e name)
-        (swap! local-db assoc :autocomplete-visible? false)))))
+        (dismiss-autocomplete! local-db)))))
 
 (defn- scroll-selected-into-view-if-needed [local-db]
   (when-let [dropdown-element (:autocomplete-element @local-db)]
@@ -74,7 +84,7 @@
                              :on-mouse-enter #(swap! local-db assoc :selected-index i)
                              :on-click #(do
                                           (on-clicked db local-db % result)
-                                          (swap! local-db assoc :autocomplete-visible? false))}
+                                          (dismiss-autocomplete! local-db))}
                             result])
                          search-results)
             (doall))])))

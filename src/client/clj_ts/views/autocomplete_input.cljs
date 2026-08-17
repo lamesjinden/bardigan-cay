@@ -3,7 +3,7 @@
             [clojure.string :as str]
             [reagent.core :as r]
             [clj-ts.keyboard :as keyboard]
-            [clj-ts.views.autocomplete-dropdown :refer [autocomplete-dropdown]]
+            [clj-ts.views.autocomplete-dropdown :refer [autocomplete-dropdown dismiss-autocomplete!]]
             [clj-ts.autocomplete.autocomplete-process :as autocomplete]))
 
 ;; region keyboard handlers
@@ -11,11 +11,12 @@
 (defn- autocomplete-input-on-key-enter [db local-db e on-submit]
   (let [input-value (-> e .-target .-value str/trim)]
     (when (seq input-value)
+      (dismiss-autocomplete! local-db)
       (on-submit db local-db e input-value))))
 
 (defn- autocomplete-input-on-escape [_db local-db _e]
   (if (:autocomplete-visible? @local-db)
-    (swap! local-db assoc :autocomplete-visible? false)
+    (dismiss-autocomplete! local-db)
     (swap! local-db assoc :input-value nil)))
 
 (defn- focus-autocomplete-element [_db local-db]
@@ -65,7 +66,7 @@
           (a/go-loop []
             (when-some [result (a/<! output$)]
               (let [{:keys [_query suggestions result-error]} result]
-                (when-not result-error
+                (when-not (or result-error (:autocomplete-dismissed? @local-db))
                   (swap! local-db assoc
                          :selected-index nil
                          :suggestions suggestions
@@ -79,7 +80,7 @@
                            click-in-container? (and container-element (.contains container-element (.-target e)))
                            click-in-dropdown? (.contains dropdown-element (.-target e))]
                        (when-not (or click-in-container? click-in-dropdown?)
-                         (swap! local-db assoc :autocomplete-visible? false)))))]
+                         (dismiss-autocomplete! local-db)))))]
     (reset! click-listener listener)
     (js/document.addEventListener "click" listener)))
 
@@ -169,7 +170,9 @@
          [:input {:type        "text"
                   :class       class-name
                   :value       (:input-value @local-db)
-                  :on-change   #(swap! local-db assoc :input-value (-> % .-target .-value))
+                  :on-change   #(swap! local-db assoc
+                                       :input-value (-> % .-target .-value)
+                                       :autocomplete-dismissed? false)
                   :on-key-up   #(autocomplete-input-on-key-up db local-db % on-submit)
                   :placeholder placeholder
                   :ref         #(swap! local-db assoc :input-element %)}]

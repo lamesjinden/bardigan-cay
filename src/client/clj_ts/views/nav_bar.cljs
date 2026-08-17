@@ -17,6 +17,7 @@
             [clj-ts.transcript :as transcript]
             [clj-ts.view :as view]
             [clj-ts.views.app-menu :refer [app-menu]]
+            [clj-ts.views.autocomplete-dropdown :refer [dismiss-autocomplete!]]
             [clj-ts.views.autocomplete-input :refer [autocomplete-input]]))
 
 ;; region nav input handlers
@@ -55,16 +56,18 @@
                 body (.parse js/JSON body-text)]
             (load-search-results! db cleaned-query body)))))))
 
-(defn- on-search-clicked [db query-text]
+(defn- on-search-clicked [db local-db query-text]
   (let [query-text (-> (or query-text "")
                        (str/trim))]
     (when (not (str/blank? query-text))
+      (dismiss-autocomplete! local-db)
       (search-text-async! db query-text))))
 
-(defn- on-navigate-clicked [db input-value]
+(defn- on-navigate-clicked [db local-db input-value]
   (let [input-value (-> (or input-value "")
                         (str/trim))]
     (when (not (str/blank? input-value))
+      (dismiss-autocomplete! local-db)
       (nav/<navigate! db input-value))))
 
 ;; endregion
@@ -90,6 +93,7 @@
   (let [current (-> (or input-value "")
                     (str/trim))]
     (when (not (str/blank? current))
+      (dismiss-autocomplete! local-db)
       (eval-input! db local-db current))))
 
 (defn- on-link-click [db e target aux-clicked?]
@@ -473,11 +477,11 @@
                [:div.header-input-separator])
              (when (not quake-mode?)
                [:button#go-button.header-input-button
-                {:on-click (fn [] (on-navigate-clicked db (:input-value @local-db)))}
+                {:on-click (fn [] (on-navigate-clicked db local-db (:input-value @local-db)))}
                 [:span {:class [:material-symbols-sharp :clickable]} "navigate_next"]])
              (when (not quake-mode?)
                [:button.header-input-button
-                {:on-click (fn [] (on-search-clicked db (:input-value @local-db)))}
+                {:on-click (fn [] (on-search-clicked db local-db (:input-value @local-db)))}
                 [:span {:class [:material-symbols-sharp :clickable]} "search"]])
              [:button#lambda-button.header-input-button
               {:class (when quake-mode? "quake-active")
