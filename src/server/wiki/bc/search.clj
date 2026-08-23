@@ -5,17 +5,17 @@
   [server-snapshot pattern term]
   (let [db (-> server-snapshot :facts-db)
         all-pages (.all-pages db)
-        name-res (pagestore/name-search all-pages (re-pattern pattern))
-        count-names (count name-res)
-        res (pagestore/text-search server-snapshot all-pages (re-pattern pattern))
-        count-res (count res)
-        name-list (apply str (map #(str "* [[" % "]]\n") name-res))
-        res-list (apply str (map #(str "* [[" % "]]\n") res))
-        out (str "
+        name-matches (pagestore/name-search all-pages (re-pattern pattern))
+        text-matches (pagestore/text-search server-snapshot all-pages (re-pattern pattern))]
+    {:query term
+     :name-matches (vec name-matches)
+     :text-matches (vec text-matches)}))
 
-*" count-names " PageNames containing \"" term "\"*\n
-" name-list "
-
-*" count-res " Pages containing \"" term "\"*\n
-" res-list)]
-    out))
+(defn results->markdown
+  [{:keys [query name-matches text-matches]}]
+  (let [name-list (apply str (map #(str "* [[" % "]]\n") name-matches))
+        text-list (apply str (map #(str "* [[" % "]]\n") text-matches))]
+    (str "\n\n*" (count name-matches) " PageNames containing \"" query "\"*\n\n"
+         name-list
+         "\n\n*" (count text-matches) " Pages containing \"" query "\"*\n\n"
+         text-list)))

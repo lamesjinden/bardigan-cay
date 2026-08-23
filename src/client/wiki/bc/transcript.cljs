@@ -1,7 +1,5 @@
 (ns wiki.bc.transcript
   (:require [cljs.reader :as reader]
-            [clojure.walk :as walk]
-            [reagent.core :as r]
             [reagent.dom.server :as server]
             [wiki.bc.mode :as mode]))
 
@@ -18,23 +16,9 @@
     (catch :default _
       default-transcript)))
 
-(defn hydrate-entry
-  "Entries are stored as pure EDN, so raw-html nodes carry a plain {:__html s} map;
-   reagent only honours :dangerouslySetInnerHTML when the value is its UnsafeHTML
-   type, so wrap those maps before rendering."
-  [entry]
-  (walk/postwalk
-   (fn [x]
-     (if (and (map? x)
-              (= 1 (count x))
-              (string? (:__html x)))
-       (r/unsafe-html (:__html x))
-       x))
-   entry))
-
 (defn transcript->html [transcript]
   (->> transcript
-       (map #(server/render-to-static-markup (hydrate-entry %)))
+       (map server/render-to-static-markup)
        (apply str)))
 
 (defn- transcript-entry [code result]

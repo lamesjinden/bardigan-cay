@@ -43,7 +43,7 @@
       :search
       (let [query-pattern-str (util/string->pattern-string (:query info))
             res (search/search server-snapshot query-pattern-str (:query info))
-            html (render/md->html res)]
+            html (render/md->html (search/results->markdown res))]
         (util/package-card "search" :system :html source-data html render-context))
 
       :about

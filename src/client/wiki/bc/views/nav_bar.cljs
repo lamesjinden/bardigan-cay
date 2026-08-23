@@ -15,7 +15,6 @@
             [wiki.bc.http :as http]
             [wiki.bc.navigation :as nav]
             [wiki.bc.transcript :as transcript]
-            [wiki.bc.view :as view]
             [wiki.bc.views.app-menu :refer [app-menu]]
             [wiki.bc.views.autocomplete-dropdown :refer [dismiss-autocomplete!]]
             [wiki.bc.views.autocomplete-input :refer [autocomplete-input]]))
@@ -35,12 +34,29 @@
 
 ;; region search
 
-(defn- load-search-results! [db cleaned-query body]
+(defn- wikilink [page-name]
+  [:a.wikilink {:data page-name
+                :href (str "/pages/" page-name)}
+   page-name])
+
+(defn- page-list [pages]
+  (into [:ul] (map (fn [page-name] [:li (wikilink page-name)]) pages)))
+
+(defn- search-results-hiccup [query name-matches text-matches]
+  [:div.search-results
+   [:p [:em (str (count name-matches) " PageNames containing \"" query "\"")]]
+   (page-list name-matches)
+   [:p [:em (str (count text-matches) " Pages containing \"" query "\"")]]
+   (page-list text-matches)])
+
+(defn- load-search-results! [db body]
   (let [edn (js->clj body)
-        result (get edn "result_text")]
+        query (get edn "query")
+        name-matches (get edn "name_matches")
+        text-matches (get edn "text_matches")]
     (transcript/prepend-transcript! db
-                                    (str "Searching for " cleaned-query)
-                                    [:div {:dangerouslySetInnerHTML {:__html (view/string->html result)}}])
+                                    (str "Searching for " query)
+                                    (search-results-hiccup query name-matches text-matches))
     (transcript-events/<notify-transcript-navigating db)))
 
 (defn- search-text-async! [db query-text]
@@ -54,7 +70,7 @@
         (when-let [result (a/<! (http/<http-get (str "/api/search?q=" cleaned-query)))]
           (let [{body-text :body} result
                 body (.parse js/JSON body-text)]
-            (load-search-results! db cleaned-query body)))))))
+            (load-search-results! db body)))))))
 
 (defn- on-search-clicked [db local-db query-text]
   (let [query-text (-> (or query-text "")

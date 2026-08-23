@@ -62,8 +62,10 @@
 (defn resolve-text-search [server-snapshot _context arguments _value]
   (let [{:keys [query_string]} arguments
         query-pattern-str (util/string->pattern-string query_string)
-        out (search/search server-snapshot query-pattern-str query_string)]
-    {:result_text out}))
+        {:keys [query name-matches text-matches]} (search/search server-snapshot query-pattern-str query_string)]
+    {:query query
+     :name_matches name-matches
+     :text_matches text-matches}))
 
 (defn resolve-autocomplete-search [server-snapshot _context arguments _value]
   (let [{:keys [query_string]} arguments

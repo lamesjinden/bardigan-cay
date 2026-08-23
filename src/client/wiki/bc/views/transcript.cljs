@@ -32,4 +32,4 @@
                                                          (.preventDefault e)
                                                          (when (card/has-link-target? e)
                                                            (navigate-via-link-async! db e)))}]
-                                      (map transcript/hydrate-entry @db-transcript)))})))
+                                      @db-transcript))})))
