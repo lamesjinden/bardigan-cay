@@ -2,7 +2,7 @@
   (:require
    [cljs.core.async :as a]
    [reagent.core :as r]
-   [reagent.dom :as dom]
+   [reagent.dom.client :as dom-client]
    [clj-ts.confirmation.onbeforeload-process :as confirm-onbeforeload]
    [clj-ts.confirmation.edit-process :as confirm-edit]
    [clj-ts.confirmation.navigation-process :as confirm-nav]
@@ -45,6 +45,8 @@
 
 ; request and load the start-page
 
+(defonce !app-root (delay (dom-client/create-root (js/document.getElementById "app"))))
+
 (defn render-app []
   (let [_editing-confirmation-process (confirm-edit/<create-editor-process
                                        (e-editing/create-editing$)
@@ -68,7 +70,7 @@
         confirmation-request$ (e-confirm/create-confirmation-request$)
         progress$ (e-progress/create-progress$)]
 
-    (dom/render [app db confirmation-request$ progress$] (js/document.getElementById "app"))))
+    (dom-client/render @!app-root [app db confirmation-request$ progress$])))
 
 (defn ^:dev/after-load start []
   (render-app))

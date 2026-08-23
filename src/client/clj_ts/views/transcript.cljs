@@ -28,7 +28,7 @@
       :component-will-unmount (fn [] (js/window.removeEventListener "keyup" key-up-listener))
       :reagent-render         (fn []
                                 [:div {:class                   "transcript"
-                                       :dangerouslySetInnerHTML {:__html @db-transcript}
+                                       :dangerouslySetInnerHTML (r/unsafe-html @db-transcript)
                                        :on-click                (fn [e]
                                                                   (.preventDefault e)
                                                                   (when (card/has-link-target? e)

@@ -19,4 +19,4 @@
      {:component-did-mount (fn [_this] (apply-highlighting @!root-element))
       :reagent-render (fn [s]
                         [:div {:ref (fn [element] (reset! !root-element element))
-                               :dangerouslySetInnerHTML {:__html s}}])})))
+                               :dangerouslySetInnerHTML (r/unsafe-html s)}])})))

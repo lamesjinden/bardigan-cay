@@ -352,7 +352,7 @@
 
                                           (string? result)
                                           (if (= (first result) \<)
-                                            [:div {:dangerouslySetInnerHTML {:__html result}}]
+                                            [:div {:dangerouslySetInnerHTML (r/unsafe-html result)}]
                                             result)
 
                                           (and (vector? result)
