@@ -1,0 +1,48 @@
+# src/client/wiki/bc/views/app_menu.cljs (incl. job statuses + theme submenu)
+schedule
+progress_activity
+check_circle
+error
+help
+download
+check
+menu
+palette
+expand_less
+expand_more
+deployed_code_update
+work_history
+rss_feed
+light_mode
+dark_mode
+bolt
+# nav_bar.cljs
+close
+navigate_next
+search
+clear_all
+# card_shell.cljs
+step_over
+unfold_more
+unfold_less
+# tool_bar.cljs
+save
+edit
+# card_gutter.cljs
+expand_circle_down
+expand_circle_up
+low_priority
+# app_page_controls.cljs
+unfold_more_double
+unfold_less_double
+# workspace_card.cljs
+vertical_split
+horizontal_split
+format_align_justify
+expand
+# paste_bar.cljs
+add
+hub
+bookmark
+# bedrock/WorkspaceExample.md
+play_arrow

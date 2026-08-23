@@ -9,7 +9,7 @@ The following card transcludes a card from the pages BardiganCay, PatterningSupp
 
 {:from "BardiganCay" 
  :type :Markdown
- :ids ["1f4d36e3-75fd-5483-91ed-2a0ecfc72ab3" ]
+ :ids ["1546b50a-36db-50d5-9529-d74a9a18beca" ]
 }
 
 ----
@@ -17,7 +17,7 @@ The following card transcludes a card from the pages BardiganCay, PatterningSupp
 
 {:from "PatterningSupportInBardiganCay"
  :type :Markdown
- :ids ["1e088496-5ef1-5542-922d-0b386e9035ad" "38621dcd-8104-5d37-97fb-83a2b4b9c929"]
+ :ids ["3e3b45fa-936c-5a33-a9f3-fa441a71be20" "1c0f1620-b819-5742-abb0-225f969b4082"]
 }
 
 -------
@@ -25,7 +25,7 @@ The following card transcludes a card from the pages BardiganCay, PatterningSupp
 
 {:from "VideoEmbedding"
  :type :Markdown
-:ids ["36658abe-9a09-5926-ad15-ff7ba4de43e8" ]
+:ids ["3cd30359-e6cb-501d-9f82-d6095a65a01e" ]
 }
 
 ----

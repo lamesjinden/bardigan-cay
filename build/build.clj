@@ -1,5 +1,6 @@
 (ns build
   (:require [babashka.process :as p]
+            [clojure.java.io :as io]
             [clojure.string :as str]
             [clojure.tools.build.api :as b]
             [inline]))
@@ -29,6 +30,15 @@
   (b/copy-dir {:src-dirs   ["src" "resources"]
                :target-dir class-dir})
   (inline/inline-assets class-dir)
+  ;; inline-assets embeds the fonts into main.css and main.css into index.html,
+  ;; so the standalone copies would ship the same bytes a second (and third) time
+  (doseq [redundant ["public/css/main.css" "public/css/vendor"]]
+    (b/delete {:path (str class-dir "/" redundant)}))
+  ;; shadow-cljs emits source maps even for release builds; they only serve
+  ;; browser devtools and have no place in the shipped artifact
+  (doseq [file (.listFiles (io/file class-dir "public/js"))
+          :when (str/ends-with? (.getName file) ".js.map")]
+    (b/delete {:path (.getPath file)}))
   (b/compile-clj {:basis     basis
                   :src-dirs  ["src"]
                   :class-dir class-dir})

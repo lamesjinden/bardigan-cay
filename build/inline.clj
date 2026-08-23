@@ -40,6 +40,16 @@
         encoder (Base64/getEncoder)]
     (.encodeToString encoder source-bytes)))
 
+(defn subset-material-symbols-font
+  "Subset the build's copy of the icon font to the glyphs listed in
+  build/font-subset/icons.txt. Runs against the class-dir copy only: the
+  vendored font stays complete, so dev builds serve every icon and the icon
+  budget is enforced solely on release artifacts."
+  [css-directory-path]
+  (let [font-path (format "%s/vendor/material-symbols/material-symbols-sharp.woff2" css-directory-path)]
+    (shell "bb" "build/font-subset/subset_icons.clj"
+           font-path font-path "build/font-subset/icons.txt")))
+
 (defn inline-material-symbols-font [css-string css-directory-path]
   (let [material-symbols-path (format "%s/vendor/material-symbols/material-symbols-sharp.woff2" css-directory-path)
         material-symbols-encoded (base64-encode-file material-symbols-path)
@@ -126,6 +136,7 @@
         main-js-path (format "%s/public/js/main.js" working-directory-path)
         css-directory-path (format "%s/public/css/" working-directory-path)
         html (slurp index-html-path)
+        _ (subset-material-symbols-font css-directory-path)
         html (inline-styles html css-directory-path)
         html (inline-javascript main-js-path html)]
     (spit index-html-path html)))

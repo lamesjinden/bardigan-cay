@@ -1,10 +1,11 @@
 (ns wiki.bc.util
   (:require [clojure.string :as str]
             [clojure.java.io :as io]
-            [hasch.core :refer [uuid5 edn-hash]]
             [ring.util.response :as resp]
             [sci.core :as sci])
   (:import (java.io PrintWriter PushbackReader StringWriter)
+           (java.nio ByteBuffer)
+           (java.security MessageDigest)
            (java.util.regex Pattern)
            (java.time LocalDate LocalDateTime ZonedDateTime ZoneId)
            (java.time.format DateTimeFormatter)))
@@ -85,10 +86,50 @@
                  \' "&apos;"
                  \" "&quot;"}))
 
-(defn hash-it [card-data]
-  (-> card-data
-      (edn-hash)
-      (uuid5)))
+(defn- hash-escape-bytes
+  "hasch.benc/encode-safe: payloads under 1024 bytes are followed by a
+  same-length escape array flagging control bytes (1-29); larger payloads are
+  replaced by their SHA-512 digest."
+  ^bytes [^bytes u]
+  (let [len (alength u)]
+    (if (< len 1024)
+      (let [out (byte-array (* 2 len))]
+        (System/arraycopy u 0 out 0 len)
+        (loop [i 0]
+          (when (< i len)
+            (let [e (aget u i)]
+              (when (and (pos? e) (< e 30))
+                (aset out (+ len i) (byte 1))))
+            (recur (inc i))))
+        out)
+      (.digest (MessageDigest/getInstance "SHA-512") u))))
+
+(defn hash-it
+  "Deterministic content id of a card's source text.
+
+  This is a dependency-free re-implementation of hasch 0.3.94's
+  (uuid5 (edn-hash s)) for strings, and MUST keep producing identical output:
+  card hashes are persisted inside user page content (transclusion :ids), so
+  any change to this algorithm breaks existing wikis."
+  [card-data]
+  (when-not (string? card-data)
+    (throw (ex-info "hash-it only hashes strings (hasch-compatible output is only implemented for them)"
+                    {:type (type card-data)})))
+  (let [md (MessageDigest/getInstance "SHA-512")]
+    (.update md (byte-array 1 (byte 3))) ; hasch :string magic byte
+    (.update md (hash-escape-bytes (.getBytes ^String card-data "UTF-8")))
+    (let [bb (ByteBuffer/wrap (.digest md))
+          high (.getLong bb)
+          low (.getLong bb)]
+      (java.util.UUID.
+       (-> high
+           (bit-or 0x0000000000005000)
+           (bit-and 0x7fffffffffff5fff)
+           (bit-clear 63)
+           (bit-clear 62))
+       (-> low
+           (bit-set 63)
+           (bit-clear 62))))))
 
 (defn package-card [id source-type render-type source-data server-prepared-data render-context]
   {:source_type          source-type

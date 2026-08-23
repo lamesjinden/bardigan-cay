@@ -13,8 +13,10 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "harfbuzzjs": "^0.10.3",
     "lightningcss-cli": "^1.33.0",
-    "shadow-cljs": "^3.4.12"
+    "shadow-cljs": "^3.4.12",
+    "wawoff2": "^2.0.1"
   },
   "dependencies": {
     "ace-builds": "^1.44.0",

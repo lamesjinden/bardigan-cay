@@ -1,9 +1,14 @@
 {:paths ["resources" "src/common"]
+ ;; clojurescript exclusion: patterning declares ClojureScript (and with it the
+ ;; Closure compiler/library) as a hard dependency, but only uses it when
+ ;; compiled as cljs; the client build gets ClojureScript from the :client
+ ;; alias, so without the exclusion the SERVER uberjar ships megabytes of
+ ;; compiler jars it never loads.
  :deps  {org.clojure/core.async        {:mvn/version "1.9.865"}
          markdown-clj/markdown-clj     {:mvn/version "1.12.9"}
-         io.replikativ/hasch           {:mvn/version "0.3.94"}
          com.alchemyislands/patterning {:git/url "https://github.com/interstar/Patterning-Core.git"
-                                        :sha "c22baf29cf33be1dd83dde3d0226b38ae96f77fa"}
+                                        :sha "c22baf29cf33be1dd83dde3d0226b38ae96f77fa"
+                                        :exclusions [org.clojure/clojurescript]}
          org.babashka/sci              {:mvn/version "0.15.58"}
          org.slf4j/slf4j-nop           {:mvn/version "2.0.18"}}
 
