@@ -8,9 +8,9 @@
             [wiki.bc.transcript :as transcript]))
 
 (defn- on-send-transcript-click [db page-name]
-  (when (and (not (s/blank? page-name)) (not (s/blank? (:transcript @db))))
+  (when (and (not (s/blank? page-name)) (seq (:transcript @db)))
     (a/go
-      (a/<! (page/<append-page! db page-name (:transcript @db)))
+      (a/<! (page/<append-page! db page-name (transcript/transcript->html (:transcript @db))))
       (transcript/clear-transcript! db))))
 
 (defn tool-bar [db db-mode db-current-page]

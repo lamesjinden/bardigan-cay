@@ -3,7 +3,7 @@
             [wiki.bc.card :as card]
             [wiki.bc.keyboard :as keyboard]
             [wiki.bc.navigation :as nav]
-            [wiki.bc.transcript]))
+            [wiki.bc.transcript :as transcript]))
 
 (defn navigate-via-link-async! [db e]
   (let [tag (-> e .-target)
@@ -11,7 +11,7 @@
     (nav/<navigate! db data)))
 
 (defn- on-escape-key-up [db]
-  (wiki.bc.transcript/exit-transcript! db))
+  (transcript/exit-transcript! db))
 
 (defn- on-key-up [db e]
   ;; note - escape doesn't fire for key-press, only key-up
@@ -27,9 +27,9 @@
      {:component-did-mount    (fn [] (js/window.addEventListener "keyup" key-up-listener))
       :component-will-unmount (fn [] (js/window.removeEventListener "keyup" key-up-listener))
       :reagent-render         (fn []
-                                [:div {:class                   "transcript"
-                                       :dangerouslySetInnerHTML (r/unsafe-html @db-transcript)
-                                       :on-click                (fn [e]
-                                                                  (.preventDefault e)
-                                                                  (when (card/has-link-target? e)
-                                                                    (navigate-via-link-async! db e)))}])})))
+                                (into [:div {:class    "transcript"
+                                             :on-click (fn [e]
+                                                         (.preventDefault e)
+                                                         (when (card/has-link-target? e)
+                                                           (navigate-via-link-async! db e)))}]
+                                      (map transcript/hydrate-entry @db-transcript)))})))

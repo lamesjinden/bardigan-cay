@@ -40,7 +40,7 @@
         result (get edn "result_text")]
     (transcript/prepend-transcript! db
                                     (str "Searching for " cleaned-query)
-                                    (view/string->html result))
+                                    [:div {:dangerouslySetInnerHTML {:__html (view/string->html result)}}])
     (transcript-events/<notify-transcript-navigating db)))
 
 (defn- search-text-async! [db query-text]
@@ -78,7 +78,7 @@
   (let [code input-value]
     (try
       (let [result (sci/eval-string code)]
-        (transcript/prepend-transcript! db code result)
+        (transcript/prepend-transcript! db code (str result))
         (transcript-events/<notify-transcript-navigating db))
       (catch :default e
         (js/console.error "Eval error:" e)
@@ -217,7 +217,7 @@
             ;; Reset history index
             (swap! local-db assoc :quake-history-index nil)
             ;; Also add to transcript (but don't switch view)
-            (transcript/prepend-transcript! db code result)
+            (transcript/prepend-transcript! db code (str result))
             ;; Clear both editors
             (.setValue editor "" -1)
             (swap! local-db assoc :input-value nil)
