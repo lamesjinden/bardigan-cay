@@ -7,18 +7,18 @@ If you do sort of know, this page should explain what you need to understand.
 
 ----
 
-In [[CardiganBay]] you start on a page called "[[HelloWorld]]", and then navigate to and add further pages about whatever it is you are interested in.
+In [[BardiganCay]] you start on a page called "[[HelloWorld]]", and then navigate to and add further pages about whatever it is you are interested in.
 
-By default, CardiganBay comes with some standard pages, to let you see what it's like to navigate around inside the wiki, with the instructions and explanations (like this one), and with examples of the various magic tricks this wiki has up its sleeve.
+By default, BardiganCay comes with some standard pages, to let you see what it's like to navigate around inside the wiki, with the instructions and explanations (like this one), and with examples of the various magic tricks this wiki has up its sleeve.
 
 You are free to change these pages and customize the notebook to your own taste. But note, that you will discover some pages have specific functions. For example, the page called "[[AllPages]]" shows you a list of all the pages in the wiki. It does this because it contains a special "*system card*" (don't worry about what this means yet, it will be explained later). And if you remove that system card, it will no longer show you all the pages. Don't worry about all this. It should be pretty obvious once you get going. 
 
 ----
-### Navigating and interacting with Cardigan Bay
+### Navigating and interacting with Bardigan Cay
 
 You can navigate to a new page by either typing its name into [[TheNavBar]] at the top of the window, and clicking the [View It] button.
 
-Or clicking on a link on a page. Hyperlinks work in Cardigan Bay much like they do on the web or on other wikis. Though you should use Cardigan Bay's own [Back] and [Forward] buttons (at the left of the top menu) rather than the browser's back and forward buttons.
+Or clicking on a link on a page. Hyperlinks work in Bardigan Cay much like they do on the web or on other wikis. Though you should use Bardigan Cay's own [Back] and [Forward] buttons (at the left of the top menu) rather than the browser's back and forward buttons.
 
 If you try to view a page which doesn't currently exist in the wiki, either through the NavBar or following a link, you be shown a dummy page with some red text explaining this. If you want to create the page you can simply click the [Edit] button, clear out this dummy text and write your own content. If, you don't want to create the page, simply hit the [Back] button to return to the page you were on previously. 
 
@@ -56,7 +56,7 @@ If you *don't* do any work on it, then no new page will be created.
 
 So far, this is pretty much just like any other wiki, including the original C2 Wiki AKA "Ward's Wiki" (because it was invented by [Ward Cunningham](https://en.wikipedia.org/wiki/Ward_Cunningham)) and Wikipedia.
 
-However CardiganBay adds to standard wiki structure in the following ways :
+However BardiganCay adds to standard wiki structure in the following ways :
 
 - Pages are broken into a sequence of cards. 
 - Each card has a card *type* which defines how it is rendered. 
@@ -67,7 +67,7 @@ Let's drill down into all this :
 
 ### Sequence of Cards
 
-In [[CardiganBay]], pages are made of a sequence of sections called "cards". 
+In [[BardiganCay]], pages are made of a sequence of sections called "cards". 
 
 The four horizontal dashes markup (ie. -<!-->-<!-->-<!-->-) on a line by themselves, has been re-purposed as the "card separator".
 
@@ -86,7 +86,7 @@ Here's another separator before a new card with a new header, on a new theme ...
 
 ### Card Types
 
-Each card in CardiganBay has a type, which tells us what its data is meant to represent, and how to render it. 
+Each card in BardiganCay has a type, which tells us what its data is meant to represent, and how to render it. 
 
 Cards which do not specify their type explicitly are taken to be of the :markdown type. And are therefore rendered on the client as Markdown.
 
@@ -111,7 +111,7 @@ See [[CardBar]] for details.
 
 The original wikis were public servers allowing anyone to edit them to encourage a community sense of responsibility. In 2020, the web is a more dangerous place, full of hostile spam-bots, right-wing trolls and fake-news mongers. And the ideal of wiki as completely open space is largely gone.
 
-Cardigan Bay is intended to be run locally on your own machine. And then its contents can be exported as a "flat" or "static" collection of HTML files that can be hosted on any public facing server. 
+Bardigan Cay is intended to be run locally on your own machine. And then its contents can be exported as a "flat" or "static" collection of HTML files that can be hosted on any public facing server. 
 
 See [[ExportingAsFlatSite]] for information about how to do this. 
 
@@ -123,4 +123,4 @@ Links in wikis are unidirectional. They start on a page like ChocolateCake and g
 
 But someone else reading the wiki would get a lot of value from that. 
 
-We call a link "backwards" from a page to a page that links to it, a "backlink". And CardiganBay automatically calculates all the backlinks for any page and shows them in a separate card at the bottom. This card is not really part of the page, and if you edit the text you'll see no reference to it. But it's added automatically and becomes increasingly useful as your wiki gets bigger.
+We call a link "backwards" from a page to a page that links to it, a "backlink". And BardiganCay automatically calculates all the backlinks for any page and shows them in a separate card at the bottom. This card is not really part of the page, and if you edit the text you'll see no reference to it. But it's added automatically and becomes increasingly useful as your wiki gets bigger.

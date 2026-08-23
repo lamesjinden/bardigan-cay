@@ -1,4 +1,4 @@
-Here in [[CardiganBay]] we believe in hand-drawn network diagrams more than automatically calculated diagrams.
+Here in [[BardiganCay]] we believe in hand-drawn network diagrams more than automatically calculated diagrams.
 
 This page contains an example of a :network card.
 
@@ -16,7 +16,7 @@ See next card source for this example.
 
 {:nodes [
 [1 "HelloWorld" 180 60]
-[2 "CardiganBay" 100 200]
+[2 "BardiganCay" 100 200]
 [3 "GettingStarted" 340 250]
 [4 "CodeExamples" 200 400]
 ]

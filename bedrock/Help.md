@@ -1,4 +1,4 @@
-New to Cardigan Bay?
+New to Bardigan Cay?
 
 [[GettingStarted]]
 

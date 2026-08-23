@@ -64,7 +64,7 @@
   {:main-opts ["-m" "dev-server"]}
 
   :run-server
-  {:main-opts ["-m" "clj-ts.app"]}
+  {:main-opts ["-m" "wiki.bc.app"]}
 
   :nrepl-main
   {:main-opts ["-m" "nrepl.cmdline" "--middleware" "[cider.nrepl/cider-middleware]"]}

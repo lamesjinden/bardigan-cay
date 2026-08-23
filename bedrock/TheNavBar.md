@@ -1,6 +1,6 @@
-That NavBar (or "Navigation Bar") appears at the top of the Cardigan Bay screen.
+That NavBar (or "Navigation Bar") appears at the top of the Bardigan Cay screen.
 
-It's similar to, and inspired by the browser's navbar, in that it's a place to type the names of pages to visit or terms to be searched. But it is also inspired by command-line terminals, allowing you to interact with Cardigan Bay textually.
+It's similar to, and inspired by the browser's navbar, in that it's a place to type the names of pages to visit or terms to be searched. But it is also inspired by command-line terminals, allowing you to interact with Bardigan Cay textually.
 
 At the moment there are three things you can do on the NavBar.
 
@@ -21,7 +21,7 @@ If you want to run a small Clojure expression, type it in the NavBar and hit the
 ----
 ### The Copy Bar
 
-When you switch to Edit mode in Cardigan Bay, the NavBar disappears, and is replaced by the Copy Bar. (See [[RemovingNavBarDuringEditing]] for an explanation)
+When you switch to Edit mode in Bardigan Cay, the NavBar disappears, and is replaced by the Copy Bar. (See [[RemovingNavBarDuringEditing]] for an explanation)
 
 The Copy Bar is a replacement for the previous Quick Paste bar. It provides a number of boilerplate "snippets" of  things you may want to add to a page, such a embed cards, search cards, workspaces or even simple Markdown and Clojure code.
 

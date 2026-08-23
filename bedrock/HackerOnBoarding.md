@@ -2,19 +2,17 @@
 
 **Where is the source?**
 
-On GitHub : <https://github.com/interstar/cardigan-bay>
-
-On GitLab : <https://gitlab.com/interstar/cardigan-bay>
+On GitHub : <https://github.com/lamesjinden/bardigan-cay>
 
 
 ----
 
 
-**Want to change the look of CardiganBay?**
+**Want to change the look of BardiganCay?**
 
 For coders working with the source-code, the main css is in 
 
-`resources/clj_ts/main.css`
+`resources/wiki/bc/main.css`
 
 However, this is supplemented with 
 
@@ -22,12 +20,12 @@ However, this is supplemented with
 
 which can be modified and customised even if you are working with a standard build.
 
-**NB:** if replace *bedrock* with the path to your main pages directory if you aren't using the default bedrock that came with your copy of CardiganBay.
+**NB:** if replace *bedrock* with the path to your main pages directory if you aren't using the default bedrock that came with your copy of BardiganCay.
 
 
 All the layout / widgets of the UI are defined (in hiccup format) in 
 
-`src/clj_ts/client.cljs`
+`src/wiki/bc/client.cljs`
 
 
 ----
@@ -35,16 +33,16 @@ All the layout / widgets of the UI are defined (in hiccup format) in
 
 **Most of the work on managing pages**, including parsing them into cards and handling the rendering of cards is in
 
-`src/clj_ts/common.cljc` - common functions for parsing raw text into cards and manipulating lists of cards) that can be used both on the server and in the client.
+`src/wiki/bc/common.cljc` - common functions for parsing raw text into cards and manipulating lists of cards) that can be used both on the server and in the client.
 
-`src/clj_ts/card_server.clj` - the main functionality for creating / manipulating the wiki full of cards. Look here first for the main "actions" the system can do.
+`src/wiki/bc/card_server.clj` - the main functionality for creating / manipulating the wiki full of cards. Look here first for the main "actions" the system can do.
 
-`src/clj_ts/pagestore.clj` - the bit that deals with the pages stored as plain files in the file-syste
+`src/wiki/bc/pagestore.clj` - the bit that deals with the pages stored as plain files in the file-syste
 
 
 ----
 
-**If you want to creat a new card type** or edit how a particular type is being rendered, have a look in  `src/clj_ts/card_server.clj` 
+**If you want to creat a new card type** or edit how a particular type is being rendered, have a look in  `src/wiki/bc/card_server.clj` 
 
 But *also* look at `resources/gql_schema.edn` for enums related to graphql communication between client and server
 
@@ -66,7 +64,7 @@ We're using graphql (via lacinia) for most communication between client and serv
 
 **The core.logic stuff** happens in 
 
-`src/clj_ts/logic.clj` 
+`src/wiki/bc/logic.clj` 
 
 If you want to capture more information in logic format or ask new queries on it, that's the place to look at.
 
@@ -79,12 +77,12 @@ Note that it's almost certain I'll be moving away from core.logic for the databa
 
 **Where's the web-server?**
 
-`src/clj_ts/server.clj`
+`src/wiki/bc/server.clj`
 
 ----
 **I want to change the look of the exported flat pages**
 
-* `/resources/clj_ts/export_template/` has the index.html and main.css that are used when exporting the wiki as flat files.
+* `/resources/wiki/bc/export_template/` has the index.html and main.css that are used when exporting the wiki as flat files.
 
 ----
 

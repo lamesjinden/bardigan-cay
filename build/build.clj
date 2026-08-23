@@ -35,7 +35,7 @@
   (b/uber {:class-dir class-dir
            :uber-file uber-file
            :basis     basis
-           :main      'clj-ts.app
+           :main      'wiki.bc.app
            :manifest  {"Implementation-Title"   artifact-name
                        "Implementation-Version" version
                        "Git-Commit"             (git-short-hash)

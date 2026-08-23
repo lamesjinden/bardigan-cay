@@ -1,6 +1,6 @@
-The Transcript is a space showing the results of dynamic interactions with [[CardiganBay]], such as the results of searches or executing short pieces of Clojure code.
+The Transcript is a space showing the results of dynamic interactions with [[BardiganCay]], such as the results of searches or executing short pieces of Clojure code.
 
-The idea and name is inspired by the transcript in the Smalltalk environment. Though it's also like the output on a text terminal. Over the course of a session with Cardigan Bay, the transcript builds up, so you can always look back and see the results of earlier searches and calculations. However, the transcript is **not** saved between sessions. So anything important should be copied to a page.
+The idea and name is inspired by the transcript in the Smalltalk environment. Though it's also like the output on a text terminal. Over the course of a session with Bardigan Cay, the transcript builds up, so you can always look back and see the results of earlier searches and calculations. However, the transcript is **not** saved between sessions. So anything important should be copied to a page.
 
 Currently things appear in the transcript as a result of actions made on [[TheNavBar]]. In future other actions might also write to the transcript.
 

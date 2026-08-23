@@ -31,7 +31,7 @@ re-saveable by the recipient. Export is one-way; BardiganCay never re-imports.
 
 ## Architecture
 
-New namespace `clj-ts.export.tiddlywiki` (server side):
+New namespace `wiki.bc.export.tiddlywiki` (server side):
 
 1. Load all pages (excluding synthetic `AllPages`/`AllLinks`/`BrokenLinks`/
    `OrphanPages` — TiddlyWiki derives these natively via filters).
@@ -122,8 +122,8 @@ Per-page failures are collected and reported, not fatal (retain the spirit of
 
 ## Deletions
 
-- `src/server/clj_ts/export/static_export.clj`,
-  `src/server/clj_ts/export/page_exporter.clj` (IPageExporter protocol)
+- `src/server/wiki/bc/export/static_export.clj`,
+  `src/server/wiki/bc/export/page_exporter.clj` (IPageExporter protocol)
 - `/api/exportpage` route + handler; per-page export link in `tool_bar.cljs`
 - `system/export_resources/` template + CSS loading; Selmer dependency if
   nothing else uses it

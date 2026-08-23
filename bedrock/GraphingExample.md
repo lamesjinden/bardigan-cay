@@ -1,10 +1,10 @@
 This workspace is an example of a simple "graphing calculator" built using the Clojure facilities here.
 
-You should note that Cardigan Bay has no specific graphing functions built in. We're not using an existing framework. Instead, this small code example implements its own drawing facilities using SVG. 
+You should note that Bardigan Cay has no specific graphing functions built in. We're not using an existing framework. Instead, this small code example implements its own drawing facilities using SVG. 
 
 The function graphit takes three arguments : an input space (the dimensions of the space containing your data), the output space, or the dimensions of image to produce, and a list of points. It returns a chunk of SVG which is the visualization of those points.
 
-It's a very crude example, but you should be able to see how it works. And how you could extend it to improve the visualization or embed other mathematical models in you Cardigan Bay.
+It's a very crude example, but you should be able to see how it works. And how you could extend it to improve the visualization or embed other mathematical models in you Bardigan Cay.
 
 Try changing the function `f` to visualize different mathematical functions. You can use Javascript's maths library in your f, as in  `(defn f [x] (js/Math.sin x))`
 

@@ -84,7 +84,7 @@ In addition to the default SCI execution environment, the following functions ar
 
 ### Publishing Code
 
-A new, experimental feature of Cardigan Bay is that workspaces **are** now executable when exported to static HTML pages.
+A new, experimental feature of Bardigan Cay is that workspaces **are** now executable when exported to static HTML pages.
 
 This is an exciting new feature. It means that we can add dynamic in-page calculations to public facing wikis and digital gardens.
 
@@ -94,7 +94,7 @@ In the above Workspace example, we wrote code that output hiccup format which wa
 
 In an *exported* Workspace, hiccup isn't available. So if you want to write a program that renders correctly, you'll need it to produce HTML itself (unless plain text is sufficient)
 
-Look at the example in the Workspace below. Note that if you run it in a live Cardigan Bay, the tags won't render correctly. But in an exported page they will.
+Look at the example in the Workspace below. Note that if you run it in a live Bardigan Cay, the tags won't render correctly. But in an exported page they will.
 
 ----
 

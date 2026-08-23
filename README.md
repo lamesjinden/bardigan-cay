@@ -72,7 +72,7 @@ npm i
 
 Then navigate to [http://localhost:4545/](http://localhost:4545/) in your browser.
 
-You should be running your wiki. By default CardiganBay starts on port 4545 and looks in the local `bedrock` directory for its pages. You'll find several pages with the beginnings of some documentation and examples there.
+You should be running your wiki. By default BardiganCay starts on port 4545 and looks in the local `bedrock` directory for its pages. You'll find several pages with the beginnings of some documentation and examples there.
 
 ### Advanced Development
 
@@ -108,5 +108,5 @@ Will build everything into an UberJAR, under the `target` directory
 You can then run the UberJAR like this:
 
 ```bash
-java -jar PATH/TO/clj-ts-0.1.0-SNAPSHOT-standalone-YYYY-MM-DD.jar
+java -jar PATH/TO/bardigan-cay-1.0.2-SNAPSHOT.jar
 ```

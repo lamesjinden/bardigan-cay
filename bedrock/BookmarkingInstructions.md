@@ -1,4 +1,4 @@
-[[CardiganBay]] has an easy way to bookmark web-pages into it using [bookmarklets](https://support.mozilla.org/en-US/kb/bookmarklets-perform-common-web-page-tasks)
+[[BardiganCay]] has an easy way to bookmark web-pages into it using [bookmarklets](https://support.mozilla.org/en-US/kb/bookmarklets-perform-common-web-page-tasks)
 
 Here's what you do :
 
@@ -6,7 +6,7 @@ Find the link titled "*bookmark to this wiki*" on the bottom of this page (and o
 
 Right-click on the bookmarklet and choose *Properties* to rename it.
 
-Now whenever you would like to capture a link to a page you are viewing in the browser, simply click the bookmarklet when you are on the page. (Note, CardiganBay needs to be running for this to work)
+Now whenever you would like to capture a link to a page you are viewing in the browser, simply click the bookmarklet when you are on the page. (Note, BardiganCay needs to be running for this to work)
 
 It will open a page called [[InQueue]] in your wiki, where the link will have been added as a new card of the :bookmark type.
 

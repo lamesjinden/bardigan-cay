@@ -1,0 +1,97 @@
+(ns wiki.bc.ace
+  (:require [clojure.string :as s]
+            [cljs.core.async :as a]
+            ["ace-builds/src-min-noconflict/ace" :default ace]
+            ["ace-builds/src-min-noconflict/ext-language_tools"]
+            ["ace-builds/src-min-noconflict/ext-searchbox"]
+            ["ace-builds/src-min-noconflict/mode-clojure" :as mode-clojure]
+            ["ace-builds/src-min-noconflict/mode-markdown" :as mode-markdown]
+            ["ace-builds/src-min-noconflict/theme-cloud9_day"]
+            ["ace-builds/src-min-noconflict/theme-cloud9_night"]
+            ["ace-builds/src-min-noconflict/theme-tomorrow_night_eighties"]
+            [wiki.bc.ace.core :as ace-core]
+            [wiki.bc.events.editing :as editing-events]))
+
+(def default-ace-options {:fontSize                 "1.2rem"
+                          :minLines                 5
+                          :autoScrollEditorIntoView true
+                          :enableLiveAutocompletion true})
+
+(def ace-theme ace-core/ace-theme)
+(def ace-theme-dark ace-core/ace-theme-dark)
+(def ace-theme-synthwave84 ace-core/ace-theme-synthwave84)
+(def pick-ace-theme ace-core/pick-ace-theme)
+(def ace-mode-clojure (.-Mode mode-clojure))
+(def ace-mode-markdown (.-Mode mode-markdown))
+
+(defn create-edit [editor-element]
+  (.edit ace editor-element))
+
+(defn configure-ace-instance!
+  ([ace-instance mode]
+   (configure-ace-instance! ace-instance mode ace-theme default-ace-options))
+  ([^js ace-instance mode theme options]
+   (let [^js ace-session (.getSession ace-instance)]
+     (.setTheme ace-instance theme)
+     (.setOptions ace-instance (clj->js options))
+     (.setShowInvisibles ace-instance false)
+     (.setMode ace-session (new mode)))))
+
+(defn set-theme! [^js ace-instance theme]
+  (when ace-instance
+    (.setTheme ace-instance theme)))
+
+(defn- <editor-dirty$ [ace-instance original-state]
+  (let [chan (a/promise-chan)]
+    (.on ace-instance "change" (fn when-changed [delta]
+                                 (when (not (= original-state (.getValue ace-instance)))
+                                   (a/put! chan delta)
+                                   (.off ace-instance "change" when-changed))))
+    chan))
+
+(defn- <css-class-change$ [target-node]
+  (let [chan (a/chan)
+        config #js {"attributeFilter" ["class"] "attributeOldValue" true}
+        callback (fn [mutation-list observer]
+                   (a/put! chan {:mutation-list mutation-list :observer observer}))
+        observer (js/MutationObserver. callback)]
+    (.observe observer target-node config)
+    chan))
+
+(defn- focus-editor-on-mutation [ace-instance edit-box-container {:keys [mutation-list observer] :as _result}]
+  (when-let [mutation-record (some #(and (= "class" (.-attributeName %)) %) (array-seq mutation-list))]
+    (let [configured-class-name "configured"
+          old-value (.-oldValue mutation-record)
+          current-value (.-className edit-box-container)]
+      (when (and (not (s/includes? old-value configured-class-name)) (s/includes? current-value configured-class-name))
+        (.focus ace-instance)
+        (.moveCursorToPosition ace-instance #js {"row" 0 "column" 0})
+        (.scrollIntoView edit-box-container)
+        (.disconnect observer)))))
+
+(defn- <setup-editor [db-theme source-data editor-element edit-box-container on-edit-begin]
+  (ace-core/<defer (fn []
+                     (let [ace-instance (create-edit editor-element)]
+
+                ;; configure ace
+                       (let [ace-options (assoc default-ace-options :maxLines "Infinity")
+                             theme (pick-ace-theme db-theme)]
+                         (configure-ace-instance! ace-instance ace-mode-markdown theme ace-options))
+
+                ;; watch for the first change; notify app
+                       (a/go
+                         (when-some [_delta (a/<! (<editor-dirty$ ace-instance source-data))]
+                           (on-edit-begin)))
+
+                ;; after ace is visible
+                       (a/go
+                         (when-some [mutation (a/<! (<css-class-change$ edit-box-container))]
+                           (focus-editor-on-mutation ace-instance edit-box-container mutation)))
+
+                       ace-instance))))
+
+(defn <setup-global-editor [db-theme source-data editor-element edit-box-container]
+  (<setup-editor db-theme source-data editor-element edit-box-container editing-events/notify-global-editing-start))
+
+(defn <setup-card-editor [db-theme source-data hash editor-element edit-box-container]
+  (<setup-editor db-theme source-data editor-element edit-box-container (partial editing-events/notify-editing-begin hash)))

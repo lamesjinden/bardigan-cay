@@ -1,11 +1,11 @@
 Context : [[HackerOnBoarding]]
 
-This is my simple script for building CardiganBay into a JAR file for distribution. Copy it into a file called something like build.sh.
+This is my simple script for building BardiganCay into a JAR file for distribution. Copy it into a file called something like build.sh.
 
-At the end of running it, you will have the distro of the latest code in ./deploy/cardigan.zip 
+At the end of running it, you will have the distro of the latest code in ./deploy/bardigan.zip 
 
 This zip contains :
-* an UberJAR which can be run with `java -jar ./cardigan.jar`
+* an UberJAR which can be run with `java -jar ./bardigan.jar`
 * a copy of the default bedrock wiki data.
 ----
 
@@ -15,19 +15,19 @@ This zip contains :
 rm -rf target 
 clj -A:prod:app
 
-mkdir -p ./deploy/cardigan
-cp ./target/clj-ts-0.1.0-SNAPSHOT-standalone.jar ./deploy/cardigan/cardigan.jar
-cp ./target/clj-ts-0.1.0-SNAPSHOT-standalone.jar /media/phil/54AE4F563BCE86E8/DATA/dev_tools/jars/cardigan.jar 
+mkdir -p ./deploy/bardigan
+cp ./target/bardigan-cay-1.0.2-SNAPSHOT.jar ./deploy/bardigan/bardigan.jar
+cp ./target/bardigan-cay-1.0.2-SNAPSHOT.jar /media/phil/54AE4F563BCE86E8/DATA/dev_tools/jars/bardigan.jar 
 
-rsync -avr --delete-after ./bedrock/ ./deploy/cardigan/bedrock/
+rsync -avr --delete-after ./bedrock/ ./deploy/bardigan/bedrock/
 
-echo "java -jar ./cardigan.jar" > ./deploy/cardigan/go.sh
-chmod +x ./deploy/cardigan/go.sh
-echo "java -jar ./cardigan.jar" > ./deploy/cardigan/go.bat
+echo "java -jar ./bardigan.jar" > ./deploy/bardigan/go.sh
+chmod +x ./deploy/bardigan/go.sh
+echo "java -jar ./bardigan.jar" > ./deploy/bardigan/go.bat
 
 cd ./deploy/
 
-zip -r ./cardigan.zip cardigan
+zip -r ./bardigan.zip bardigan
 
 ```
 

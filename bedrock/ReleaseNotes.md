@@ -1,5 +1,5 @@
 
-This is [[CardiganBay]] *0.8.0*
+This is [[BardiganCay]] *0.8.0*
 
 # Release 0.8.0 Notes
 
@@ -7,38 +7,38 @@ A lot of big changes, and some fixes.
 
 ### Breaking Changes
 
-There's been a change to the way we pass parameters to Cardigan Bay when starting up.
+There's been a change to the way we pass parameters to Bardigan Cay when starting up.
 
 * Command line arguments still work ... BUT 
 * You are now encouraged to keep most of your configurations in a file called `<page-directory>/system/config.edn`
 
-When Cardigan Bay starts it will start by reading the command line arguments. But then read the config.edn file. 
+When Bardigan Cay starts it will start by reading the command line arguments. But then read the config.edn file. 
 
 *The parameters defined in config.edn will take precedence over those defined on the command line.*
 
-**Astute observers will note that the one parameter which can NOT be given in the config.edn file is the :directory ... as Cardigan Bay needs to know the directory *before* it can find the config.edn file**
+**Astute observers will note that the one parameter which can NOT be given in the config.edn file is the :directory ... as Bardigan Cay needs to know the directory *before* it can find the config.edn file**
 
-I've dithered about this for a while, but of all the options I considered, this seems the least confusing in practice. Basically either run Cardigan Bay with the default bedrock directory under the place where the code sits. Or, pass the -d flag on the command line as you have currently been doing, to point it at a different page directory. All the other parameters can now be kept within that page directory, in system/config.edn
+I've dithered about this for a while, but of all the options I considered, this seems the least confusing in practice. Basically either run Bardigan Cay with the default bedrock directory under the place where the code sits. Or, pass the -d flag on the command line as you have currently been doing, to point it at a different page directory. All the other parameters can now be kept within that page directory, in system/config.edn
 
 ### Non-breaking Changes
 
 **Card level editing**. This is the BIG ONE anyone who has used CB will have been waiting for. You can now edit an individual card. It's not particularly pretty yet (though hopefully it will get prettier soon), but now, when you open up the card bar at the bottom of a card, there's another edit-box with just the source of that particular card. So you can now do more focused editing.
 
-Note, that while this is very useful, particularly on longer pages, it will **never** replace the one-big-text-box philosophy of Cardigan Bay. There will *always* be a canonical single text file view of a page.
+Note, that while this is very useful, particularly on longer pages, it will **never** replace the one-big-text-box philosophy of Bardigan Cay. There will *always* be a canonical single text file view of a page.
 
 **Workspace Saving**. This is also a big deal. As the server now has the ability to accept individual card updates, it means that the Workspace finally gets a [Save] button. So as you are working on code interactively in the workspace, you can hit the save button to store it. No need to copy and paste it into the page level editor.
 
-**Network Cards**. These are still an *experimental* feature. But it's always been the intention for Cardigan Bay to support a type of card which is a hand-drawn network diagram of boxes and arrows. Each node is, itself, a link to a page. So you can make graphical overviews of topics that are then covered on their own pages. There's currently no graphical editor for this card type. But this version of CB does at least now have a reasonable looking rendering. (The graphical editor is being worked on, but not yet enabled)
+**Network Cards**. These are still an *experimental* feature. But it's always been the intention for Bardigan Cay to support a type of card which is a hand-drawn network diagram of boxes and arrows. Each node is, itself, a link to a page. So you can make graphical overviews of topics that are then covered on their own pages. There's currently no graphical editor for this card type. But this version of CB does at least now have a reasonable looking rendering. (The graphical editor is being worked on, but not yet enabled)
 
 **Media Directory Cards**. CB already has the `<page-directory>/media/`  as a place to store your media files. There is now a  :system command for listing the media directory. And an extra card type for linking to a media file.
 ----
 # Release 0.7.4 Notes
 
-Cardigan Bay now officially does Transclusion of cards from one page to another. 
+Bardigan Cay now officially does Transclusion of cards from one page to another. 
 
 See [[TransclusionExample]] for how it's done.
 
-A version of transclusion existed in Cardigan Bay before, but it was buggy to the extent of risking damage to your data. And not officially supported.
+A version of transclusion existed in Bardigan Cay before, but it was buggy to the extent of risking damage to your data. And not officially supported.
 
 As of 0.7.4 those bugs are fixed. There is now a transclusion card type which causes a number of cards to be pulled from another page into this page. You can reorder and move cards containing transclusions. And the hash displayed on the Card Bar now doubles up as a button which copies the boilerplate for transcluding the card, to the clipboard.
 
@@ -48,7 +48,7 @@ Internally there's been some important code changes. Namely a revision and clean
 ----
 # Release 0.7.3 Notes
 
-There's been a considerable overhaul of the look Cardigan Bay, with improved CSS, some changes to hopefully make the UI a lot more friendly and intelligible to new users.
+There's been a considerable overhaul of the look Bardigan Cay, with improved CSS, some changes to hopefully make the UI a lot more friendly and intelligible to new users.
 
 Patterning support has been enhanced (including adding l-systems etc.)
 
@@ -64,7 +64,7 @@ Blank cards are now stripped from exported pages.
 
 Navigating to new pages automatically scrolls to the top of the page
 
-Browser's native JS libraries (eg. js/Math etc.) are now accessible from Workspaces in live versions of Cardigan Bay AND exported flat pages.
+Browser's native JS libraries (eg. js/Math etc.) are now accessible from Workspaces in live versions of Bardigan Cay AND exported flat pages.
 ----
 # Release 0.7.1 Notes
 
@@ -76,7 +76,7 @@ Now added private / public separation for Workspaces.
 
 index.html template for exporter, and main.css should now be placed in system/export_resources/ (where "system" is the system directory)
 
-If you started with a previous version of Cardigan Bay and customized your index.html template and main.css for exporting, make sure you have copied both into system/export_resources/
+If you started with a previous version of Bardigan Cay and customized your index.html template and main.css for exporting, make sure you have copied both into system/export_resources/
 
 If you want to be able to export functioning :workspaces then make sure you have added the Scittle dependency in the latest index.html template to your custom template.
 

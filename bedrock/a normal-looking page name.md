@@ -6,7 +6,7 @@ That means you really shouldn't have page-names with strange characters in them.
 
 Don't use question-marks (?) Or exclamation points (!) And certainly don't use slashes like / or \ in the page name. Or colons (:) 
 
-Cardigan Bay doesn't mind, but your computer's file system probably **will** mind, and will be confused. It might even stop Cardigan Bay working.
+Bardigan Cay doesn't mind, but your computer's file system probably **will** mind, and will be confused. It might even stop Bardigan Cay working.
 
 So at this time, we highly recommend that you just don't do it.
 

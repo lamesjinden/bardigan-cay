@@ -3,8 +3,8 @@
    [clojure.pprint]
    [ring.middleware.reload :as reload]
    [ring.middleware.cors :as cors]
-   [clj-ts.server :as server]
-   [clj-ts.app :as app]))
+   [wiki.bc.server :as server]
+   [wiki.bc.app :as app]))
 
 (set! *warn-on-reflection* true)
 

@@ -1,4 +1,4 @@
-[[CardiganBay]] pages are made of cards.
+[[BardiganCay]] pages are made of cards.
 
 By default you simply see a rendered content of the card. But you'll also see at the bottom right corner of each card, a small eye icon.
 

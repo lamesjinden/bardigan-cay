@@ -1,4 +1,4 @@
-Cardigan Bay is intended to be an individual authoring tool. (Or used by a group,  using something like the git version control system to share a collection of files in common).
+Bardigan Cay is intended to be an individual authoring tool. (Or used by a group,  using something like the git version control system to share a collection of files in common).
 
 When you wish to make your wiki public, you export it as a flat site (ie. a collection of stand-alone html files).
 
@@ -26,4 +26,4 @@ Even the main menu of an exported site is part of this template, meaning you can
 
 This pulls in the Scittle small ClojureScript interpreter. It's the only JS dependency in the static sites, and it is there to enable ClojureScript Workspaces and custom scripts in your wiki to also run in the exported site.
 
-This is what allows a Cardigan Bay to be an "alive" or "magical" experience that is active rather than just passive. (See [[WorkspaceExample]] for more details.)
+This is what allows a Bardigan Cay to be an "alive" or "magical" experience that is active rather than just passive. (See [[WorkspaceExample]] for more details.)

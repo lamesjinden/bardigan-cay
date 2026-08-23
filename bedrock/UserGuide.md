@@ -1,5 +1,5 @@
 
-* [[GettingStarted]] with Cardigan Bay
+* [[GettingStarted]] with Bardigan Cay
 * Examples
   * See [[CodeExamples]] for an explanation and examples of embedded Clojure code in your wiki.
   * See [[EmbeddingExamples]] for explanation and examples of embedding various media types from external sites, such as music and videos.

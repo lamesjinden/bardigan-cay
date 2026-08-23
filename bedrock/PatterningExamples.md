@@ -1,4 +1,4 @@
-[[CardiganBay]], the software behind this wiki now supports a card type of basic [Patterning](https://github.com/interstar/Patterning-Core) patterns. Some more information is on [[PatterningSupportInCardiganBay]], as is a list of the Patterning functions currently supported in Cardigan Bay.
+[[BardiganCay]], the software behind this wiki now supports a card type of basic [Patterning](https://github.com/interstar/Patterning-Core) patterns. Some more information is on [[PatterningSupportInBardiganCay]], as is a list of the Patterning functions currently supported in Bardigan Cay.
 
 The following cards, of type :patterning, show some example patterns to give an idea how the library works. Note that the embedded SVG in these cards was generated from Patterning at [[ExportTime]]
  

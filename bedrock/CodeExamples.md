@@ -1,7 +1,7 @@
 
 ### Code Examples
 
-[[CardiganBay]] is written in [Clojure](https://clojure.org/), a language which I'm a big fan of, and want to use for scripting within the wiki.
+[[BardiganCay]] is written in [Clojure](https://clojure.org/), a language which I'm a big fan of, and want to use for scripting within the wiki.
 
 There are two ways to embed Clojure code in your wiki.
 
@@ -57,8 +57,8 @@ See also [[PatterningExamples]]
 ----
 ### IMPORTANT
 
-**Please note that we don't do any security checking of Clojure to be run on the server, so this is a security risk. Don't run Cardigan Bay on a server where you think it might be accessible to hostile, Clojure-aware agents.**
+**Please note that we don't do any security checking of Clojure to be run on the server, so this is a security risk. Don't run Bardigan Cay on a server where you think it might be accessible to hostile, Clojure-aware agents.**
 
-Right now, Cardigan Bay is only recommended for private machines or protected private networks.
+Right now, Bardigan Cay is only recommended for private machines or protected private networks.
 
 Unlike client-side evaluation, server-side code will be evaluated during exports.

@@ -1,5 +1,5 @@
 {:port 4545
- :name "Yet Another Cardigan Bay Wiki"
+ :name "Yet Another Bardigan Cay Wiki"
  :site "http://www.example.com/"
  :init "HelloWorld"
  :beginner false}

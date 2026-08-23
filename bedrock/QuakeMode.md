@@ -1,6 +1,6 @@
 # Overview
 
-Quake Mode is an expanded Clojure evaluation interface inspired by the drop-down console in classic games like Quake. It provides a persistent REPL-like environment for evaluating Clojure expressions directly within [[CardiganBay]].
+Quake Mode is an expanded Clojure evaluation interface inspired by the drop-down console in classic games like Quake. It provides a persistent REPL-like environment for evaluating Clojure expressions directly within [[BardiganCay]].
 
 ----
 
