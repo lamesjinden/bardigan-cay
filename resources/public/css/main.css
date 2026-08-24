@@ -439,22 +439,19 @@ div textarea {
 /* #region jobs-view */
 
 .jobs-view {
-  margin: 0 auto;
-  max-width: 700px;
   /* main is pulled up under the header band by -1 * --material-icon-size;
-     compensate so the view clears the band by the usual main padding */
-  padding-top: calc(var(--material-icon-size) + var(--main-padding-bottom));
+     compensate so the first card clears the band by its own margin, matching
+     the card list's rhythm */
+  padding-top: var(--material-icon-size);
 }
 
 .jobs-view-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
   list-style-type: none;
   margin: 0;
   padding: 0;
 }
 
+/* job entries take the shell/outer appearance of standard page cards */
 .jobs-view-item {
   align-items: center;
   background-color: var(--primary-background-color);
@@ -462,7 +459,13 @@ div textarea {
   box-shadow: var(--card-box-shadow);
   display: flex;
   gap: 15px;
-  padding: 12px 15px;
+  margin: var(--card-list-item-margin) 0;
+  min-height: var(--card-outer-min-height);
+  padding: 0 calc(var(--card-outer-padding) + 7px);
+}
+
+.jobs-view-item:hover {
+  filter: brightness(98%);
 }
 
 .jobs-view-item-body {
@@ -537,6 +540,7 @@ div textarea {
 .jobs-view-empty {
   color: var(--secondary-foreground-color);
   font-size: 0.85rem;
+  margin: var(--card-list-item-margin) 0;
 }
 
 @keyframes job-spin {
@@ -1307,6 +1311,10 @@ dialog::backdrop {
 }
 
 .app-menu-container>.menu-list .material-symbols-sharp.spinning {
+  /* the flex row stretches icons taller than their 24px glyph box, which
+     puts the transform origin below the glyph center and makes the spin
+     wobble; centering restores the natural square box */
+  align-self: center;
   animation: job-spin 1.2s linear infinite;
 }
 

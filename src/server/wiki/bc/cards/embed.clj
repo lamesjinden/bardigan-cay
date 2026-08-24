@@ -118,7 +118,7 @@ seamless><a href='" url "'>" description "</a></iframe></div></div>")
 (defn twitter [data caption-renderer]
   (let [url (:url data)
         api (str "https://publish.twitter.com/oembed?url=" url)
-        {:keys [status body error]}
+        {:keys [body error]}
         @(http/get api)]
     (generic-embed
      (conj {:extra-link (str "<a href='https://threadviewer.com/"
@@ -126,9 +126,7 @@ seamless><a href='" url "'>" description "</a></iframe></div></div>")
                              "'>ThreadView</a>")} data)
      (if error
        (str "Failed, exception: " error)
-       (do
-         (println "HTTP GET success: " status)
-         (-> body json/read-str (get "html"))))
+       (-> body json/read-str (get "html")))
      caption-renderer)))
 
 (defn mastodon [data caption-renderer]
