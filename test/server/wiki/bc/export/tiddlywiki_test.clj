@@ -6,6 +6,7 @@
             [wiki.bc.card-server :as card-server]
             [wiki.bc.export.tiddlywiki :as tiddlywiki]
             [wiki.bc.query.facts-db :as facts]
+            [wiki.bc.storage.index :as index]
             [wiki.bc.storage.page-store :as pagestore])
   (:import [java.nio.file Files]
            [java.nio.file.attribute FileAttribute]
@@ -31,9 +32,8 @@
 
 (defn- make-snapshot [dir]
   (let [page-store (pagestore/make-page-store (str dir))
-        server-ref (card-server/create-card-server "TestWiki" "/" 4545 "Start" [] nil page-store)]
-    (card-server/regenerate-db! server-ref)
-    @server-ref))
+        page-index (index/build! (index/open-index) page-store)]
+    @(card-server/create-card-server "TestWiki" "/" 4545 "Start" [] page-index page-store)))
 
 (def ^:private store-marker
   "<script class=\"tiddlywiki-tiddler-store\" type=\"application/json\">")

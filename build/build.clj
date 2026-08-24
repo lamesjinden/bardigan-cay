@@ -6,7 +6,7 @@
             [inline]))
 
 (def artifact-name "bardigan-cay")
-(def base-version "1.0.2")
+(def base-version "2.0.0")
 
 (defn git-short-hash []
   (-> (p/process ["git" "rev-parse" "--short" "HEAD"] {:out :string})
@@ -49,4 +49,9 @@
            :manifest  {"Implementation-Title"   artifact-name
                        "Implementation-Version" version
                        "Git-Commit"             (git-short-hash)
-                       "Build-Timestamp"        (str (java.time.Instant/now))}}))
+                       "Build-Timestamp"        (str (java.time.Instant/now))
+                       ;; datalevin's LMDB layer needs reflective access to
+                       ;; java.nio internals; mirrors :jvm-opts in deps.edn
+                       ;; so plain `java -jar` needs no extra flags
+                       "Add-Opens"              "java.base/java.nio java.base/sun.nio.ch"
+                       "Enable-Native-Access"   "ALL-UNNAMED"}}))

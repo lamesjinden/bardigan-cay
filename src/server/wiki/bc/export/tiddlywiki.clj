@@ -25,7 +25,6 @@
             [clojure.string :as str]
             [wiki.bc.export.tiddler :as tiddler])
   (:import [java.io File Writer]
-           [java.nio.file Path]
            [java.text SimpleDateFormat]
            [java.util Arrays Base64 Date TimeZone]))
 
@@ -68,8 +67,8 @@
 
 (defn- page-tiddlers
   "The page's own tiddler plus any asset tiddlers its cards generate.
-  Reads the page unmemoized: caching every page of a large corpus in
-  page-store's read-page memo would pin it all in heap."
+  load-page fetches from the memory-mapped page index, so exporting a
+  large corpus does not pin every page in heap."
   [server-snapshot page-name]
   (let [page-store (:page-store server-snapshot)
         source (.load-page page-store page-name)
@@ -153,9 +152,8 @@
   "Writes one media file as a tiddler. Binary content streams through
   chunked base64 -- the base64 alphabet contains no JSON-special
   characters and no `<`, so it needs no escaping. SVG stays text."
-  [^Writer writer first?* ^Path path]
-  (let [file (.toFile path)
-        file-name (str (.getFileName path))
+  [^Writer writer first?* ^File file]
+  (let [file-name (.getName file)
         content-type (get media-content-types (file-extension file-name)
                           "application/octet-stream")
         modified (tw-timestamp (Date. (.lastModified file)))]
@@ -193,12 +191,9 @@
                          nil))]
         (doseq [tiddler tiddlers]
           (write-tiddler! writer first?* tiddler))))
-    (let [page-store (:page-store server-snapshot)
-          media-dir (-> (.as-map page-store) :page-path (.resolve "media"))]
-      (when (-> media-dir .toFile .isDirectory)
-        (with-open [stream (.media-files-as-new-directory-stream page-store)]
-          (doseq [path stream]
-            (write-media-tiddler! writer first?* path)))))
+    (let [page-store (:page-store server-snapshot)]
+      (doseq [file-name (.media-list page-store)]
+        (write-media-tiddler! writer first?* (.load-media-file page-store file-name))))
     (doseq [tiddler (site-tiddlers server-snapshot)]
       (write-tiddler! writer first?* tiddler))
     (when (seq @failures*)

@@ -10,6 +10,7 @@
             [wiki.bc.card-server :as card-server]
             [wiki.bc.jobs :as jobs]
             [wiki.bc.routing :as routing]
+            [wiki.bc.storage.index :as index]
             [wiki.bc.storage.page-store :as pagestore])
   (:import (clojure.lang Atom)))
 
@@ -29,15 +30,26 @@
         "-----------------------------------------------------------------------------------------------"
         "\n")))
 
+;; closing the previous index on (re)creation frees its LMDB env and
+;; scratch directory -- keeps dev-server reloads leak-free
+(defonce ^:private page-index* (atom nil))
+
+(defn- next-page-index! []
+  (let [page-index (index/open-index)]
+    (when-let [previous (first (reset-vals! page-index* page-index))]
+      (index/close! previous))
+
+    page-index))
+
 (defn create-card-server
   "initializes server state contained within an Atom and returns it"
   [application-settings]
   (let [{:keys [directory name site port init nav-links]} application-settings
         page-store (pagestore/make-page-store directory)
-        card-server-ref (card-server/create-card-server name site port init nav-links nil page-store)
+        page-index (index/build! (next-page-index!) page-store)
+        card-server-ref (card-server/create-card-server name site port init nav-links page-index page-store)
         card-server-state @card-server-ref]
     (print-card-server-state card-server-state)
-    (card-server/regenerate-db! card-server-ref)
     card-server-ref))
 
 (defn- print-server-settings [server-settings]

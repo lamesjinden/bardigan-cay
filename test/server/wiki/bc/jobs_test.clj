@@ -9,6 +9,7 @@
             [wiki.bc.card-server :as card-server]
             [wiki.bc.export.artifacts :as artifacts]
             [wiki.bc.server :as server]
+            [wiki.bc.storage.index :as index]
             [wiki.bc.storage.page-store :as pagestore])
   (:import [java.io File]
            [java.nio.file Files]
@@ -25,8 +26,8 @@
     (.mkdirs (io/file dir "system"))
     (spit (io/file dir "Start.md") "# hello jobs")
     (let [page-store (pagestore/make-page-store (str dir))
-          server-ref (card-server/create-card-server "Jobs Test Wiki" "/" 4545 "Start" [] nil page-store)]
-      (card-server/regenerate-db! server-ref)
+          page-index (index/build! (index/open-index) page-store)
+          server-ref (card-server/create-card-server "Jobs Test Wiki" "/" 4545 "Start" [] page-index page-store)]
       (server/create-request-pipeline server-ref))))
 
 (defn- request

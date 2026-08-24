@@ -6,46 +6,37 @@
             [wiki.bc.cards.parsing :as parsing]
             [wiki.bc.cards.system :as system]
             [wiki.bc.query.card-server-record :as server-record]
-            [wiki.bc.query.facts-db :as facts]
-            [wiki.bc.query.logic :as ldb]
+            [wiki.bc.query.index-db :as index-db]
             [wiki.bc.render :as render]
             [wiki.bc.search :as search]
+            [wiki.bc.storage.indexed-page-store :as indexed-page-store]
             [wiki.bc.storage.page-store :as pagestore]
             [wiki.bc.util :as util])
   (:import (clojure.lang Atom)))
 
 ;; Card Server state is just a defrecord.
-;; But one component, the page-store, is a deftype in its own right.
-;; page-store has all the file-system information that the wiki reads and writes.
+;; Its storage components are deftypes in their own right, all built over
+;; the page-index (a disposable Datalevin index of the page files): the
+;; facts-db is a live query view over the index, and the page-store reads
+;; from the index while writing through to the files (see
+;; wiki.bc.storage.indexed-page-store).
 
-(defn create-card-server ^Atom [wiki-name site-url port-no start-page nav-links logic-db page-store]
+(defn create-card-server ^Atom [wiki-name site-url port-no start-page nav-links page-index page-store]
   (atom (server-record/->CardServerRecord
          wiki-name
          site-url
          port-no
          start-page
          nav-links
-         logic-db
-         page-store)))
-
-(defn- set-state!
-  [^Atom card-server key val]
-  (swap! card-server assoc key val))
-
-(defn- set-facts-db!
-  [^Atom card-server facts-db]
-  {:pre [(satisfies? facts/IFactsDb facts-db)]}
-  (set-state! card-server :facts-db facts-db))
-
-(defn regenerate-db!
-  [^Atom card-server]
-  (let [f (ldb/regenerate-db @card-server)]
-    (set-facts-db! card-server f)))
+         (index-db/make-facts-db page-index)
+         (indexed-page-store/make-indexed-page-store page-index page-store)
+         page-index)))
 
 (defn write-page-to-file!
+  "The single mutation path for page content: the indexed page-store
+  writes the file and re-indexes, then RecentChanges is updated."
   [^Atom card-server page-name body]
-  (pagestore/write-page-to-file! @card-server page-name body)
-  (regenerate-db! card-server))
+  (pagestore/write-page-to-file! @card-server page-name body))
 
 (defn page-exists?
   [server-snapshot page-name]

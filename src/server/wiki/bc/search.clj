@@ -1,15 +1,25 @@
 (ns wiki.bc.search
-  (:require [wiki.bc.storage.page-store :as pagestore]))
+  (:require [clojure.string :as string]
+            [wiki.bc.storage.index :as index]
+            [wiki.bc.storage.page-store :as pagestore]))
 
 (defn search
+  "Page-name matches are a case-insensitive substring test against the
+  pattern; text matches come from the page index's full-text engine
+  (token-based, relevance-ranked -- see index/search-pages). A blank
+  query matches nothing."
   [server-snapshot pattern term]
-  (let [db (-> server-snapshot :facts-db)
-        all-pages (.all-pages db)
-        name-matches (pagestore/name-search all-pages (re-pattern pattern))
-        text-matches (pagestore/text-search server-snapshot all-pages (re-pattern pattern))]
+  (if (string/blank? term)
     {:query term
-     :name-matches (vec name-matches)
-     :text-matches (vec text-matches)}))
+     :name-matches []
+     :text-matches []}
+    (let [db (-> server-snapshot :facts-db)
+          all-pages (.all-pages db)
+          name-matches (pagestore/name-search all-pages (re-pattern pattern))
+          text-matches (index/search-pages (:page-index server-snapshot) term)]
+      {:query term
+       :name-matches (vec name-matches)
+       :text-matches (vec text-matches)})))
 
 (defn results->markdown
   [{:keys [query name-matches text-matches]}]

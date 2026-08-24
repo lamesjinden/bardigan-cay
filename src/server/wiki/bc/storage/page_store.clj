@@ -1,49 +1,58 @@
 (ns wiki.bc.storage.page-store
   (:require
-   [clojure.core.memoize :refer [memo memo-clear!]]
    [clojure.java.io :as io]
    [clojure.string :as string]
    [wiki.bc.cards.cards :refer [find-card-by-hash]]
    [wiki.bc.cards.parsing :as parsing]
    [wiki.bc.storage.page-storage :as page-storage])
-  (:import (java.nio.file Files Path Paths)))
+  (:import (java.nio.file Files Paths)))
 
 ;; Data structures / types
 
 ;; page-path and system-path are Java nio Paths
 ;; git-repo? is boolean
 
+;; Path helpers -- the nio types stay private to this namespace; the
+;; IPageStore surface deals only in names and content strings.
+
+(defn- path->pagename [path]
+  (-> path .getFileName .toString (string/split #"\.") first))
+
+(defn- page-name->path [page-path page-name]
+  (.resolve page-path (str page-name ".md")))
+
+(defn- system-name->path [system-path name]
+  (.resolve system-path name))
+
+(defn- media-dir-path [page-path]
+  (.resolve page-path "media"))
+
 (deftype PageStore [page-path system-path git-repo?]
   page-storage/IPageStore
 
   (as-map [_this]
-    {:page-path   page-path
-     :system-path system-path
+    {:page-path   (str page-path)
+     :system-path (str system-path)
      :git-repo?   git-repo?})
 
-  (page-name->path [_this page-name]
-    (.resolve page-path (str page-name ".md")))
+  (page-names [_this]
+    (with-open [stream (Files/newDirectoryStream page-path "*.md")]
+      (->> stream
+           (mapv path->pagename)
+           sort
+           vec)))
 
-  (name->system-path [_this name]
-    (.resolve system-path name))
+  (page-exists? [_this page-name]
+    (-> (page-name->path page-path page-name) .toFile .exists))
 
-  (page-exists? [this page-name]
-    (-> (.page-name->path this page-name) .toFile .exists))
+  (last-modified [_this page-name]
+    (-> (page-name->path page-path page-name) .toFile .lastModified (#(java.util.Date. %))))
 
-  (system-file-exists? [this name]
-    (-> (.name->system-path this name) .toFile .exists))
-
-  (last-modified [this page-name]
-    (-> (.page-name->path this page-name) .toFile .lastModified (#(java.util.Date. %))))
-
-  (load-page [this page]
-    (if (instance? Path page)
-      (-> page .toFile slurp)
-      (-> page (#(.page-name->path this %)) .toFile slurp)))
+  (load-page [_this page-name]
+    (-> (page-name->path page-path page-name) .toFile slurp))
 
   (get-page-as-card-maps [this page-name]
     (->> page-name
-         (.page-name->path this)
          (.load-page this)
          (parsing/raw-text->card-maps)))
 
@@ -56,63 +65,42 @@
          (map #(.get-card this page-name %))
          (remove nil?)))
 
-  (write-page! [this page data]
-    (if (instance? Path page)
-      (spit (.toString page) data)
-      (let [x (-> page (#(.page-name->path this %)))]
-        (spit (.toString x) data))))
+  (write-page! [_this page-name data]
+    (spit (str (page-name->path page-path page-name)) data))
 
-  (read-system-file [this name]
-    (if (instance? Path name)
-      (-> name .toFile slurp)
-      (-> name (#(.name->system-path this %)) .toFile slurp)))
+  (read-system-file [_this name]
+    (-> (system-name->path system-path name) .toFile slurp))
 
-  (write-system-file! [this name data]
-    (if (instance? Path name)
-      (spit (.toString name) data)
-      (let [x (-> name (#(.name->system-path this %)))]
-        (spit (.toString x) data))))
-
-  (report [_this]
-    (str "Page Directory:  \t" (str page-path) "\n"
-         "System Directory:\t" (str system-path) "\n"
-         "Within Git Repo?:\t" (str git-repo?) "\n"))
-
-  (similar-page-names [this page-name]
-    (let [all-pages (.pages-as-new-directory-stream this)
-          all-names (map #(-> (.getFileName %)
-                              .toString
-                              (string/split #"\.")
-                              butlast
-                              last)
-                         all-pages)]
-      (filter #(= (string/lower-case %) (string/lower-case page-name)) all-names)))
-
-  (pages-as-new-directory-stream [_this]
-    (Files/newDirectoryStream page-path "*.md"))
-
-  (media-files-as-new-directory-stream [_this]
-    (let [media-path (.resolve page-path "media")]
-      (Files/newDirectoryStream media-path "*.*")))
+  (write-system-file! [_this name data]
+    (spit (str (system-name->path system-path name)) data))
 
   (read-recent-changes [this]
     (.read-system-file this "recentchanges"))
 
-  (recent-changes-as-page-list [page-store]
-    (->> (clojure.string/split-lines (.read-recent-changes page-store))
-         (map (fn [line] (first (re-seq #"\[\[(.+?)\]\]" line))))
-         (map second)))
-
   (write-recent-changes! [this recent-changes]
     (.write-system-file! this "recentchanges" recent-changes))
 
-  (load-media-file [_this file-name]
-    (let [media-dir (.toString (.resolve page-path "media"))]
-      (io/file media-dir file-name)))
+  (similar-page-names [this page-name]
+    (let [target (string/lower-case page-name)]
+      (filter #(= (string/lower-case %) target) (.page-names this))))
 
-  (media-list [this]
-    (let [files (.media-files-as-new-directory-stream this)]
-      (map #(.getFileName %) files))))
+  (media-list [_this]
+    (let [media-dir (media-dir-path page-path)]
+      (if (-> media-dir .toFile .isDirectory)
+        (with-open [stream (Files/newDirectoryStream media-dir "*.*")]
+          (->> stream
+               (mapv #(str (.getFileName %)))
+               sort
+               vec))
+        [])))
+
+  (load-media-file [_this file-name]
+    (io/file (str (media-dir-path page-path)) file-name))
+
+  (report [_this]
+    (str "Page Directory:  \t" (str page-path) "\n"
+         "System Directory:\t" (str system-path) "\n"
+         "Within Git Repo?:\t" (str git-repo?) "\n")))
 
 ;; Constructing
 
@@ -142,12 +130,6 @@
                  " but it is not a directory. Please remove that file and create a directory with that name"))
     page-store))
 
-;; Basic functions
-
-;; note - used externally (logic)
-(defn path->pagename [path]
-  (-> path .getFileName .toString (string/split #"\.") first))
-
 ;; RecentChanges
 ;; We store recent-changes in a system file called "recentchanges".
 
@@ -160,24 +142,17 @@
                  curlist)]
     (.write-recent-changes! page-store (string/join "\n" (take 80 newlist)))))
 
-;; API for writing a file
-
-(defn m-read-page [page-store page-name]
-  (.load-page page-store page-name))
-
-(def memoized-read-page (memo m-read-page))
+;; Reading and writing against the server state's page-store
 
 ;; note - used externally
 (defn read-page [server-state page-name]
-  (let [page-store (:page-store server-state)]
-    (memoized-read-page page-store page-name)))
+  (-> server-state :page-store (.load-page page-name)))
 
 ;; note - used externally
 (defn write-page-to-file! [server-state page-name body]
-  (let [page-store (.page-store server-state)]
+  (let [page-store (:page-store server-state)]
     (.write-page! page-store page-name body)
-    (update-recent-changes! page-store page-name)
-    (memo-clear! memoized-read-page [page-store page-name])))
+    (update-recent-changes! page-store page-name)))
 
 ;; region Search
 

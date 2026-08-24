@@ -1,26 +1,25 @@
 (ns wiki.bc.storage.page-storage)
 
+;; The page-store contract speaks in page/file NAMES and content strings;
+;; no java.nio types cross this boundary. The one deliberate exception is
+;; load-media-file, which returns a java.io.File because media is served
+;; to Ring as a file response.
 (defprotocol IPageStore
   (as-map [ps])
-  (page-name->path [ps page-name])
-  (name->system-path [ps name])
+  (page-names [ps])
   (page-exists? [ps page-name])
-  (system-file-exists? [ps name])
   (last-modified [ps page-name])
-  ;; note - renamed read-page to load-page to avoid collision with pagestore/read-page
-  (load-page [ps page])
+  ;; note - named load-page (not read-page) to avoid collision with pagestore/read-page
+  (load-page [ps page-name])
   (get-page-as-card-maps [ps page-name])
   (get-card [ps page-name card-hash])
   (get-cards-from-page [ps page-name card-hashes])
-  (write-page! [ps page data])
+  (write-page! [ps page-name data])
   (read-system-file [ps name])
   (write-system-file! [ps name data])
-  (report [ps])
-  (similar-page-names [ps p-name])
-  (pages-as-new-directory-stream [ps])
-  (media-files-as-new-directory-stream [ps])
   (read-recent-changes [ps])
-  (recent-changes-as-page-list [ps])
   (write-recent-changes! [ps new-rc])
+  (similar-page-names [ps page-name])
+  (media-list [ps])
   (load-media-file [ps file-name])
-  (media-list [ps]))
+  (report [ps]))
