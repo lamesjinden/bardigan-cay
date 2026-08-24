@@ -7,17 +7,26 @@
    [wiki.bc.confirmation.edit-process :as confirm-edit]
    [wiki.bc.confirmation.navigation-process :as confirm-nav]
    [wiki.bc.confirmation.transcript-process :as confirm-transcript]
+   [wiki.bc.cards.move-card-process :as move-card-process]
+   [wiki.bc.cards.reorder-card-process :as reorder-card-process]
+   [wiki.bc.events.cards :as e-cards]
    [wiki.bc.events.confirmation :as e-confirm]
    [wiki.bc.events.editing :as e-editing]
    [wiki.bc.events.jobs :as e-jobs]
    [wiki.bc.events.navigation :as e-nav]
    [wiki.bc.events.progression :as e-progress]
    [wiki.bc.events.rendering :as e-rendering]
+   [wiki.bc.events.saving :as e-saving]
+   [wiki.bc.events.searching :as e-searching]
    [wiki.bc.events.transcript :as e-transcript]
    [wiki.bc.jobs.jobs-process :as jobs-process]
    [wiki.bc.mode :as mode]
    [wiki.bc.navigation :as nav]
    [wiki.bc.rendering.render-process :as rendering-render]
+   [wiki.bc.saving.append-page-process :as append-page-process]
+   [wiki.bc.saving.save-card-process :as save-card-process]
+   [wiki.bc.saving.save-page-process :as save-page-process]
+   [wiki.bc.searching.search-process :as search-process]
    [wiki.bc.theme :as theme]
    [wiki.bc.views.app :refer [app]]
    [wiki.bc.transcript :as transcript]))
@@ -66,6 +75,18 @@
         _render-process (rendering-render/<create-render-process (e-rendering/create-rendering$))
 
         _jobs-process (jobs-process/<create-jobs-process db (e-jobs/create-jobs$))
+
+        _save-page-process (save-page-process/<create-save-page-process (e-saving/create-saving-page$))
+
+        _save-card-process (save-card-process/<create-save-card-process (e-saving/create-saving-card$))
+
+        _append-page-process (append-page-process/<create-append-page-process (e-saving/create-appending-page$))
+
+        _search-process (search-process/<create-search-process (e-searching/create-searching$))
+
+        _move-card-process (move-card-process/<create-move-card-process (e-cards/create-moving-card$))
+
+        _reorder-card-process (reorder-card-process/<create-reorder-card-process (e-cards/create-reordering-card$))
 
         confirmation-request$ (e-confirm/create-confirmation-request$)
         progress$ (e-progress/create-progress$)]

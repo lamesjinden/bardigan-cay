@@ -3,8 +3,8 @@
             [clojure.string :as str]
             [reagent.core :as r]
             [wiki.bc.card :as cards]
+            [wiki.bc.events.cards :as e-cards]
             [wiki.bc.events.rendering :as e-rendering]
-            [wiki.bc.http :as http]
             [wiki.bc.navigation :as nav]
             [wiki.bc.view :as view]
             [wiki.bc.views.autocomplete-input :refer [autocomplete-input]]))
@@ -21,24 +21,21 @@
   (let [page-name (-> @db :current-page)
         hash (if-let [transcluded (get card "transcluded")]
                (get transcluded "hash")
-               (get card "hash"))
-        body (pr-str {:from page-name
-                      :to   new-page-name
-                      :hash hash})]
+               (get card "hash"))]
     (a/go
-      (when-let [_ (a/<! (http/<http-post "/api/movecard" body))]
+      (when-let [_ (a/<! (e-cards/<notify-move-card page-name new-page-name hash))]
         (nav/<navigate! db new-page-name)))))
 
 (defn- <card-reorder! [db card direction]
   (let [page-name (-> @db :current-page)
         hash (if-let [transcluded (get card "transcluded")]
                (get transcluded "hash")
-               (get card "hash"))
-        body (pr-str {:page      page-name
-                      :hash      hash
-                      :direction direction})]
+               (get card "hash"))]
     (a/go
-      (when-let [response (a/<! (http/<http-post "/api/reordercard" body))]
+      ;; rapid reorders all execute server-side (superseding only aborts the
+      ;; client side), so the newest response reflects every applied reorder -
+      ;; one reload, scrolled to the last-touched card
+      (when-let [response (a/<! (e-cards/<notify-reorder-card page-name hash direction))]
         ;; reload the page content
         (nav/load-page-response db response)
         ;; wait for the next render of the parent component

@@ -2,6 +2,7 @@
   (:require [cljs.core.async :as a]
             [clojure.string :as str]
             [reagent.core :as r]
+            [wiki.bc.async :as async]
             [wiki.bc.keyboard :as keyboard]
             [wiki.bc.views.autocomplete-dropdown :refer [autocomplete-dropdown dismiss-autocomplete!]]
             [wiki.bc.autocomplete.autocomplete-process :as autocomplete]))
@@ -44,7 +45,7 @@
                               (autocomplete/sexp-filter-transducer)
                               (autocomplete/distinct-until-changed-transducer)
                               (autocomplete/query-length-filter-transducer min-query-length)))
-        debounced$ (autocomplete/create-debounced-channel raw-input$ debounce-ms)
+        debounced$ (async/create-debounced-channel raw-input$ debounce-ms)
         output$ (autocomplete/<create-autocomplete-process debounced$)]
 
     ;; Store channels for cleanup

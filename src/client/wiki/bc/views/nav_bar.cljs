@@ -10,9 +10,9 @@
             ["ace-builds/src-min-noconflict/theme-cloud9_night"]
             ["ace-builds/src-min-noconflict/theme-tomorrow_night_eighties"]
             [wiki.bc.ace.core :as ace-core]
+            [wiki.bc.events.searching :as e-searching]
             [wiki.bc.events.transcript :as transcript-events]
             [wiki.bc.highlight :as highlight]
-            [wiki.bc.http :as http]
             [wiki.bc.navigation :as nav]
             [wiki.bc.transcript :as transcript]
             [wiki.bc.views.app-menu :refer [app-menu]]
@@ -67,7 +67,7 @@
                           (js/encodeURI))]
     (when (not (str/blank? cleaned-query))
       (a/go
-        (when-let [result (a/<! (http/<http-get (str "/api/search?q=" cleaned-query)))]
+        (when-let [result (a/<! (e-searching/<notify-search cleaned-query))]
           (let [{body-text :body} result
                 body (.parse js/JSON body-text)]
             (load-search-results! db body)))))))

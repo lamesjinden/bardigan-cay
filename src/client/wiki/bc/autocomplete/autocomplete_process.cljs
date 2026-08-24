@@ -1,6 +1,7 @@
 (ns wiki.bc.autocomplete.autocomplete-process
   (:require [cljs.core.async :as a]
             [clojure.string :as str]
+            [wiki.bc.async :as async]
             [wiki.bc.http :as http]))
 
 ;; region transducers
@@ -20,43 +21,10 @@
             (let [trimmed-query (str/trim (or query ""))]
               (not (str/starts-with? trimmed-query "("))))))
 
-(defn create-debounced-channel
-  "Creates a debounced channel that only emits values after delay-ms of inactivity
-   Returns a channel that should be used as the target for puts
-   
-   related: https://stackoverflow.com/questions/35663415/throttle-functions-with-core-async
-   "
-
-  [source-chan delay-ms]
-  (let [debounced-chan (a/chan)
-        timeout-chan (a/chan)]
-    (a/go-loop [timeout-id nil]
-      (let [[value port] (a/alts! [source-chan timeout-chan])]
-        (cond
-          (= port timeout-chan)
-          ;; Timeout fired - emit the pending value
-          (do
-            (a/>! debounced-chan value)
-            (recur nil))
-
-          (= port source-chan)
-          (if (nil? value)
-            ;; Source channel closed - cleanup everything
-            (do
-              (when timeout-id (js/clearTimeout timeout-id))
-              (a/close! timeout-chan)
-              (a/close! debounced-chan))
-            ;; New value - reset timeout
-            (do
-              (when timeout-id (js/clearTimeout timeout-id))
-              (let [new-timeout-id (js/setTimeout #(a/put! timeout-chan value) delay-ms)]
-                (recur new-timeout-id)))))))
-    debounced-chan))
-
 (defn distinct-until-changed-transducer
   "Stateful transducer that only emits values when they differ from the previous value
    Optionally takes a key-fn to extract comparison value and compare-fn for custom equality
-   
+
    Examples:
    (distinct-until-changed-transducer) ; uses = for comparison
    (distinct-until-changed-transducer identity) ; uses = on identity
@@ -84,30 +52,34 @@
 
 ;; region autocomplete process
 
+(defn- get-suggestions [query]
+  (http/http-get* (str "/api/search/autocomplete?q=" (js/encodeURI (str/trim query)))))
+
+(defn- suggestions-result [{:keys [input response]}]
+  (try
+    {:query       input
+     :suggestions (js->clj (js/JSON.parse (:body response)) :keywordize-keys true)}
+    (catch js/Error e
+      (js/console.error "Autocomplete fetch failed:" e)
+      {:query input :suggestions [] :result-error e})))
+
 (defn <create-autocomplete-process
-  "Creates a reusable autocomplete process
+  "Creates a reusable autocomplete process: queries taken from input$ are
+   fetched with switchMap semantics - a newer query aborts the in-flight
+   request, so only the latest query's suggestions are emitted. Closing
+   input$ aborts any in-flight request and closes the returned channel.
+
    Parameters:
    - input$ - channel with pre-applied transducers (filtering, debouncing, etc.)
-   
+   - opts (optional) - {:fetch-suggestions (fn [query] {:response$ .. :abort! ..})}
+
    Returns a channel that emits autocomplete results in the format:
    {:query string :suggestions [...] :result-error error-or-nil}"
-  [input$]
-  (let [result$ (a/chan)]
-    ;; Start the autocomplete process loop
-    (a/go-loop []
-      (when-some [query (a/<! input$)]
-        (let [trimmed-query (str/trim query)]
-          (try
-            (when-let [response (a/<! (http/<http-get (str "/api/search/autocomplete?q=" (js/encodeURI trimmed-query))))]
-              (let [{body-text :body} response
-                    suggestions (js->clj (js/JSON.parse body-text) :keywordize-keys true)]
-                (a/put! result$ {:query query :suggestions suggestions})))
-            (catch js/Error e
-              (js/console.error "Autocomplete fetch failed:" e)
-              (a/put! result$ {:query query :suggestions [] :result-error e}))))
-        (recur)))
-
-    ;; Return the result channel
-    result$))
+  ([input$]
+   (<create-autocomplete-process input$ {}))
+  ([input$ {:keys [fetch-suggestions] :or {fetch-suggestions get-suggestions}}]
+   (let [result$ (a/chan 1 (map suggestions-result))]
+     (a/pipe (async/create-switching-channel input$ fetch-suggestions) result$)
+     result$)))
 
 ;; endregion

@@ -85,3 +85,16 @@
                           :headers           headers
                           :timeout           timeout
                           :with-credentials? with-credentials?})))
+
+(defn http-post*
+  "Raw variant of <http-post: returns {:response$ <promise-chan> :abort! <fn>}
+   so the caller can abort the request while it is in flight. Aborting resolves
+   :response$ with {:isSuccess false :aborted? true}; aborting after completion
+   is a no-op."
+  [url body & {:keys [headers timeout with-credentials?]}]
+  (http-send {:url               url
+              :method            "POST"
+              :body              body
+              :headers           headers
+              :timeout           timeout
+              :with-credentials? with-credentials?}))

@@ -1,6 +1,6 @@
 (ns wiki.bc.page
   (:require [cljs.core.async :as a]
-            [wiki.bc.http :as http]
+            [wiki.bc.events.saving :as e-saving]
             [wiki.bc.navigation :as nav]))
 
 (defn enter-view-mode! [db]
@@ -19,11 +19,9 @@
   ([db callback]
    (let [page-name (-> @db :current-page)
          editor (:editor @db)
-         new-data ^string (.getValue editor)
-         body (pr-str {:page page-name
-                       :data new-data})]
+         new-data ^string (.getValue editor)]
      (a/go
-       (when-let [result (a/<! (http/<http-post "/api/save" body))]
+       (when-let [result (a/<! (e-saving/<notify-save-page page-name new-data))]
          (callback result)))))
   ([db]
    (let [callback (fn [{body-text :body}]
@@ -35,18 +33,13 @@
 
 (defn <append-page!
   ([db destination body]
-   (let [body (pr-str {:page destination
-                       :data body})]
-     (a/go
-       (when-let [_ (a/<! (http/<http-post "/api/append" body))]
-         (nav/<navigate! db destination))))))
+   (a/go
+     (when-let [_ (a/<! (e-saving/<notify-append-page destination body))]
+       (nav/<navigate! db destination)))))
 
 (defn <save-card!
   [page-name hash new-val]
-  (let [body (pr-str {:page page-name
-                      :data new-val
-                      :hash hash})]
-    (a/go
-      (when-let [result (a/<! (http/<http-post "/api/replacecard" body))]
-        (let [{body-text :body} result]
-          (js/JSON.parse body-text))))))
+  (a/go
+    (when-let [result (a/<! (e-saving/<notify-save-card page-name hash new-val))]
+      (let [{body-text :body} result]
+        (js/JSON.parse body-text)))))
