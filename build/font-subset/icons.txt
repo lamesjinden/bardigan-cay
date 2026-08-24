@@ -1,21 +1,23 @@
-# src/client/wiki/bc/views/app_menu.cljs (incl. job statuses + theme submenu)
-schedule
-progress_activity
-check_circle
-error
-help
-download
+# src/client/wiki/bc/views/app_menu.cljs (theme + export submenus)
 check
 menu
 palette
 expand_less
 expand_more
+output
 deployed_code_update
 work_history
 rss_feed
 light_mode
 dark_mode
 bolt
+# src/client/wiki/bc/views/jobs.cljs (job statuses)
+schedule
+progress_activity
+check_circle
+error
+help
+download
 # nav_bar.cljs
 close
 navigate_next

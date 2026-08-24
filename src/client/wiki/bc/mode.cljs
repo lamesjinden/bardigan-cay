@@ -9,6 +9,9 @@
 (defn set-transcript-mode! [db]
   (swap! db assoc :mode :transcript))
 
+(defn set-jobs-mode! [db]
+  (swap! db assoc :mode :jobs))
+
 (defn editing? [db]
   (= :editing (:mode @db)))
 

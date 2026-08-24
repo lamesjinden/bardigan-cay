@@ -3,6 +3,7 @@
             [cljs.core.async :as a]
             [reagent.core :as r]
             [wiki.bc.events.editing :as e-editing]
+            [wiki.bc.jobs :as jobs]
             [wiki.bc.mode :as mode]
             [wiki.bc.page :as page]
             [wiki.bc.transcript :as transcript]))
@@ -67,4 +68,10 @@
              [:span {:class [:material-symbols-sharp :clickable]} "clear_all"]]
             [:button.big-btn.big-btn-right
              {:on-click #(transcript/exit-transcript! db)}
+             [:span {:class [:material-symbols-sharp :clickable]} "close"]]]
+
+           :jobs
+           [:span.button-container
+            [:button.big-btn
+             {:on-click #(jobs/exit-jobs-view! db)}
              [:span {:class [:material-symbols-sharp :clickable]} "close"]]])]))))

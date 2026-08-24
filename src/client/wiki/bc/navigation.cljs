@@ -3,6 +3,7 @@
             [clojure.string :as str]
             [wiki.bc.http :as http]
             [wiki.bc.events.navigation :as nav-events]
+            [wiki.bc.jobs :as jobs]
             [wiki.bc.mode :as mode]))
 
 ;; region load page
@@ -149,6 +150,9 @@
     (cond
       (= (get state-map "mode") "transcript")
       (mode/set-transcript-mode! db)
+
+      (= (get state-map "mode") "jobs")
+      (jobs/enter-jobs-view! db)
 
       :else (let [page-name (popstate->page-name db state)]
               (<go-new! db page-name)))))

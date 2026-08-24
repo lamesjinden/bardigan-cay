@@ -2,14 +2,16 @@
   "Maintains the client's view of server jobs under [:jobs] in the app db:
 
      {:entries [...]         ;; mirrored from the job-server state api
-      :local-failures [...]} ;; submissions that never became server jobs
+      :local-failures [...]  ;; submissions that never became server jobs
+      :hydrated? ...         ;; true once the first fetch has landed
+      :attention? ...}       ;; a failure arrived since the jobs view last opened
 
   Entry shape:
      {:job-id ... :label ... :status :accepted|:running|:success|:failure
       :accept-time ... :end-time ... :error-message ... :output {:url ...}}
 
-  The process consumes submit commands and polls the job-server state api
-  while any job is accepted or running (the api is poll-only)."
+  The process consumes submit and refresh commands and polls the job-server
+  state api while any job is accepted or running (the api is poll-only)."
   (:require [cljs.core.async :as a]
             [wiki.bc.http :as http]))
 
@@ -52,12 +54,29 @@
   (vec (concat (->> (get state "pending") (map pending->entry) (reverse))
                (->> (get state "history") (map history->entry) (reverse)))))
 
+(defn- failure-ids [entries]
+  (->> entries
+       (filter (fn [{:keys [status]}] (= :failure status)))
+       (map :job-id)
+       (set)))
+
+(defn- merge-entries
+  "Replaces :entries, raising :attention? when a failure appears that the
+  previous fetch did not know about (startup rehydration stays quiet)."
+  [{:keys [hydrated?] :as jobs} entries]
+  (let [new-failure? (seq (remove (failure-ids (:entries jobs))
+                                  (failure-ids entries)))]
+    (cond-> (assoc jobs
+                   :entries entries
+                   :hydrated? true)
+      (and hydrated? new-failure?) (assoc :attention? true))))
+
 (defn- <fetch-state! [db]
   (a/go
     (let [response (a/<! (http/<http-get "/api/state"))]
       (when (:isSuccess response)
         (let [state (js->clj (js/JSON.parse (:body response)))]
-          (swap! db assoc-in [:jobs :entries] (state->entries state)))))))
+          (swap! db update :jobs merge-entries (state->entries state)))))))
 
 (defn- local-failure [label message]
   {:job-id (str "local-" (random-uuid))
@@ -74,11 +93,15 @@
           response (a/<! (http/<http-post url nil))]
       (if (and (:isSuccess response) (= 202 (:status response)))
         (a/<! (<fetch-state! db))
-        (swap! db update-in [:jobs :local-failures] (fnil conj [])
-               (local-failure label
-                              (if (= 503 (:status response))
-                                "server busy - too many queued jobs"
-                                (str "submission failed (status " (:status response) ")"))))))))
+        (swap! db update :jobs
+               (fn [jobs]
+                 (-> jobs
+                     (update :local-failures (fnil conj [])
+                             (local-failure label
+                                            (if (= 503 (:status response))
+                                              "server busy - too many queued jobs"
+                                              (str "submission failed (status " (:status response) ")"))))
+                     (assoc :attention? true))))))))
 
 (defn- active? [db]
   (->> (get-in @db [:jobs :entries])
@@ -105,6 +128,7 @@
             (if (= port jobs-cmd$)
               (condp = (:action value)
                 :submit (a/<! (<submit-job! db value))
+                :refresh (a/<! (<fetch-state! db))
                 (js/console.warn "unknown jobs command" (str value)))
               (a/<! (<fetch-state! db)))
             (recur true)))))))

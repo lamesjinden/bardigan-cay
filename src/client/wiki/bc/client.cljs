@@ -6,6 +6,7 @@
    [wiki.bc.confirmation.onbeforeload-process :as confirm-onbeforeload]
    [wiki.bc.confirmation.edit-process :as confirm-edit]
    [wiki.bc.confirmation.navigation-process :as confirm-nav]
+   [wiki.bc.confirmation.jobs-view-process :as confirm-jobs-view]
    [wiki.bc.confirmation.transcript-process :as confirm-transcript]
    [wiki.bc.cards.move-card-process :as move-card-process]
    [wiki.bc.cards.reorder-card-process :as reorder-card-process]
@@ -46,7 +47,9 @@
               :env-port     4545
               :quake-mode?  false
               :jobs         {:entries []
-                             :local-failures []}}))
+                             :local-failures []
+                             :hydrated? false
+                             :attention? false}}))
 
 ;; endregion
 
@@ -71,6 +74,10 @@
         _transcript-process (confirm-transcript/<create-transcript-process
                              (e-transcript/create-transcript-navigating$)
                              (e-editing/create-editing$))
+
+        _jobs-view-process (confirm-jobs-view/<create-jobs-view-process
+                            (e-jobs/create-jobs-view-navigating$)
+                            (e-editing/create-editing$))
 
         _render-process (rendering-render/<create-render-process (e-rendering/create-rendering$))
 
