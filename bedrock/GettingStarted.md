@@ -111,9 +111,9 @@ See [[CardBar]] for details.
 
 The original wikis were public servers allowing anyone to edit them to encourage a community sense of responsibility. In 2020, the web is a more dangerous place, full of hostile spam-bots, right-wing trolls and fake-news mongers. And the ideal of wiki as completely open space is largely gone.
 
-Bardigan Cay is intended to be run locally on your own machine. And then its contents can be exported as a "flat" or "static" collection of HTML files that can be hosted on any public facing server. 
+Bardigan Cay is intended to be run locally on your own machine. And then its contents can be exported as a single self-contained HTML file (in TiddlyWiki format) that can be hosted on any public facing server. 
 
-See [[ExportingAsFlatSite]] for information about how to do this. 
+See [[ExportingTheWiki]] for information about how to do this. 
 
 ----
 

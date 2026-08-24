@@ -12,7 +12,6 @@
 /.shadow-cljs
 .direnv
 
-bedrock/exported
 node_modules
 out
 resources/public/js

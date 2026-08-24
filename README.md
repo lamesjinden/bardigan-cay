@@ -67,7 +67,7 @@ npm i
     2. start server application (assumes your `bedrock` directory is located at )
     ```bash
     # you may want to modify bb.edn target 'run-dev-server' to map to your custom directory structure instead of passing the following CLI args
-    bb run-dev-server --directory "./bedrock" --export-dir "./bedrock/exported/"
+    bb run-dev-server --directory "./bedrock"
     ```
 
 Then navigate to [http://localhost:4545/](http://localhost:4545/) in your browser.

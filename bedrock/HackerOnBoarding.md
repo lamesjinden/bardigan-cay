@@ -80,9 +80,9 @@ Note that it's almost certain I'll be moving away from core.logic for the databa
 `src/wiki/bc/server.clj`
 
 ----
-**I want to change the look of the exported flat pages**
+**I want to change what an export produces**
 
-* `/resources/wiki/bc/export_template/` has the index.html and main.css that are used when exporting the wiki as flat files.
+* Exporting produces a single self-contained TiddlyWiki HTML file. The vendored empty TiddlyWiki template lives at `/resources/tiddlywiki/empty.html` (see the VERSION note beside it), and `src/server/wiki/bc/export/tiddlywiki.clj` fills it with the wiki's pages.
 
 ----
 
@@ -96,7 +96,7 @@ clj -A:dev:app [ARGS]
 **What ARGS**?
 
 ```
-clj -A:dev:app -n "WikiName" -s "http://myserver.com/" -d "/PATH/TO/PAGE/DIRECTORY" -e "/PATH/TO/EXPORT/DIRECTORY" -p PORT
+clj -A:dev:app --name "WikiName" --site "http://myserver.com/" -d "/PATH/TO/PAGE/DIRECTORY" -p PORT
 ```
 
 **What about building it as a JAR?**
