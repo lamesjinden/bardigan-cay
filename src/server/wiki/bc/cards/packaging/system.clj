@@ -47,12 +47,12 @@
         (util/package-card "search" :system :html source-data html render-context))
 
       :about
-      (let [sr (str "### System Information\n
+      (let [{:keys [page-path git-repo?]} (.as-map page-store)
+            sr (str "### System Information\n
 **Wiki Name**,, " (:wiki-name server-snapshot) "
-**PageStore Directory** (relative to code) ,, " (.page-path page-store) "
-**Is Git Repo?**  ,, " (.git-repo? page-store) "
+**PageStore Directory** (relative to code) ,, " page-path "
+**Is Git Repo?**  ,, " git-repo? "
 **Site Url Root** ,, " (:site-url server-snapshot) "
-**Export Dir** ,, " (.export-path page-store) "
 **Number of Pages** ,, " (count (.all-pages facts-db)))]
         (util/package-card id :system :markdown source-data sr render-context))
 
