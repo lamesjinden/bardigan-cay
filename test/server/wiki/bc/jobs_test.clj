@@ -9,26 +9,21 @@
             [wiki.bc.card-server :as card-server]
             [wiki.bc.export.artifacts :as artifacts]
             [wiki.bc.server :as server]
-            [wiki.bc.storage.index :as index]
-            [wiki.bc.storage.page-store :as pagestore])
-  (:import [java.io File]
-           [java.nio.file Files]
-           [java.nio.file.attribute FileAttribute]))
+            [wiki.bc.storage.page-store :as pagestore]
+            [wiki.bc.test-fixtures :as fixtures])
+  (:import [java.io File]))
 
 (use-fixtures :each (fn [f]
                       (artifacts/reset-artifacts!)
-                      (f)
+                      (fixtures/close-tracked-indexes f)
                       (artifacts/reset-artifacts!)))
 
 (defn- temp-pipeline []
-  (let [dir (-> (Files/createTempDirectory "bc-jobs-test" (make-array FileAttribute 0))
-                (.toFile))]
-    (.mkdirs (io/file dir "system"))
-    (spit (io/file dir "Start.md") "# hello jobs")
-    (let [page-store (pagestore/make-page-store (str dir))
-          page-index (index/build! (index/open-index) page-store)
-          server-ref (card-server/create-card-server "Jobs Test Wiki" "/" 4545 "Start" [] page-index page-store)]
-      (server/create-request-pipeline server-ref))))
+  (let [dir (fixtures/temp-wiki-dir {"Start" "# hello jobs"})
+        page-store (pagestore/make-page-store (str dir))
+        page-index (fixtures/tracked-index dir)
+        server-ref (card-server/create-card-server "Jobs Test Wiki" "/" 4545 "Start" [] page-index page-store)]
+    (server/create-request-pipeline server-ref)))
 
 (defn- request
   ([pipeline method uri] (request pipeline method uri nil))

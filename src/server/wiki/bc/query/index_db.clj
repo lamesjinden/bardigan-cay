@@ -3,13 +3,12 @@
 
   Replaces the core.logic pldb that was rebuilt from every page file on
   every write: the index is maintained incrementally, and each query
-  here runs against a fresh immutable snapshot of it, so results are
-  consistent even while a write is in flight."
-  (:require [datalevin.core :as d]
-            [wiki.bc.query.facts-db :as facts]
+  delegates to an index read over a fresh immutable snapshot, so results
+  are consistent even while a write is in flight."
+  (:require [wiki.bc.query.facts-db :as facts]
             [wiki.bc.storage.index :as index]))
 
-(deftype IndexFactsDb [page-index conn]
+(deftype IndexFactsDb [page-index]
   facts/IFactsDb
 
   (raw-db [this]
@@ -20,30 +19,22 @@
     (index/page-names page-index))
 
   (all-links [_this]
-    (sort (d/q '[:find ?from ?to
-                 :where [?e :page/name ?from]
-                 [?e :page/links ?to]]
-               (d/db conn))))
+    (index/all-links page-index))
 
   (links-to [_this target]
-    (sort (d/q '[:find ?from ?to
-                 :in $ ?to
-                 :where [?e :page/links ?to]
-                 [?e :page/name ?from]]
-               (d/db conn) target)))
+    (index/links-to page-index target))
 
   (broken-links [_this]
-    (sort (d/q '[:find ?from ?to
-                 :where [?e :page/name ?from]
-                 [?e :page/links ?to]
-                 (not [_ :page/name ?to])]
-               (d/db conn))))
+    (index/broken-links page-index))
 
   (orphan-pages [_this]
-    (sort (d/q '[:find [?name ...]
-                 :where [?e :page/name ?name]
-                 (not [_ :page/links ?name])]
-               (d/db conn)))))
+    (index/orphan-pages page-index))
 
-(defn make-facts-db [{:keys [conn] :as page-index}]
-  (->IndexFactsDb page-index conn))
+  (transcluded-into [_this target]
+    (index/transcluded-into page-index target))
+
+  (broken-transclusions [_this]
+    (index/broken-transclusions page-index)))
+
+(defn make-facts-db [page-index]
+  (->IndexFactsDb page-index))

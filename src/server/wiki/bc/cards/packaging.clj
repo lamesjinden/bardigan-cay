@@ -105,14 +105,22 @@
                               (dissoc :tx/locator)))))]
     cards))
 
-(defn- process-card [server-snapshot i {:keys [source_type] :as card-map} render-context]
+(defn- process-card [server-snapshot i {:keys [source_type source_data] :as card-map} render-context]
   (if (= source_type :transclude)
-    (transclude server-snapshot i card-map render-context)
+    ;; a transclusion from a missing page throws from the page store;
+    ;; render it as an error card (mirroring process-card-map's catch)
+    ;; instead of failing the whole page
+    (try
+      (transclude server-snapshot i card-map render-context)
+      (catch Exception e
+        [(util/package-card i :raw :raw source_data (render/process-card-error source_type source_data e) render-context)]))
     (process-card-map server-snapshot i card-map render-context)))
 
+(defn card-maps->cards [server-snapshot card-maps render-context]
+  (mapcat (fn [i card-map]
+            (process-card server-snapshot i card-map render-context))
+          (iterate inc 0)
+          card-maps))
+
 (defn raw->cards [server-snapshot raw render-context]
-  (let [card-maps (parsing/raw-text->card-maps raw)]
-    (mapcat (fn [i card-map]
-              (process-card server-snapshot i card-map render-context))
-            (iterate inc 0)
-            card-maps)))
+  (card-maps->cards server-snapshot (parsing/raw-text->card-maps raw) render-context))

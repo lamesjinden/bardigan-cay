@@ -32,11 +32,35 @@
          (indexed-page-store/make-indexed-page-store page-index page-store)
          page-index)))
 
+;; Serializes every mutation: the file write + index update pair, and the
+;; read-modify-write card operations around them. Without it, concurrent
+;; saves from separate http-kit worker threads can interleave file and
+;; index writes and leave the two permanently diverged. Monitors are
+;; re-entrant, so the write fns nest freely inside locked card operations.
+(def ^:private write-lock (Object.))
+
+(defn- refresh-page-from-disk!
+  "Folds any external change to page-name's file (hand edit, git pull,
+  create, delete) into the store's derived state. Every mutating
+  operation that reads page content it will write back calls this first;
+  skipping it would overwrite the external edit with the stale copy."
+  [server-snapshot page-name]
+  (-> (.page-store server-snapshot)
+      (.refresh-page! page-name)))
+
 (defn write-page-to-file!
   "The single mutation path for page content: the indexed page-store
   writes the file and re-indexes, then RecentChanges is updated."
   [^Atom card-server page-name body]
-  (pagestore/write-page-to-file! @card-server page-name body))
+  (locking write-lock
+    (pagestore/write-page-to-file! @card-server page-name body)))
+
+(defn- write-page-delta-to-file!
+  "write-page-to-file! for card-level edits: the delta lets the store
+  reindex just the affected card instead of re-parsing the page."
+  [^Atom card-server page-name body delta]
+  (locking write-lock
+    (pagestore/write-page-delta-to-file! @card-server page-name body delta)))
 
 (defn page-exists?
   [server-snapshot page-name]
@@ -47,8 +71,8 @@
   [server-snapshot page-name]
   (as-> server-snapshot $
     (.page-store $)
-    (.load-page $ page-name)
-    (packaging/raw->cards server-snapshot $ {:user-authored? true :for-export? false})))
+    (.get-page-as-card-maps $ page-name)
+    (packaging/card-maps->cards server-snapshot $ {:user-authored? true :for-export? false})))
 
 (defn resolve-text-search [server-snapshot _context arguments _value]
   (let [{:keys [query_string]} arguments
@@ -135,73 +159,16 @@ If you would *like* to create a page with this name, simply click the [Edit] but
 
 ; endregion
 
-(defn- append-card-to-page!
-  [^Atom card-server page-name {:keys [source_data] :as _card}]
-  (let [server-snapshot @card-server
-        page-body (try
-                    (pagestore/read-page server-snapshot page-name)
-                    (catch Exception _ (str "Automatically created a new page : " page-name "\n\n")))
-        new-body (str page-body "\n\n" "----" "\n\n" (str/trim source_data) "\n\n")]
-    (write-page-to-file! card-server page-name new-body)))
-
-(defn move-card!
-  [^Atom card-server page-name hash destination-name]
-  (if (= page-name destination-name)
-    ;; don't try to move to self
-    nil
-    (let [server-snapshot @card-server
-          page-store (.page-store server-snapshot)
-          from-cards (.get-page-as-card-maps page-store page-name)
-          card (cards/find-card-by-hash from-cards hash)
-          stripped (into [] (cards/remove-card-by-hash from-cards hash))
-          stripped-raw (cards/cards->raw stripped)]
-      (when (not (nil? card))
-        (append-card-to-page! card-server destination-name card)
-        (write-page-to-file! card-server page-name stripped-raw)))))
-
-(defn reorder-card!
-  [^Atom card-server page-name hash direction]
-  (let [server-snapshot @card-server
-        page-store (.page-store server-snapshot)
-        cards (.get-page-as-card-maps page-store page-name)
-        new-cards (condp = direction
-                    "up" (cards/move-card-up cards hash)
-                    "down" (cards/move-card-down cards hash)
-                    "start" (cards/move-card-to-start cards hash)
-                    "end" (cards/move-card-to-end cards hash)
-                    :else cards)]
-    (write-page-to-file! card-server page-name (cards/cards->raw new-cards))))
-
-(defn replace-card!
-  [^Atom card-server page-name hash new-body]
-  (let [server-snapshot @card-server
-        page-store (.page-store server-snapshot)
-        cards (.get-page-as-card-maps page-store page-name)
-        match (cards/find-card-by-hash cards hash)]
-    (if (not match)
-      :not-found
-      (let [new-card (parsing/raw-card-text->card-map new-body)
-            new-cards (cards/replace-card
-                       cards
-                       #(cards/card-matches % hash)
-                       new-card)]
-        (write-page-to-file! card-server page-name (cards/cards->raw new-cards))
-        (let [render-context {:user-authored? true :for-export? false}
-              packaged-card (-> (packaging/process-card-map server-snapshot -1 new-card render-context)
-                                (first)
-                                (dissoc :id))]
-          packaged-card)))))
-
-(defn load-media-file [server-snapshot file-name]
-  (-> server-snapshot :page-store (.load-media-file file-name)))
-
 (defn- append-to-page!
   [^Atom card-server page-name source-data]
   (let [server-snapshot @card-server
         page-store (.page-store server-snapshot)
         page-body (.load-page page-store page-name)
-        new-body (str page-body "\n\n" "----" "\n\n" (str/trim source-data) "\n\n")]
-    (write-page-to-file! card-server page-name new-body)))
+        appended (str/trim source-data)
+        new-body (str page-body "\n\n" "----" "\n\n" appended "\n\n")]
+    (write-page-delta-to-file! card-server page-name new-body
+                               {:op :append
+                                :card (parsing/raw-card-text->card-map appended)})))
 
 (defn- append-to-new-page!
   [^Atom card-server page-name source-data]
@@ -214,9 +181,74 @@ If you would *like* to create a page with this name, simply click the [Edit] but
 
 (defn append-page!
   [^Atom card-server destination-name source-data]
-  (let [server-snapshot @card-server
-        page-store (.page-store server-snapshot)
-        source-data (str/trim source-data)]
-    (if (.page-exists? page-store destination-name)
-      (append-to-page! card-server destination-name source-data)
-      (append-to-new-page! card-server destination-name source-data))))
+  (locking write-lock
+    (let [server-snapshot @card-server
+          _ (refresh-page-from-disk! server-snapshot destination-name)
+          page-store (.page-store server-snapshot)
+          source-data (str/trim source-data)]
+      (if (.page-exists? page-store destination-name)
+        (append-to-page! card-server destination-name source-data)
+        (append-to-new-page! card-server destination-name source-data)))))
+
+(defn move-card!
+  [^Atom card-server page-name hash destination-name]
+  (if (= page-name destination-name)
+    ;; don't try to move to self
+    nil
+    (locking write-lock
+      (let [server-snapshot @card-server
+            _ (refresh-page-from-disk! server-snapshot page-name)
+            page-store (.page-store server-snapshot)
+            from-cards (.get-page-as-card-maps page-store page-name)
+            card (cards/find-card-by-hash from-cards hash)
+            stripped (into [] (cards/remove-card-by-hash from-cards hash))
+            stripped-raw (cards/cards->raw stripped)]
+        (when (not (nil? card))
+          (append-page! card-server destination-name (:source_data card))
+          (write-page-delta-to-file! card-server page-name stripped-raw
+                                     {:op :remove :target hash}))))))
+
+(defn reorder-card!
+  [^Atom card-server page-name hash direction]
+  (locking write-lock
+    (let [server-snapshot @card-server
+          _ (refresh-page-from-disk! server-snapshot page-name)
+          page-store (.page-store server-snapshot)
+          cards (.get-page-as-card-maps page-store page-name)
+          ;; the bare trailing expression is condp's default: an
+          ;; unrecognized direction is a no-op, not a "no matching clause"
+          new-cards (condp = direction
+                      "up" (cards/move-card-up cards hash)
+                      "down" (cards/move-card-down cards hash)
+                      "start" (cards/move-card-to-start cards hash)
+                      "end" (cards/move-card-to-end cards hash)
+                      cards)]
+      (write-page-delta-to-file! card-server page-name (cards/cards->raw new-cards)
+                                 {:op :reorder
+                                  :hashes (mapv (fn [c] (str (:hash c))) new-cards)}))))
+
+(defn replace-card!
+  [^Atom card-server page-name hash new-body]
+  (locking write-lock
+    (let [server-snapshot @card-server
+          _ (refresh-page-from-disk! server-snapshot page-name)
+          page-store (.page-store server-snapshot)
+          cards (.get-page-as-card-maps page-store page-name)
+          match (cards/find-card-by-hash cards hash)]
+      (if (not match)
+        :not-found
+        (let [new-card (parsing/raw-card-text->card-map new-body)
+              new-cards (cards/replace-card
+                         cards
+                         #(cards/card-matches % hash)
+                         new-card)]
+          (write-page-delta-to-file! card-server page-name (cards/cards->raw new-cards)
+                                     {:op :replace :target hash :card new-card})
+          (let [render-context {:user-authored? true :for-export? false}
+                packaged-card (-> (packaging/process-card-map server-snapshot -1 new-card render-context)
+                                  (first)
+                                  (dissoc :id))]
+            packaged-card))))))
+
+(defn load-media-file [server-snapshot file-name]
+  (-> server-snapshot :page-store (.load-media-file file-name)))

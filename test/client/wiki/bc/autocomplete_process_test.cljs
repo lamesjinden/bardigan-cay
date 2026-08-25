@@ -40,20 +40,28 @@
              (done)))))
 
 (deftest unparseable-body-yields-a-result-error
+  ;; the process logs the handled parse failure via js/console.error;
+  ;; stub it for this test so the expected failure doesn't spray a stack
+  ;; trace over the test output
   (async done
          (a/go
-           (let [input$ (a/chan)
-                 [fetch-suggestions requests] (create-fake-fetch)
-                 result$ (autocomplete/<create-autocomplete-process input$ {:fetch-suggestions fetch-suggestions})]
-             (a/>! input$ "Page")
-             (a/<! (a/timeout 1))
-             (a/put! (:response$ (first @requests)) {:isSuccess true
-                                                     :body      "{not-json"})
-             (let [{:keys [query suggestions result-error]} (a/<! result$)]
-               (is (= "Page" query))
-               (is (empty? suggestions))
-               (is (some? result-error)))
-             (done)))))
+           (let [original-console-error (.-error js/console)]
+             (set! (.-error js/console) (fn [& _]))
+             (try
+               (let [input$ (a/chan)
+                     [fetch-suggestions requests] (create-fake-fetch)
+                     result$ (autocomplete/<create-autocomplete-process input$ {:fetch-suggestions fetch-suggestions})]
+                 (a/>! input$ "Page")
+                 (a/<! (a/timeout 1))
+                 (a/put! (:response$ (first @requests)) {:isSuccess true
+                                                         :body      "{not-json"})
+                 (let [{:keys [query suggestions result-error]} (a/<! result$)]
+                   (is (= "Page" query))
+                   (is (empty? suggestions))
+                   (is (some? result-error))))
+               (finally
+                 (set! (.-error js/console) original-console-error)
+                 (done)))))))
 
 (deftest newer-query-supersedes-the-in-flight-request
   (async done

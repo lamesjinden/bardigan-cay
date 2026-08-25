@@ -30,23 +30,44 @@
         "-----------------------------------------------------------------------------------------------"
         "\n")))
 
-;; closing the previous index on (re)creation frees its LMDB env and
-;; scratch directory -- keeps dev-server reloads leak-free
+;; tracks the live index so that dev-server re-creation and process
+;; shutdown can free its LMDB env and scratch directory
 (defonce ^:private page-index* (atom nil))
 
-(defn- next-page-index! []
-  (let [page-index (index/open-index)]
-    (when-let [previous (first (reset-vals! page-index* page-index))]
-      (index/close! previous))
+(defn- install-page-index!
+  "Installs a fully built index as the live one, then closes whatever it
+  replaced -- in that order, so a failed build never destroys a working
+  index and dev reloads stay leak-free."
+  [page-index]
+  (when-let [previous (first (reset-vals! page-index* page-index))]
+    (index/close! previous))
 
-    page-index))
+  page-index)
+
+(defn close-page-index!
+  "Closes the live index and removes its scratch directory; the process
+  shutdown path calls this so no LMDB copy of the wiki outlives the app."
+  []
+  (when-let [current (first (reset-vals! page-index* nil))]
+    (index/close! current)))
+
+(defn- build-page-index
+  "Opens and fully builds an index over page-store, closing the fresh
+  scratch directory again if the build fails partway."
+  [page-store]
+  (let [page-index (index/open-index)]
+    (try
+      (index/build! page-index page-store)
+      (catch Throwable t
+        (index/close! page-index)
+        (throw t)))))
 
 (defn create-card-server
   "initializes server state contained within an Atom and returns it"
   [application-settings]
   (let [{:keys [directory name site port init nav-links]} application-settings
         page-store (pagestore/make-page-store directory)
-        page-index (index/build! (next-page-index!) page-store)
+        page-index (install-page-index! (build-page-index page-store))
         card-server-ref (card-server/create-card-server name site port init nav-links page-index page-store)
         card-server-state @card-server-ref]
     (print-card-server-state card-server-state)

@@ -3,18 +3,8 @@
             [clojure.test :refer [deftest is testing]]
             [wiki.bc.card-server :as card-server]
             [wiki.bc.storage.index :as index]
-            [wiki.bc.storage.page-store :as pagestore])
-  (:import [java.nio.file Files]
-           [java.nio.file.attribute FileAttribute]))
-
-(defn- temp-wiki-dir [pages]
-  (let [dir (-> (Files/createTempDirectory "bc-search-test" (make-array FileAttribute 0))
-                (.toFile))]
-    (.mkdirs (io/file dir "system"))
-    (spit (io/file dir "system" "recentchanges") "")
-    (doseq [[page-name source] pages]
-      (spit (io/file dir (str page-name ".md")) source))
-    dir))
+            [wiki.bc.storage.page-store :as pagestore]
+            [wiki.bc.test-fixtures :refer [temp-wiki-dir]]))
 
 (deftest resolve-text-search-combines-name-and-fulltext-matches
   (let [dir (temp-wiki-dir {"CheeseShop" "we sell dairy products"

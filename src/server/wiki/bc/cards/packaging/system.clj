@@ -1,5 +1,6 @@
 (ns wiki.bc.cards.packaging.system
-  (:require [wiki.bc.cards.parsing :as parsing]
+  (:require [clojure.string :as string]
+            [wiki.bc.cards.parsing :as parsing]
             [wiki.bc.cards.system :as system]
             [wiki.bc.render :as render]
             [wiki.bc.search :as search]
@@ -33,6 +34,24 @@
       :orphanpages
       (system/ldb-query->mdlist-card
        id source-data "Orphan Pages" (.orphan-pages facts-db) :orphanpages item1
+       render-context)
+
+      :brokentransclusions
+      (system/ldb-query->mdlist-card
+       id source-data "Broken Transclusions" (.broken-transclusions facts-db) :brokentransclusions
+       (fn [{:keys [page from missing-page missing-ids malformed-ids] :as entry}]
+         (cond
+           missing-page
+           (str "[[" page "]],, &#8603;,, missing page [[" from "]]\n")
+
+           (contains? entry :malformed-ids)
+           (str "[[" page "]],, &#8603;,, [[" from "]] malformed :ids: `"
+                (pr-str malformed-ids) "`\n")
+
+           :else
+           (str "[[" page "]],, &#8603;,, [[" from "]] unresolved ids: "
+                (string/join ", " (map (fn [id] (str "`" id "`")) missing-ids))
+                "\n")))
        render-context)
 
       :recentchanges

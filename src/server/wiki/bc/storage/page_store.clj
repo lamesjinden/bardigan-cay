@@ -61,12 +61,19 @@
         (find-card-by-hash hash-or-id)))
 
   (get-cards-from-page [this page-name hashes-or-ids]
-    (->> hashes-or-ids
-         (map #(.get-card this page-name %))
-         (remove nil?)))
+    (page-storage/cards-from-page this page-name hashes-or-ids))
 
   (write-page! [_this page-name data]
     (spit (str (page-name->path page-path page-name)) data))
+
+  ;; the file store has no index to keep current; a card-level write is
+  ;; just the whole-page write
+  (write-page-delta! [this page-name data _delta]
+    (.write-page! this page-name data))
+
+  ;; reads go straight to the files, so there is nothing to refresh
+  (refresh-page! [_this _page-name]
+    nil)
 
   (read-system-file [_this name]
     (-> (system-name->path system-path name) .toFile slurp))
@@ -81,8 +88,7 @@
     (.write-system-file! this "recentchanges" recent-changes))
 
   (similar-page-names [this page-name]
-    (let [target (string/lower-case page-name)]
-      (filter #(= (string/lower-case %) target) (.page-names this))))
+    (page-storage/similarly-named-pages this page-name))
 
   (media-list [_this]
     (let [media-dir (media-dir-path page-path)]
@@ -154,16 +160,16 @@
     (.write-page! page-store page-name body)
     (update-recent-changes! page-store page-name)))
 
-;; region Search
+(defn write-page-delta-to-file!
+  "write-page-to-file! for card-level edits: body is still the full new
+  page text; delta lets an index-backed store reindex just the affected
+  card."
+  [server-state page-name body delta]
+  (let [page-store (:page-store server-state)]
+    (.write-page-delta! page-store page-name body delta)
+    (update-recent-changes! page-store page-name)))
 
-;; Text Search
-;; note - used externally
-(defn text-search [server-state page-names pattern]
-  (let [contains-pattern? (fn [page-name]
-                            (let [text (read-page server-state page-name)]
-                              (not (nil? (re-find pattern text)))))
-        res (filter contains-pattern? page-names)]
-    res))
+;; region Search
 
 ;; Name Search - finds names containing substring
 ;; note - used externally

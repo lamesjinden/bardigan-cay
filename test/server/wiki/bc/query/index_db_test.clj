@@ -3,17 +3,8 @@
             [clojure.test :refer [deftest is testing]]
             [wiki.bc.query.index-db :as index-db]
             [wiki.bc.storage.index :as index]
-            [wiki.bc.storage.page-store :as pagestore])
-  (:import [java.nio.file Files]
-           [java.nio.file.attribute FileAttribute]))
-
-(defn- temp-wiki-dir [pages]
-  (let [dir (-> (Files/createTempDirectory "bc-index-db-test" (make-array FileAttribute 0))
-                (.toFile))]
-    (.mkdirs (io/file dir "system"))
-    (doseq [[page-name source] pages]
-      (spit (io/file dir (str page-name ".md")) source))
-    dir))
+            [wiki.bc.storage.page-store :as pagestore]
+            [wiki.bc.test-fixtures :refer [temp-wiki-dir]]))
 
 ;; Start -> About, Missing (broken); About -> Start; Lonely -> nothing
 (def ^:private corpus
@@ -61,5 +52,27 @@
         (is (= ["About" "Lonely" "Missing" "Start"] (vec (.all-pages facts-db))))
         (is (= '() (.broken-links facts-db)))
         (is (= [] (vec (.orphan-pages facts-db)))))
+      (finally
+        (index/close! idx)))))
+
+(deftest transclusion-edges-are-their-own-relation
+  (let [dir (temp-wiki-dir
+             {"Source" "a card worth transcluding"
+              "User"   ":transclude\n\n{:from \"Source\"\n :ids [\"abc\"]}"})
+        page-store (pagestore/make-page-store (str dir))
+        idx (index/build! (index/open-index) page-store)
+        facts-db (index-db/make-facts-db idx)]
+    (try
+      (testing "transcluded-into names the transcluding pages"
+        (is (= ["User"] (vec (.transcluded-into facts-db "Source"))))
+        (is (= [] (vec (.transcluded-into facts-db "User")))))
+      (testing "transclusion is not a wiki-link"
+        (is (= '() (.links-to facts-db "Source")))
+        (is (= [] (vec (.all-links facts-db)))))
+      (testing "a page reached only by transclusion is not an orphan"
+        (is (= ["User"] (vec (.orphan-pages facts-db)))))
+      (testing "unresolvable transclusions are reported"
+        (is (= [{:page "User" :from "Source" :missing-ids ["abc"]}]
+               (vec (.broken-transclusions facts-db)))))
       (finally
         (index/close! idx)))))

@@ -1,9 +1,7 @@
 (ns wiki.bc.cards.packaging.scheduling
   (:require [clojure.string :as s]
-            [wiki.bc.storage.page-store :as pagestore]
+            [wiki.bc.storage.index :as index]
             [wiki.bc.util :as util]))
-
-(def deadline-pattern-str "deadline:")
 
 (def date-patterns [#"\d{4}/\d{1,2}/\d{1,2}"
                     #"\d{1,2}/\d{1,2}/\d{4}"
@@ -21,26 +19,28 @@
                           (some (fn [pattern] (re-find pattern token))))]
       (util/parse-datetime found))))
 
-(defn- page->matches [server-snapshot page-name]
-  (let [page-text (pagestore/read-page server-snapshot page-name)]
-    (->> (s/split-lines page-text)
-         (keep (fn [line] (re-matches (re-pattern (str "^(.*?)(" deadline-pattern-str ")(.*?)$")) line)))
-         (map (fn [[_ _ _ post :as match]]
-                {:match match
-                 :source-page page-name
-                 :datetime (post-match->datetime post)})))))
+(def ^:private deadline-line-pattern
+  (re-pattern (str "^(.*?)(" index/deadline-marker ")(.*?)$")))
+
+(defn- text->matches [source-page text]
+  (->> (s/split-lines text)
+       (keep (fn [line] (re-matches deadline-line-pattern line)))
+       (map (fn [[_ _ _ post :as match]]
+              {:match match
+               :source-page source-page
+               :datetime (post-match->datetime post)}))))
 
 (defn package-deadline [id card-map render-context server-snapshot]
   (let [source-body (:source-body card-map)
-        server-prepared-data (let [all-pages (-> server-snapshot :facts-db .all-pages)
-                                   pages (pagestore/text-search server-snapshot all-pages (re-pattern deadline-pattern-str))]
-                               (->> pages
-                                    (map (partial page->matches server-snapshot))
-                                    (mapcat identity)
-                                    (map (fn [{:keys [match source-page datetime]}]
-                                           {:match match
-                                            :source-page source-page
-                                            :datetime (util/datetime->iso-time datetime)}))
-                                    (sort-by :datetime)
-                                    (pr-str)))]
+        ;; the index hands over the flagged cards' own text, so the
+        ;; line-scan is O(deadline cards); the old path text-searched
+        ;; every page per render
+        server-prepared-data (->> (index/deadline-cards (:page-index server-snapshot))
+                                  (mapcat (fn [[page-name text]] (text->matches page-name text)))
+                                  (map (fn [{:keys [match source-page datetime]}]
+                                         {:match match
+                                          :source-page source-page
+                                          :datetime (util/datetime->iso-time datetime)}))
+                                  (sort-by :datetime)
+                                  (pr-str))]
     (util/package-card id :edn :deadline source-body server-prepared-data render-context)))

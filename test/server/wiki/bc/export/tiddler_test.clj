@@ -1,13 +1,13 @@
 (ns wiki.bc.export.tiddler-test
-  (:require [clojure.java.io :as io]
-            [clojure.string :as str]
-            [clojure.test :refer [deftest is testing]]
+  (:require [clojure.string :as str]
+            [clojure.test :refer [deftest is testing use-fixtures]]
             [wiki.bc.cards.parsing :as parsing]
             [wiki.bc.export.tiddler :as tiddler]
             [wiki.bc.query.facts-db :as facts]
-            [wiki.bc.storage.page-store :as pagestore])
-  (:import [java.nio.file Files]
-           [java.nio.file.attribute FileAttribute]))
+            [wiki.bc.storage.page-store :as pagestore]
+            [wiki.bc.test-fixtures :as fixtures]))
+
+(use-fixtures :each fixtures/close-tracked-indexes)
 
 (defn- parse-card [source]
   (first (parsing/raw-text->card-maps source)))
@@ -186,12 +186,9 @@
   "Creates a throwaway page directory with the given pages and returns a
   minimal server snapshot over it."
   [pages]
-  (let [dir (-> (Files/createTempDirectory "bc-tiddler-test" (make-array FileAttribute 0))
-                (.toFile))]
-    (.mkdirs (io/file dir "system"))
-    (doseq [[page-name source] pages]
-      (spit (io/file dir (str page-name ".md")) source))
+  (let [dir (fixtures/temp-wiki-dir pages)]
     {:page-store (pagestore/make-page-store (str dir))
+     :page-index (fixtures/tracked-index dir)
      :facts-db (reify facts/IFactsDb
                  (all-pages [_] (vec (keys pages))))}))
 

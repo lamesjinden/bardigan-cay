@@ -4,18 +4,8 @@
             [clojure.test :refer [deftest is testing]]
             [wiki.bc.storage.index :as index]
             [wiki.bc.storage.indexed-page-store :as indexed-page-store]
-            [wiki.bc.storage.page-store :as pagestore])
-  (:import [java.nio.file Files]
-           [java.nio.file.attribute FileAttribute]))
-
-(defn- temp-wiki-dir [pages]
-  (let [dir (-> (Files/createTempDirectory "bc-indexed-store-test" (make-array FileAttribute 0))
-                (.toFile))]
-    (.mkdirs (io/file dir "system"))
-    (spit (io/file dir "system" "recentchanges") "")
-    (doseq [[page-name source] pages]
-      (spit (io/file dir (str page-name ".md")) source))
-    dir))
+            [wiki.bc.storage.page-store :as pagestore]
+            [wiki.bc.test-fixtures :refer [temp-wiki-dir]]))
 
 (defn- make-store [dir]
   (let [file-store (pagestore/make-page-store (str dir))

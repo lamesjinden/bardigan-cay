@@ -16,4 +16,6 @@
   (all-links [this] (dnn this all-links))
   (broken-links [this] (dnn this broken-links))
   (orphan-pages [this] (dnn this orphan-pages))
-  (links-to [this page-name] (dnn this links-to page-name)))
+  (links-to [this page-name] (dnn this links-to page-name))
+  (transcluded-into [this page-name] (dnn this transcluded-into page-name))
+  (broken-transclusions [this] (dnn this broken-transclusions)))

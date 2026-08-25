@@ -1,38 +1,24 @@
 (ns wiki.bc.export.tiddlywiki-test
   (:require [clojure.data.json :as json]
-            [clojure.java.io :as io]
             [clojure.string :as str]
-            [clojure.test :refer [deftest is testing]]
+            [clojure.test :refer [deftest is testing use-fixtures]]
             [wiki.bc.card-server :as card-server]
             [wiki.bc.export.tiddlywiki :as tiddlywiki]
             [wiki.bc.query.facts-db :as facts]
-            [wiki.bc.storage.index :as index]
-            [wiki.bc.storage.page-store :as pagestore])
-  (:import [java.nio.file Files]
-           [java.nio.file.attribute FileAttribute]
-           [java.util Base64]))
+            [wiki.bc.storage.page-store :as pagestore]
+            [wiki.bc.test-fixtures :as fixtures :refer [temp-wiki-dir]])
+  (:import [java.util Base64]))
+
+(use-fixtures :each fixtures/close-tracked-indexes)
 
 (def ^:private png-bytes
   ;; a 1x1 transparent png
   (.decode (Base64/getDecoder)
            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="))
 
-(defn- temp-wiki-dir [pages media]
-  (let [dir (-> (Files/createTempDirectory "bc-tw-test" (make-array FileAttribute 0))
-                (.toFile))]
-    (.mkdirs (io/file dir "system"))
-    (doseq [[page-name source] pages]
-      (spit (io/file dir (str page-name ".md")) source))
-    (when (seq media)
-      (.mkdirs (io/file dir "media"))
-      (doseq [[file-name bytes] media]
-        (with-open [out (io/output-stream (io/file dir "media" file-name))]
-          (.write out ^bytes bytes))))
-    dir))
-
 (defn- make-snapshot [dir]
   (let [page-store (pagestore/make-page-store (str dir))
-        page-index (index/build! (index/open-index) page-store)]
+        page-index (fixtures/tracked-index dir)]
     @(card-server/create-card-server "TestWiki" "/" 4545 "Start" [] page-index page-store)))
 
 (def ^:private store-marker
