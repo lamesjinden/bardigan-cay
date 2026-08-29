@@ -36,9 +36,17 @@
 (defn- tiddler-by-title [tiddlers title]
   (first (filter #(= title (get % "title")) tiddlers)))
 
-(defn- export [snapshot]
-  (let [{:keys [file failures]} (tiddlywiki/export-wiki! snapshot)]
-    {:html (slurp file) :failures failures}))
+(defn- export
+  ([snapshot] (export snapshot {}))
+  ([snapshot options]
+   (let [{:keys [file failures]} (tiddlywiki/export-wiki! snapshot options)]
+     {:html (slurp file) :failures failures})))
+
+(deftest include-source-option-embeds-page-markdown
+  (let [dir (temp-wiki-dir {"Start" "# Hello\n\nsome **bold** text"} {})
+        {:keys [html]} (export (make-snapshot dir) {:include-source? true})
+        start (tiddler-by-title (spliced-tiddlers html) "Start")]
+    (is (= "# Hello\n\nsome **bold** text" (get start "bc-source")))))
 
 (deftest export-produces-a-self-contained-wiki
   (let [dir (temp-wiki-dir {"Start" "# Hello\n\nsome **bold** text"
@@ -51,12 +59,13 @@
       (is (= [] failures)))
     (testing "the template gains exactly one extra store block"
       (is (= 2 (count (re-seq (re-pattern (java.util.regex.Pattern/quote store-marker)) html)))))
-    (testing "page tiddlers carry converted WikiText, type, timestamp and source"
+    (testing "page tiddlers carry converted WikiText, type and timestamp"
       (let [start (tiddler-by-title tiddlers "Start")]
         (is (= "! Hello\n\nsome ''bold'' text" (get start "text")))
         (is (= "text/vnd.tiddlywiki" (get start "type")))
-        (is (re-matches #"\d{17}" (get start "modified")))
-        (is (= "# Hello\n\nsome **bold** text" (get start "bc-source")))))
+        (is (re-matches #"\d{17}" (get start "modified")))))
+    (testing "source is not embedded by default"
+      (is (not (contains? (tiddler-by-title tiddlers "Start") "bc-source"))))
     (testing "synthetic pages are excluded"
       (is (nil? (tiddler-by-title tiddlers "AllPages"))))
     (testing "site tiddlers are present"

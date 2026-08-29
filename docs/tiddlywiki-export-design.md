@@ -18,8 +18,13 @@ re-saveable by the recipient. Export is one-way; BardiganCay never re-imports.
    as source in a code block plus any captured output. A future BC-companion
    TW plugin (Scittle inside TiddlyWiki) may make workspaces live in the
    export; it is explicitly out of scope for v1.
-3. **One-way, but source is preserved.** Each page tiddler carries the
-   original page markdown in a `bc-source` field for debugging.
+3. **One-way; source embedding disabled by default.** (Revised 2026-08-29;
+   originally always on.) `export-wiki!` accepts `:include-source?`
+   (default false) to carry each page's original markdown in a
+   `bc-source` tiddler field. The forward conversion is lossy in ways
+   that make TW-side edits unusable back in BC, so without an
+   established re-import plan the embedded source is pure overhead —
+   off unless explicitly requested.
 4. **Global export only.** Per-page export is removed (endpoint + toolbar UI).
 5. **WikiText, not the Markdown plugin.** Card content is converted
    markdown → WikiText at export time.
@@ -53,7 +58,6 @@ New namespace `wiki.bc.export.tiddlywiki` (server side):
 | `text` | converted WikiText |
 | `type` | `text/vnd.tiddlywiki` |
 | `modified` | page file mtime |
-| `bc-source` | original page markdown, verbatim |
 
 ### Vendored base file
 

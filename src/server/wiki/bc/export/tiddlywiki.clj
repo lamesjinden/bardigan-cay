@@ -9,10 +9,9 @@
   core tiddlers.
 
   Each page becomes one tiddler (body via the card contract in
-  wiki.bc.export.tiddler) carrying the original page markdown in a
-  `bc-source` field. Media files are embedded as base64 tiddlers titled
-  media/<name>. Page-level failures are collected into an ExportFailures
-  tiddler rather than failing the export.
+  wiki.bc.export.tiddler). Media files are embedded as base64 tiddlers
+  titled media/<name>. Page-level failures are collected into an
+  ExportFailures tiddler rather than failing the export.
 
   Assembly is STREAMING: the artifact is written to a file one tiddler at
   a time, and binary media is base64-encoded in bounded chunks, so peak
@@ -69,15 +68,15 @@
   "The page's own tiddler plus any asset tiddlers its cards generate.
   load-page fetches from the memory-mapped page index, so exporting a
   large corpus does not pin every page in heap."
-  [server-snapshot page-name]
+  [server-snapshot page-name {:keys [include-source?] :as _options}]
   (let [page-store (:page-store server-snapshot)
         source (.load-page page-store page-name)
         {:keys [text assets]} (tiddler/page->tiddler-content server-snapshot page-name source)]
-    (into [{:title page-name
-            :text text
-            :type "text/vnd.tiddlywiki"
-            :modified (tw-timestamp (.last-modified page-store page-name))
-            :bc-source source}]
+    (into [(cond-> {:title page-name
+                    :text text
+                    :type "text/vnd.tiddlywiki"
+                    :modified (tw-timestamp (.last-modified page-store page-name))}
+             include-source? (assoc :bc-source source))]
           assets)))
 
 (def ^:private media-content-types
@@ -178,13 +177,13 @@
 
 (defn- write-store!
   "Writes the JSON tiddler store array. Returns the page failures."
-  [^Writer writer server-snapshot page-names]
+  [^Writer writer server-snapshot page-names options]
   (let [first?* (volatile! true)
         failures* (volatile! [])]
     (.write writer "[")
     (doseq [page-name page-names]
       (let [tiddlers (try
-                       (page-tiddlers server-snapshot page-name)
+                       (page-tiddlers server-snapshot page-name options)
                        (catch Exception e
                          (vswap! failures* conj {:page page-name
                                                  :error (.getMessage e)})
@@ -209,21 +208,31 @@
   "Streams the whole wiki into one self-contained TiddlyWiki HTML file.
   Returns {:file ^File :failures [...]}, or :not-available when the page
   database has not been generated yet. The file is a temp file marked
-  delete-on-exit; callers may delete it sooner."
-  [server-snapshot]
-  (let [page-names (.all-pages server-snapshot)]
-    (if (= :not-available page-names)
-      :not-available
-      (let [{:keys [prefix suffix]} @template-parts
-            file (File/createTempFile "bardigancay-export-" ".html")]
-        (.deleteOnExit file)
-        (let [failures (with-open [writer (io/writer file :encoding "UTF-8")]
-                         (.write writer ^String prefix)
-                         (.write writer "\n")
-                         (.write writer ^String store-marker)
-                         (let [failures (write-store! writer server-snapshot
-                                                      (remove synthetic-pages page-names))]
-                           (.write writer "</script>")
-                           (.write writer ^String suffix)
-                           failures))]
-          {:file file :failures failures})))))
+  delete-on-exit; callers may delete it sooner.
+
+  Options:
+    :include-source? (default false) -- carry each page's original
+    markdown in a `bc-source` tiddler field. Disabled by default: without
+    a re-import story it roughly doubles page-tiddler payload."
+  ([server-snapshot]
+   (export-wiki! server-snapshot {}))
+  ([server-snapshot {:keys [include-source?]
+                     :or {include-source? false}
+                     :as _options}]
+   (let [page-names (.all-pages server-snapshot)]
+     (if (= :not-available page-names)
+       :not-available
+       (let [{:keys [prefix suffix]} @template-parts
+             file (File/createTempFile "bardigancay-export-" ".html")]
+         (.deleteOnExit file)
+         (let [failures (with-open [writer (io/writer file :encoding "UTF-8")]
+                          (.write writer ^String prefix)
+                          (.write writer "\n")
+                          (.write writer ^String store-marker)
+                          (let [failures (write-store! writer server-snapshot
+                                                       (remove synthetic-pages page-names)
+                                                       {:include-source? include-source?})]
+                            (.write writer "</script>")
+                            (.write writer ^String suffix)
+                            failures))]
+           {:file file :failures failures}))))))
