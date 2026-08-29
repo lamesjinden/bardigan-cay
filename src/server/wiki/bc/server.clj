@@ -118,7 +118,9 @@
     (-> #'routing/request-handler
         (wrap-card-server card-server-ref)
         (wrap-json-body {:keywords? true})
-        (job-server/wrap-job-server job-mapping "/api" (next-job-server-stop-chan!))
+        ;; :max-history matches artifacts/max-artifacts so every successful job
+        ;; in the list still has a live download; older records are evicted.
+        (job-server/wrap-job-server job-mapping "/api" (next-job-server-stop-chan!) {:max-history 10})
         (wrap-stringified-params)
         ;; serializes the job-server's clojure-map response bodies;
         ;; string/File bodies from BC's own handlers pass through untouched
