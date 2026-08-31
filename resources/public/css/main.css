@@ -301,6 +301,23 @@ pre {
   overflow: auto;
 }
 
+.mermaid-diagram {
+  display: flex;
+  justify-content: center;
+}
+
+.mermaid-diagram svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.mermaid-diagram.mermaid-error {
+  display: block;
+  font-family: monospace;
+  white-space: pre-wrap;
+  color: #d9534f;
+}
+
 img {
   max-width: 100%;
   display: block;

@@ -4,11 +4,18 @@
           {:target     :browser
            :output-dir "resources/public/js"
            :module-loader true
+           ;; mermaid's venn chunk imports @upsetjs/venn.js, whose exports map
+           ;; points "require" at a file missing from the published package
+           :js-options {:resolve {"@upsetjs/venn.js"
+                                  {:target :file
+                                   :file "node_modules/@upsetjs/venn.js/build/venn.esm.js"}}}
            :modules    {:main {:init-fn wiki.bc.client/init}
                         :graph {:entries [wiki.bc.views.graph]
                                 :depends-on #{:main}}
                         :ace {:entries [wiki.bc.ace]
                               :depends-on #{:main}}
+                        :mermaid {:entries [wiki.bc.mermaid]
+                                  :depends-on #{:main}}
                         :editor {:entries [wiki.bc.views.editor]
                                  :depends-on #{:main :ace}}
                         :single-editor {:entries [wiki.bc.views.editor-single]

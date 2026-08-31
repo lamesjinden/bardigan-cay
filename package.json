@@ -13,18 +13,19 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "harfbuzzjs": "^0.10.3",
-    "lightningcss-cli": "^1.33.0",
-    "shadow-cljs": "^3.4.12",
-    "wawoff2": "^2.0.1"
+    "harfbuzzjs": "0.10.3",
+    "lightningcss-cli": "1.33.0",
+    "shadow-cljs": "3.4.12",
+    "wawoff2": "2.0.1"
   },
   "dependencies": {
-    "ace-builds": "^1.44.0",
-    "highlight.js": "^11.12.0",
-    "material-symbols": "^0.46.0",
-    "plotly.js": "^3.7.0",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
-    "react-plotly.js": "^4.1.0"
+    "ace-builds": "1.44.0",
+    "highlight.js": "11.12.0",
+    "material-symbols": "0.46.0",
+    "mermaid": "11.17.2",
+    "plotly.js": "3.7.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "react-plotly.js": "4.1.0"
   }
 }

@@ -24,21 +24,22 @@
                                   [:code (pr-str info)]])))})))
 
 (defn card->component [db card]
-  (let [render-type (get card "render_type")
+  (let [rx-theme (r/cursor db [:theme])
+        render-type (get card "render_type")
         data (get card "server_prepared_data")
         inner-component (condp = render-type
 
                           "markdown"
-                          [inner-html (view/card->html card)]
+                          [inner-html rx-theme (view/card->html card)]
 
                           "manual-copy"
-                          [manual-copy card]
+                          [manual-copy rx-theme card]
 
                           "raw"
-                          [inner-html (str "<pre>" data "</pre>")]
+                          [inner-html rx-theme (str "<pre>" data "</pre>")]
 
                           "code"
-                          [inner-html (str "<code>" data "</code>")]
+                          [inner-html rx-theme (str "<code>" data "</code>")]
 
                           "workspace"
                           (suspended-workspace-component {:db db :card card})
@@ -50,7 +51,7 @@
                           (suspended-graph-card-component {:db db :card card})
 
                           "html"
-                          [inner-html data]
+                          [inner-html rx-theme data]
 
                           "hiccup"
                           [data]

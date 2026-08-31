@@ -95,6 +95,47 @@
 (defn- file-extension [file-name]
   (some-> (re-find #"\.([^.]+)\z" file-name) second str/lower-case))
 
+(defn- load-export-resource [path]
+  (if-let [resource (io/resource path)]
+    (slurp resource)
+    (throw (ex-info (str "missing export resource " path
+                         " -- build-derived; produced by `bb prepare-export-assets`")
+                    {:path path}))))
+
+;; mermaid.min.js is an esbuild IIFE written for top-level <script> scope:
+;; its `var __esbuild_esm_mermaid_nm` must be a global for the library's
+;; closing `globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm...`
+;; line to resolve. TiddlyWiki evaluates module tiddlers inside a function
+;; wrapper, where that var would be function-local, so pre-seed the global
+;; and alias the var to it -- the library's own re-declaration of the var
+;; keeps the value.
+(def ^:private mermaid-library-shim
+  (str "globalThis.__esbuild_esm_mermaid_nm = {};\n"
+       "var __esbuild_esm_mermaid_nm = globalThis.__esbuild_esm_mermaid_nm;\n"))
+
+(defn- mermaid-plugin-tiddlers
+  "The tiddlers that make ```mermaid fences render as diagrams: the
+  vendored mermaid library (build-derived, copied from node_modules by
+  `bb prepare-export-assets`), the codeblock-widget override, and its
+  styles. Only included when the export contains at least one diagram --
+  the library is several megabytes."
+  []
+  [{:title "$:/plugins/bc/mermaid/mermaid.js"
+    :type "application/javascript"
+    :module-type "library"
+    :text (str mermaid-library-shim
+               (load-export-resource "tiddlywiki/mermaid.min.js"))}
+   {:title "$:/plugins/bc/mermaid/codeblock.js"
+    :type "application/javascript"
+    :module-type "widget"
+    :text (load-export-resource "tiddlywiki/bc-mermaid-codeblock.js")}
+   {:title "$:/plugins/bc/mermaid/styles"
+    :type "text/css"
+    :tags "$:/tags/Stylesheet"
+    :text (str ".bc-mermaid-diagram { text-align: center; }\n"
+               ".bc-mermaid-diagram svg { max-width: 100%; }\n"
+               ".bc-mermaid-error { font-family: monospace; white-space: pre-wrap; color: #d9534f; }")}])
+
 (defn- site-tiddlers [server-snapshot]
   [{:title "$:/SiteTitle"
     :text (:wiki-name server-snapshot)}
@@ -179,7 +220,8 @@
   "Writes the JSON tiddler store array. Returns the page failures."
   [^Writer writer server-snapshot page-names options]
   (let [first?* (volatile! true)
-        failures* (volatile! [])]
+        failures* (volatile! [])
+        mermaid?* (volatile! false)]
     (.write writer "[")
     (doseq [page-name page-names]
       (let [tiddlers (try
@@ -189,10 +231,15 @@
                                                  :error (.getMessage e)})
                          nil))]
         (doseq [tiddler tiddlers]
+          (when (some-> (:text tiddler) (str/includes? "```mermaid"))
+            (vreset! mermaid?* true))
           (write-tiddler! writer first?* tiddler))))
     (let [page-store (:page-store server-snapshot)]
       (doseq [file-name (.media-list page-store)]
         (write-media-tiddler! writer first?* (.load-media-file page-store file-name))))
+    (when @mermaid?*
+      (doseq [tiddler (mermaid-plugin-tiddlers)]
+        (write-tiddler! writer first?* tiddler)))
     (doseq [tiddler (site-tiddlers server-snapshot)]
       (write-tiddler! writer first?* tiddler))
     (when (seq @failures*)

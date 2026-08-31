@@ -198,7 +198,11 @@
 ;; endregion
 
 (defn md->wikitext
-  "Converts BardiganCay markdown source to TiddlyWiki WikiText."
+  "Converts BardiganCay markdown source to TiddlyWiki WikiText.
+  Mermaid fences pass through as fences: in the export they are rendered
+  in place by the bundled codeblock override (see
+  resources/tiddlywiki/bc-mermaid-codeblock.js), so the diagram source
+  stays editable in the page tiddler."
   [source]
   (->> (segment-source source)
        (map (fn [{:keys [dc-table? text]}]

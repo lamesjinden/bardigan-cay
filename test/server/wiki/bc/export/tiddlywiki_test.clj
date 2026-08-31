@@ -100,3 +100,24 @@
     (is (some? (tiddler-by-title tiddlers "Start")))
     (is (str/includes? (get (tiddler-by-title tiddlers "ExportFailures") "text")
                        "|Doomed|"))))
+
+(deftest mermaid-diagrams-render-through-the-bundled-plugin
+  (let [dir (temp-wiki-dir {"Start" "```mermaid\ngraph TD;\n  A-->B;\n```"} {})
+        {:keys [html failures]} (export (make-snapshot dir))
+        tiddlers (spliced-tiddlers html)]
+    (is (= [] failures))
+    (testing "the diagram source stays editable in the page tiddler"
+      (is (str/includes? (get (tiddler-by-title tiddlers "Start") "text")
+                         "```mermaid\ngraph TD;\n  A-->B;\n```")))
+    (testing "the mermaid library, codeblock override and styles are bundled"
+      (is (= "library"
+             (get (tiddler-by-title tiddlers "$:/plugins/bc/mermaid/mermaid.js") "module-type")))
+      (is (= "widget"
+             (get (tiddler-by-title tiddlers "$:/plugins/bc/mermaid/codeblock.js") "module-type")))
+      (is (some? (tiddler-by-title tiddlers "$:/plugins/bc/mermaid/styles"))))))
+
+(deftest mermaid-plugin-is-omitted-without-diagrams
+  (let [dir (temp-wiki-dir {"Start" "no diagrams here"} {})
+        {:keys [html]} (export (make-snapshot dir))]
+    (is (nil? (tiddler-by-title (spliced-tiddlers html)
+                                "$:/plugins/bc/mermaid/mermaid.js")))))

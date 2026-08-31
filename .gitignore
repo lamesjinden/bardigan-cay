@@ -19,3 +19,5 @@ resources/out
 target
 
 report.html
+# build-derived (bb prepare-export-assets)
+resources/tiddlywiki/mermaid.min.js

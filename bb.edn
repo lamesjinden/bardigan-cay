@@ -26,11 +26,20 @@
                                (run 'clean-client)
                                (run 'clean-server))
 
+         prepare-export-assets {:doc "Copy build-derived assets used by the server-side export"
+                                :requires ([babashka.fs :as fs])
+                                :task (let [source "node_modules/mermaid/dist/mermaid.min.js"
+                                            target "resources/tiddlywiki/mermaid.min.js"]
+                                        (println "Copying" source "->" target)
+                                        (fs/copy source target {:replace-existing true}))}
+
          build-dev-client    (do
+                               (run 'prepare-export-assets)
                                (println "Compiling ClojureScript development build")
                                (shell "npx shadow-cljs compile app"))
 
          build-client        (do
+                               (run 'prepare-export-assets)
                                (println "Compiling ClojureScript release build")
                                (shell "npx shadow-cljs release app"))
 
@@ -90,7 +99,9 @@
                                (shell "npx shadow-cljs compile tests")
                                (let [client-tests-path (format "%s/node-tests.js" client-test-out-dir)]
                                  (shell "node out/node-tests.js")))
-         test-server         (clojure "-M:test-server:server:server-tests")
+         test-server         (do
+                               (run 'prepare-export-assets)
+                               (clojure "-M:test-server:server:server-tests"))
          test                (do
                                (run 'test-client)
                                (run 'test-server))

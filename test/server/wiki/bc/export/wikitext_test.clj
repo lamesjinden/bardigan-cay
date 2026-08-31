@@ -154,3 +154,9 @@
                       "(println \"unchanged **here**\")\n"
                       "```")]
     (is (= expected (wikitext/md->wikitext markdown)))))
+
+(deftest mermaid-fences-pass-through
+  ;; in the export they render in place via the bundled codeblock
+  ;; override, so the diagram source stays editable in the page tiddler
+  (is (= "```mermaid\ngraph TD;\n  A-->B;\n```"
+         (wikitext/md->wikitext "```mermaid\ngraph TD;\n  A-->B;\n```"))))
