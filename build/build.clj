@@ -6,7 +6,7 @@
             [inline]))
 
 (def artifact-name "bardigan-cay")
-(def base-version "2.0.0")
+(def base-version "2.1.0")
 
 (defn git-short-hash []
   (-> (p/process ["git" "rev-parse" "--short" "HEAD"] {:out :string})
