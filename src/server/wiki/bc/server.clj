@@ -128,7 +128,13 @@
         (wrap-defaults ring-defaults))))
 
 (defn gather-server-settings [application-settings]
-  (let [server-settings (select-keys application-settings [:ip :port :thread :worker-name-prefix :queue-size :max-body :max-line])]
+  (let [server-settings (-> application-settings
+                            (select-keys [:ip :port :thread :worker-name-prefix :queue-size :max-body :max-line])
+                            ;; LMDB write txns have OS-thread affinity; on JDK 24+ a virtual
+                            ;; thread can migrate carriers mid-txn and corrupt the index, so
+                            ;; keep http-kit workers on platform threads (2.8+ defaults to
+                            ;; virtual threads on JVM 21+, ignoring :thread).
+                            (assoc :allow-virtual? false))]
     (print-server-settings server-settings)
     server-settings))
 
