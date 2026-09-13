@@ -4,7 +4,7 @@
             [wiki.bc.card-server :as card-server]
             [wiki.bc.storage.index :as index]
             [wiki.bc.storage.page-store :as pagestore]
-            [wiki.bc.test-fixtures :refer [temp-wiki-dir]]))
+            [wiki.bc.test-fixtures :refer [temp-wiki-dir await-search-sync!]]))
 
 (deftest resolve-text-search-combines-name-and-fulltext-matches
   (let [dir (temp-wiki-dir {"CheeseShop" "we sell dairy products"
@@ -27,8 +27,12 @@
               (card-server/resolve-text-search @server-ref nil {:query_string "  "} nil)]
           (is (= [] (vec name_matches)))
           (is (= [] (vec text_matches)))))
-      (testing "a page written through the card-server is searchable immediately"
+      (testing "a page written through the card-server becomes searchable
+                once the reconcile process catches up -- search is the
+                eventually consistent tier; immediacy is deliberately not
+                part of its contract"
         (card-server/write-page-to-file! server-ref "Fresh" "entirely unique zanzibar content")
+        (is (await-search-sync! page-index))
         (is (= ["Fresh"]
                (-> (card-server/resolve-text-search @server-ref nil {:query_string "zanzibar"} nil)
                    :text_matches

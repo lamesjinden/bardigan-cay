@@ -7,7 +7,7 @@
             [wiki.bc.cards.parsing :as parsing]
             [wiki.bc.storage.index :as index]
             [wiki.bc.storage.page-store :as pagestore]
-            [wiki.bc.test-fixtures :refer [temp-wiki-dir build-index]]))
+            [wiki.bc.test-fixtures :refer [temp-wiki-dir build-index await-search-sync!]]))
 
 (defn- indexed-names [{:keys [conn]}]
   (sort (d/q '[:find [?n ...] :where [?e :page/name ?n]] (d/db conn))))
@@ -22,6 +22,114 @@
 
 (defn- fulltext-names [idx query]
   (sort (index/search-pages idx query)))
+
+(defn- card-text-blob-count [{:keys [kv]}]
+  (d/entries kv "bc/card-text"))
+
+(deftest duplicate-card-texts-share-one-search-doc
+  (let [dir (temp-wiki-dir {"A" "shared zebra card"
+                            "B" "shared zebra card"})
+        idx (build-index dir)]
+    (try
+      (is (= 1 (d/doc-count (:engine idx))))
+      (is (= 1 (card-text-blob-count idx)))
+      (is (= #{"A" "B"} (set (index/search-pages idx "zebra"))))
+      (testing "unindexing one page keeps the shared doc for the other"
+        (index/unindex-page! idx "A")
+        (is (await-search-sync! idx))
+        (is (= ["B"] (vec (index/search-pages idx "zebra"))))
+        (is (= 1 (d/doc-count (:engine idx)))))
+      (testing "unindexing the last carrier removes the doc but never the blob:
+                readers resolve hashes from Datalog snapshots against the live
+                KV, so blobs must outlive every snapshot referencing them"
+        (index/unindex-page! idx "B")
+        (is (await-search-sync! idx))
+        (is (= [] (vec (index/search-pages idx "zebra"))))
+        (is (= 0 (d/doc-count (:engine idx))))
+        (is (= 1 (card-text-blob-count idx))))
+      (finally
+        (index/close! idx)))))
+
+(deftest failed-core-transaction-leaves-no-trace
+  ;; the core commit (datoms + page body + card texts) is one LMDB write
+  ;; transaction: a failure mid-write must roll back ALL of it. The
+  ;; injected throw fires after the body and blob puts have executed --
+  ;; under the pre-transactional ordering this exact scenario left the
+  ;; new body beside the old cards.
+  (let [dir (temp-wiki-dir {"P" "original armadillo text"})
+        store (pagestore/make-page-store (str dir))
+        idx (index/build! (index/open-index) store)
+        state (fn [] {:body  (index/page-body idx "P")
+                      :cards (vec (index/page-cards idx "P"))
+                      :blobs (card-text-blob-count idx)
+                      :docs  (d/doc-count (:engine idx))})
+        before (state)]
+    (try
+      (with-redefs [wiki.bc.storage.index/page-tx-maps
+                    (fn [& _] (throw (ex-info "injected tx failure" {})))]
+        (is (thrown? Exception
+                     (index/index-page! idx store "P" "replacement pangolin text"))))
+      (is (= before (state)))
+      (finally
+        (index/close! idx)))))
+
+(deftest blobs-survive-every-write-that-orphans-their-hash
+  ;; pins the no-eager-blob-GC invariant that keeps concurrent readers
+  ;; from resolving a snapshot's hash to a deleted blob
+  (let [dir (temp-wiki-dir {"P" "original wombat text"})
+        store (pagestore/make-page-store (str dir))
+        idx (index/build! (index/open-index) store)]
+    (try
+      (spit (io/file dir "P.md") "replacement numbat text")
+      (index/index-page! idx store "P")
+      (is (await-search-sync! idx))
+      (is (= 2 (card-text-blob-count idx)) "orphaned blob retained")
+      (is (= 1 (d/doc-count (:engine idx))) "orphaned doc removed")
+      (is (= [] (vec (index/search-pages idx "wombat"))))
+      (is (= ["P"] (vec (index/search-pages idx "numbat"))))
+      (finally
+        (index/close! idx)))))
+
+(deftest search-dedups-duplicate-texts-across-the-ranking-window
+  ;; pins the content-addressed semantics: one document per distinct
+  ;; text, however many pages or cards carry it, so duplicates cannot
+  ;; crowd other matches out of the engine's top-10 document window
+  (let [shared "the elusive quokka appears"
+        pages (into {"Solo" "a different quokka sighting"}
+                    (map (fn [i] [(format "Dup%02d" i) shared]))
+                    (range 12))
+        dir (temp-wiki-dir pages)
+        idx (build-index dir)]
+    (try
+      (is (= 2 (d/doc-count (:engine idx))))
+      (let [results (vec (index/search-pages idx "quokka"))]
+        (is (= 13 (count results)) "all carriers returned, none cut by :top")
+        (is (= (sort (keys pages)) (sort results)))
+        (is (apply distinct? results)))
+      (finally
+        (index/close! idx)))))
+
+(deftest empty-page-bodies-round-trip
+  ;; the KV body store must distinguish a stored "" from nil-means-missing:
+  ;; load-page treats nil as page-missing
+  (let [dir (temp-wiki-dir {"Empty" ""
+                            "Full"  "some content"})
+        store (pagestore/make-page-store (str dir))
+        idx (index/build! (index/open-index) store)]
+    (try
+      (is (index/page-exists? idx "Empty"))
+      (is (= "" (index/page-body idx "Empty")))
+      (is (= [] (vec (index/page-cards idx "Empty"))))
+      (testing "a page emptied by a later write stays readable"
+        (spit (io/file dir "Full.md") "")
+        (index/index-page! idx store "Full")
+        (is (index/page-exists? idx "Full"))
+        (is (= "" (index/page-body idx "Full"))))
+      (testing "an unindexed page's body reads nil"
+        (index/unindex-page! idx "Empty")
+        (is (nil? (index/page-body idx "Empty"))))
+      (finally
+        (index/close! idx)))))
 
 (deftest search-pages-is-token-based-and-ranked
   (let [dir (temp-wiki-dir {"Both" "the quick brown fox"
@@ -83,6 +191,7 @@
     (try
       (spit (io/file dir "Start.md") "second version links [[New]]")
       (index/index-page! idx page-store "Start")
+      (is (await-search-sync! idx))
       (testing "old links are gone, new ones present"
         (is (= #{["Start" "New"]} (indexed-links idx))))
       (testing "full-text reflects the new body only"
@@ -146,11 +255,28 @@
     (try
       (index/unindex-page! idx "About")
       (is (= ["Start"] (indexed-names idx)))
+      ;; the body lives in the KV sub-database, not a datom, so retracting
+      ;; the page entity alone would leave the page loadable
+      (is (nil? (index/page-body idx "About")))
       (testing "unindexing an unknown page is a no-op"
         (index/unindex-page! idx "NeverExisted")
         (is (= ["Start"] (indexed-names idx))))
       (finally
         (index/close! idx)))))
+
+(deftest close!-drains-queued-notifications
+  ;; closure propagation: close! must let the process finish everything
+  ;; it already accepted before the env closes. The dir-deleted
+  ;; assertion doubles as the drain check -- the timeout branch leaks
+  ;; the env instead of closing it, leaving the dir in place.
+  (let [dir (temp-wiki-dir {"P" "revision zero"})
+        store (pagestore/make-page-store (str dir))
+        idx (build-index dir)]
+    (dotimes [i 3]
+      (spit (io/file dir "P.md") (str "revision " i))
+      (index/index-page! idx store "P"))
+    (index/close! idx)
+    (is (not (.exists (io/file (:dir idx)))))))
 
 (deftest close!-removes-the-scratch-directory
   (let [dir (temp-wiki-dir {"Start" "hello"})
@@ -171,12 +297,23 @@
          :where [?p :page/name ?n] [?c :card/page ?p] [?c :card/transcludes-from ?t]]
        (d/db conn)))
 
+(defn- search-doc-state
+  "Doc count plus which currently indexed card hashes have a search
+  document. Delta-vs-rebuild equality of this map proves the dual-written
+  engine tracked the datom state: a missing document shrinks :indexed, a
+  leaked stale document inflates :count."
+  [{:keys [conn engine]}]
+  (let [hashes (d/q '[:find [?h ...] :where [_ :card/hash ?h]] (d/db conn))]
+    {:count   (d/doc-count engine)
+     :indexed (set (filter (fn [h] (d/doc-indexed? engine h)) hashes))}))
+
 (defn- page-state [idx page-name]
   {:body          (index/page-body idx page-name)
    :cards         (mapv #(dissoc % :tx/locator) (index/page-cards idx page-name))
    :links         (indexed-links idx)
    :transclusions (indexed-transclusions idx)
-   :deadlines     (vec (index/deadline-cards idx))})
+   :deadlines     (vec (index/deadline-cards idx))
+   :search-docs   (search-doc-state idx)})
 
 (defn- rebuilt-state [dir page-name]
   (let [idx (build-index dir)]
@@ -201,6 +338,7 @@
       (let [[new-cards delta] (f (vec (index/page-cards idx "P")))]
         (spit (io/file dir "P.md") (cards/cards->raw new-cards))
         (index/index-card-delta! idx store "P" delta)
+        (is (await-search-sync! idx))
         (let [state (page-state idx "P")]
           (is (= (rebuilt-state dir "P") state))
           state))
@@ -279,6 +417,7 @@
         (index/index-card-delta! idx store "P"
                                  {:op :reorder
                                   :hashes (mapv (fn [c] (str (:hash c))) new-cards)})
+        (is (await-search-sync! idx))
         (is (= (rebuilt-state dir "P") (page-state idx "P")))
         (is (= "unique card" (:source_data (first (index/page-cards idx "P"))))))
       (finally
@@ -408,6 +547,7 @@
             survivors (vec (cards/remove-card-by-hash page-cards target))]
         (spit (io/file dir "P.md") (cards/cards->raw survivors))
         (index/index-card-delta! idx store "P" {:op :remove :target target})
+        (is (await-search-sync! idx))
         (is (= (rebuilt-state dir "P") (page-state idx "P")))
         (is (= ["unique card"] (mapv :source_data (index/page-cards idx "P")))))
       (finally

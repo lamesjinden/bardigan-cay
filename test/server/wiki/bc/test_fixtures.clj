@@ -4,7 +4,8 @@
   envs and scratch directories are reliably closed."
   (:require [clojure.java.io :as io]
             [wiki.bc.storage.index :as index]
-            [wiki.bc.storage.page-store :as pagestore])
+            [wiki.bc.storage.page-store :as pagestore]
+            [wiki.bc.storage.reconcile :as reconcile])
   (:import [java.nio.file Files]
            [java.nio.file.attribute FileAttribute]))
 
@@ -28,6 +29,16 @@
          (with-open [out (io/output-stream (io/file dir "media" file-name))]
            (io/copy content out))))
      dir)))
+
+(defn await-search-sync!
+  "Blocks until the index's reconcile process has drained every
+  notification sent before this call; true on completion. Tests that
+  assert engine state after a runtime mutation need this barrier --
+  search is eventually consistent by contract, which is also why this
+  helper lives in the test tree: production code must never wait on
+  search, so the index namespace deliberately offers no way to."
+  [{:keys [notify$]}]
+  (reconcile/await! notify$ 10000))
 
 (defn build-index
   "A built index over dir. The caller owns closing it (index/close! in a
