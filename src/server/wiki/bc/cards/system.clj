@@ -7,8 +7,16 @@
   (str "*" title "* " "*(" (count result) " items)*\n\n"
        (apply str (map f result))))
 
+(defn- unavailable-section [title]
+  (str "*" title "* is not available for a historical revision.\n"))
+
+;; result is :not-available when the snapshot has no link graph (a page
+;; viewed at a git revision); the card says so instead of failing
 (defn ldb-query->mdlist-card [i source_data title result _qname f render-context]
-  (let [html (render/md->html (mdlist-section title result f))]
+  (let [markdown (if (= result :not-available)
+                   (unavailable-section title)
+                   (mdlist-section title result f))
+        html (render/md->html markdown)]
     (util/package-card i :system :html source_data html render-context)))
 
 (def backlinks-card-default-configuration {:display :collapsed})

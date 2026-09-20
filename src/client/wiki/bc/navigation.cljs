@@ -8,7 +8,20 @@
 
 ;; region load page
 
-(defn load-page! [db body]
+(def default-revisions
+  "The per-page revision list, closed and empty."
+  {:open?   false
+   :entries []})
+
+(defn load-page!
+  "Loads a page response body into the app-db.
+
+   :revision is the commit (string-keyed, as served) the loaded page is
+   a read-only snapshot of, nil for the live page; :revisions are the
+   page's commits, served with the page so the list opens without a
+   round trip; :git-enabled? is whether the server offers revisions at
+   all."
+  [db body]
   (let [edn (js->clj body)
         source-page (get edn "source_page")
         server-prepared-page (get edn "server_prepared_page")
@@ -19,7 +32,10 @@
         site-url (get server-prepared-page "site_url")
         wiki-name (get server-prepared-page "wiki_name")
         start-page-name (get server-prepared-page "start_page_name")
-        nav-links (get server-prepared-page "nav-links")]
+        nav-links (get server-prepared-page "nav-links")
+        revision (get server-prepared-page "revision")
+        revisions (vec (get server-prepared-page "revisions"))
+        git-enabled? (boolean (get server-prepared-page "git_enabled"))]
     (swap! db assoc
            :current-page page-name
            :site-url site-url
@@ -29,6 +45,9 @@
            :cards cards
            :system-cards system-cards
            :nav-links nav-links
+           :revision revision
+           :git-enabled? git-enabled?
+           :revisions (assoc default-revisions :entries revisions)
            :mode :viewing)))
 
 (defn load-page-response [db response]
@@ -44,9 +63,9 @@
             body (.parse js/JSON body-text)]
         body))))
 
-(defn- <load-page! [db page-name]
+(defn- <load-page! [db page-name rev]
   (a/go
-    (let [completed$ (nav-events/<notify-navigating page-name)
+    (let [completed$ (nav-events/<notify-navigating page-name rev)
           response (a/<! completed$)]
       (cond
         (= :canceled response) :canceled
@@ -56,20 +75,31 @@
                 :loaded)))))
 
 (defn <reload-page! [db]
-  (<load-page! db (:current-page @db)))
+  (<load-page! db (:current-page @db) nil))
 
-(defn- <go-new! [db page-name]
+(defn- <go-new! [db page-name rev]
   (a/go
-    (let [outcome (a/<! (<load-page! db page-name))]
+    (let [outcome (a/<! (<load-page! db page-name rev))]
       ;; a canceled navigation must not yank the user out of an edit session
       (when (not= :canceled outcome)
         (swap! db assoc :mode :viewing))
       outcome)))
 
-(defn page-name->url [page-name]
-  (if (= "/" page-name)
-    "/"
-    (str "/pages/" page-name)))
+(defn- rev-query [rev]
+  (when rev
+    (str "?rev=" (js/encodeURIComponent rev))))
+
+(defn page-name->url
+  ([page-name]
+   (page-name->url page-name nil))
+  ([page-name rev]
+   (if (= "/" page-name)
+     "/"
+     (str "/pages/" page-name (rev-query rev)))))
+
+(defn- page-state [page-name rev]
+  (cond-> {:page-name page-name}
+    rev (assoc :rev rev)))
 
 (defn push-state
   ([state-map url]
@@ -82,18 +112,29 @@
   ([state-map]
    (push-state state-map "")))
 
-(defn navigate-to [page-name]
-  (let [url (page-name->url page-name)
-        state {:page-name page-name}]
-    (push-state state url)))
+(defn navigate-to
+  ([page-name rev]
+   (push-state
+    (page-state page-name rev)
+    (page-name->url page-name rev)))
+  ([page-name]
+   (navigate-to page-name nil)))
 
-(defn <navigate! [db page-name]
+(defn- <navigate-to! [db page-name rev]
   (a/go
-    (let [outcome (a/<! (<go-new! db page-name))]
+    (let [outcome (a/<! (<go-new! db page-name rev))]
       ;; canceled or failed loads must not push a url the user never reached
       (when (= :loaded outcome)
-        (navigate-to page-name))
+        (navigate-to page-name rev))
       outcome)))
+
+;; the live page -- links always lead to the present, even from a snapshot
+(defn <navigate! [db page-name]
+  (<navigate-to! db page-name nil))
+
+;; the read-only snapshot of page-name as committed at rev
+(defn <navigate-revision! [db page-name rev]
+  (<navigate-to! db page-name rev))
 
 (defn <on-link-clicked [db e target aux-clicked?]
   (.preventDefault e)
@@ -111,6 +152,10 @@
 ;; region history
 
 (defn- get-pathname [] (-> js/window .-location .-pathname))
+
+(defn- get-rev []
+  (-> (js/URLSearchParams. (-> js/window .-location .-search))
+      (.get "rev")))
 
 (defn- pathname->url
   ([pathname]
@@ -137,6 +182,9 @@
                     page-name)]
     page-name))
 
+(defn- popstate->rev [popstate]
+  (aget popstate "rev"))
+
 (defn- replace-state
   ([state-map url]
    (js/history.replaceState (clj->js state-map) "" url))
@@ -154,8 +202,9 @@
       (= (get state-map "mode") "jobs")
       (jobs/enter-jobs-view! db)
 
-      :else (let [page-name (popstate->page-name db state)]
-              (<go-new! db page-name)))))
+      :else (let [page-name (popstate->page-name db state)
+                  rev (popstate->rev state)]
+              (<go-new! db page-name rev)))))
 
 ;; endregion
 
@@ -170,9 +219,9 @@
   (let [pathname (get-pathname)]
     (if (= "/index.html" pathname)
       (replace-state {:page-name "index.html"} pathname)
-      (let [url (pathname->url pathname)
-            page-name (pathname->page-name pathname)
-            state {:page-name page-name}]
-        (replace-state state url)))))
+      (let [rev (get-rev)
+            url (str (pathname->url pathname) (rev-query rev))
+            page-name (pathname->page-name pathname)]
+        (replace-state (page-state page-name rev) url)))))
 
 ;; endregion

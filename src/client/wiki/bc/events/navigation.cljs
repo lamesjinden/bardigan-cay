@@ -4,11 +4,18 @@
 (defonce ^:private navigating$ (a/chan))
 (defonce ^:private navigating-mult$ (a/mult navigating$))
 
-(defn <notify-navigating [page-name]
-  (let [out-chan (a/promise-chan)]
-    (a/put! navigating$ {:page-name page-name
-                         :out-chan  out-chan})
-    out-chan))
+(defn <notify-navigating
+  "Requests navigation to page-name, at the git revision rev when given
+   (nil for the live page); the returned promise-chan delivers the
+   outcome."
+  ([page-name rev]
+   (let [out-chan (a/promise-chan)]
+     (a/put! navigating$ {:page-name page-name
+                          :rev       rev
+                          :out-chan  out-chan})
+     out-chan))
+  ([page-name]
+   (<notify-navigating page-name nil)))
 
 (defn create-navigating$
   ([to-chan]

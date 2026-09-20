@@ -35,7 +35,11 @@
         ;; the index hands over the flagged cards' own text, so the
         ;; line-scan is O(deadline cards); the old path text-searched
         ;; every page per render
-        server-prepared-data (->> (index/deadline-cards (:page-index server-snapshot))
+        ;; a revision snapshot carries no index: no deadlines to show
+        deadline-cards (if-let [page-index (:page-index server-snapshot)]
+                         (index/deadline-cards page-index)
+                         [])
+        server-prepared-data (->> deadline-cards
                                   (mapcat (fn [[page-name text]] (text->matches page-name text)))
                                   (map (fn [{:keys [match source-page datetime]}]
                                          {:match match

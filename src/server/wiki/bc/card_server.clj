@@ -6,9 +6,12 @@
             [wiki.bc.cards.parsing :as parsing]
             [wiki.bc.cards.system :as system]
             [wiki.bc.query.card-server-record :as server-record]
+            [wiki.bc.query.git-facts-db :as git-facts-db]
             [wiki.bc.query.index-db :as index-db]
             [wiki.bc.render :as render]
             [wiki.bc.search :as search]
+            [wiki.bc.storage.git-page-store :as git-page-store]
+            [wiki.bc.storage.git-repo :as git-repo]
             [wiki.bc.storage.indexed-page-store :as indexed-page-store]
             [wiki.bc.storage.page-store :as pagestore]
             [wiki.bc.util :as util])
@@ -21,16 +24,22 @@
 ;; from the index while writing through to the files (see
 ;; wiki.bc.storage.indexed-page-store).
 
-(defn create-card-server ^Atom [wiki-name site-url port-no start-page nav-links page-index page-store]
-  (atom (server-record/->CardServerRecord
-         wiki-name
-         site-url
-         port-no
-         start-page
-         nav-links
-         (index-db/make-facts-db page-index)
-         (indexed-page-store/make-indexed-page-store page-index page-store)
-         page-index)))
+;; git-repo (see wiki.bc.storage.git-repo) is nil when the wiki directory
+;; is not inside a git repository; the revision views are then unavailable
+(defn create-card-server
+  (^Atom [wiki-name site-url port-no start-page nav-links page-index page-store]
+   (create-card-server wiki-name site-url port-no start-page nav-links page-index page-store nil))
+  (^Atom [wiki-name site-url port-no start-page nav-links page-index page-store git-repo]
+   (atom (server-record/->CardServerRecord
+          wiki-name
+          site-url
+          port-no
+          start-page
+          nav-links
+          (index-db/make-facts-db page-index)
+          (indexed-page-store/make-indexed-page-store page-index page-store)
+          page-index
+          git-repo))))
 
 ;; Serializes every mutation: the file write + index update pair, and the
 ;; read-modify-write card operations around them. Without it, concurrent
@@ -107,37 +116,104 @@
 Check if the name you typed, or in the link you followed is correct.
 If you would *like* to create a page with this name, simply click the [Edit] button to edit this text. When you save, you will create the page")})))
 
+(defn git-enabled?
+  "Whether the wiki directory sits inside a git repository -- the
+  precondition for every revision view."
+  [server-snapshot]
+  (some? (:git-repo server-snapshot)))
+
+(defn- page-config
+  "The wiki-wide part of every prepared page."
+  [server-snapshot]
+  (let [site-url (:site-url server-snapshot)]
+    {:wiki_name       (:wiki-name server-snapshot)
+     :site_url        site-url
+     :public_root     (str site-url "/view/")
+     :start_page_name (:start-page server-snapshot)
+     :nav-links       (:nav-links server-snapshot)
+     :git_enabled     (git-enabled? server-snapshot)}))
+
+(defn- page-revisions
+  "The commits that touched page-name, newest first; empty outside a
+  repository. Sent with every prepared page so the client has the list
+  in hand before the user asks for it."
+  [server-snapshot page-name]
+  (if (git-enabled? server-snapshot)
+    (git-repo/page-revisions (:git-repo server-snapshot) page-name)
+    []))
+
+(defn- similarly-named-pages-cards [ps page_name]
+  (let [sim-names (map #(str "\n- [[" % "]]") (.similar-page-names ps page_name))]
+    (if (empty? sim-names)
+      []
+      [(util/package-card
+        :similarly_name_pages :system :markdown ""
+        (str "Here are some similarly named pages :"
+             (apply str sim-names)) false)])))
+
+(def ^:private not-user-authored {:user-authored? false :for-export? false})
+
 (defn resolve-page
   [server-snapshot _context arguments _value]
   (let [{:keys [page_name]} arguments
-        ps (:page-store server-snapshot)
-        wiki-name (:wiki-name server-snapshot)
-        site-url (:site-url server-snapshot)
-        start-page-name (:start-page server-snapshot)
-        nav-links (:nav-links server-snapshot)]
-    (if (.page-exists? ps page_name)
-      {:page_name       page_name
-       :wiki_name       wiki-name
-       :site_url        site-url
-       :public_root     (str site-url "/view/")
-       :start_page_name start-page-name
-       :nav-links       nav-links
-       :cards           (load->cards server-snapshot page_name)
-       :system_cards    [(system/backlinks server-snapshot page_name)]}
-      {:page_name       page_name
-       :wiki_name       wiki-name
-       :site_url        site-url
-       :start_page_name start-page-name
-       :public_root     (str site-url "/view/")
-       :nav-links       nav-links
-       :cards           (packaging/raw->cards server-snapshot (render/missing-page page_name) {:user-authored? false :for-export? false})
-       :system_cards    (let [sim-names (map #(str "\n- [[" % "]]") (.similar-page-names ps page_name))]
-                          (if (empty? sim-names)
-                            []
-                            [(util/package-card
-                              :similarly_name_pages :system :markdown ""
-                              (str "Here are some similarly named pages :"
-                                   (apply str sim-names)) false)]))})))
+        ps (:page-store server-snapshot)]
+    (merge (page-config server-snapshot)
+           {:page_name page_name
+            :revisions (page-revisions server-snapshot page_name)}
+           (if (.page-exists? ps page_name)
+             {:cards        (load->cards server-snapshot page_name)
+              :system_cards [(system/backlinks server-snapshot page_name)]}
+             {:cards        (packaging/raw->cards server-snapshot (render/missing-page page_name) not-user-authored)
+              :system_cards (similarly-named-pages-cards ps page_name)}))))
+
+;; Revisions: the wiki as committed at one git revision, read-only.
+
+(defn resolve-commit
+  "The full sha for rev (a sha, abbreviated sha or ref name), or nil
+  when rev names no commit."
+  [server-snapshot rev]
+  (git-repo/resolve-commit (:git-repo server-snapshot) rev))
+
+(defn- revision-snapshot
+  "server-snapshot with its storage swapped for read-only views of the
+  wiki at commit sha: pages -- and so transclusions -- read from the
+  commit, the facts-db answers only the page list, and there is no
+  page-index. Media still comes from the live store."
+  [server-snapshot sha]
+  (let [git-store (git-page-store/make-git-page-store (:git-repo server-snapshot) sha (:page-store server-snapshot))]
+    (assoc server-snapshot
+           :page-store git-store
+           :facts-db (git-facts-db/make-git-facts-db git-store)
+           :page-index nil)))
+
+(defn- missing-page-at-revision [page-name revision]
+  (str "A PAGE CALLED " page-name " DID NOT EXIST AT REVISION " (:short_sha revision) "
+
+This is a read-only view of the wiki as committed on " (:date revision) "."))
+
+(defn resolve-revision-source-page
+  "resolve-source-page for page-name at commit sha; an empty body for a
+  page absent at that commit."
+  [server-snapshot page-name sha]
+  {:page_name page-name
+   :body      (or (git-repo/page-body (:git-repo server-snapshot) sha page-name) "")})
+
+(defn resolve-revision-page
+  "resolve-page for page-name as committed at sha (a full sha, see
+  resolve-commit). The result carries the commit under :revision and no
+  system cards: backlinks describe the present, not the commit."
+  [server-snapshot page-name sha]
+  (let [snapshot (revision-snapshot server-snapshot sha)
+        ps (:page-store snapshot)
+        revision (git-repo/commit-info (:git-repo server-snapshot) sha)]
+    (merge (page-config server-snapshot)
+           {:page_name    page-name
+            :revision     revision
+            :revisions    (page-revisions server-snapshot page-name)
+            :cards        (if (.page-exists? ps page-name)
+                            (load->cards snapshot page-name)
+                            (packaging/raw->cards snapshot (missing-page-at-revision page-name revision) not-user-authored))
+            :system_cards []})))
 
 ; region RecentChanges as RSS
 

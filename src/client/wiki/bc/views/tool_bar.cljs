@@ -6,7 +6,14 @@
             [wiki.bc.jobs :as jobs]
             [wiki.bc.mode :as mode]
             [wiki.bc.page :as page]
+            [wiki.bc.revision :as revision]
             [wiki.bc.transcript :as transcript]))
+
+(defn- on-edit-click [db]
+  (a/go
+    (when-let [response (a/<! (e-editing/<notify-global-editing-starting))]
+      (when (= response :ok)
+        (swap! db assoc :mode :editing)))))
 
 (defn- on-send-transcript-click [db page-name]
   (when (and (not (s/blank? page-name)) (seq (:transcript @db)))
@@ -16,7 +23,10 @@
 
 (defn tool-bar [db db-mode db-current-page]
   (let [value (r/atom nil)
-        on-clear-clicked (fn [] (reset! value nil))]
+        on-clear-clicked (fn [] (reset! value nil))
+        rx-git-enabled? (r/cursor db [:git-enabled?])
+        rx-revision (r/cursor db [:revision])
+        rx-revisions-open? (r/cursor db [:revisions :open?])]
     (fn []
       (let [mode @db-mode]
         [:div.toolbar-container
@@ -37,14 +47,28 @@
               [:span {:class [:material-symbols-sharp :clickable]} "save"]]]]
 
            :viewing
-           [:span.button-container
-            [:button.big-btn
-             {:on-click (fn []
-                          (a/go
-                            (when-let [response (a/<! (e-editing/<notify-global-editing-starting))]
-                              (when (= response :ok)
-                                (swap! db assoc :mode :editing)))))}
-             [:span {:class [:material-symbols-sharp :clickable]} "edit"]]]
+           (let [git-enabled? @rx-git-enabled?
+                 snapshot? (some? @rx-revision)
+                 revisions-open? @rx-revisions-open?]
+             [:span.button-container
+              (when-not snapshot?
+                [:button.big-btn
+                 {:class    (when git-enabled? "big-btn-left")
+                  :title    "Edit"
+                  :on-click (fn [] (on-edit-click db))}
+                 [:span {:class [:material-symbols-sharp :clickable]} "edit"]])
+              (when git-enabled?
+                [:button.big-btn
+                 {:class    [(if snapshot? "big-btn-left" "big-btn-right")
+                             (when revisions-open? "pressed")]
+                  :title    "Revisions"
+                  :on-click (fn [] (revision/toggle-revision-list! db))}
+                 [:span {:class [:material-symbols-sharp :clickable]} "history"]])
+              (when snapshot?
+                [:button.big-btn.big-btn-right
+                 {:title    "Back to the current page"
+                  :on-click (fn [] (revision/<exit-snapshot! db))}
+                 [:span {:class [:material-symbols-sharp :clickable]} "close"]])])
 
            :transcript
            [:span.button-container

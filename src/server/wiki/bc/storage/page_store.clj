@@ -10,7 +10,6 @@
 ;; Data structures / types
 
 ;; page-path and system-path are Java nio Paths
-;; git-repo? is boolean
 
 ;; Path helpers -- the nio types stay private to this namespace; the
 ;; IPageStore surface deals only in names and content strings.
@@ -27,13 +26,12 @@
 (defn- media-dir-path [page-path]
   (.resolve page-path "media"))
 
-(deftype PageStore [page-path system-path git-repo?]
+(deftype PageStore [page-path system-path]
   page-storage/IPageStore
 
   (as-map [_this]
     {:page-path   (str page-path)
-     :system-path (str system-path)
-     :git-repo?   git-repo?})
+     :system-path (str system-path)})
 
   (page-names [_this]
     (with-open [stream (Files/newDirectoryStream page-path "*.md")]
@@ -105,8 +103,7 @@
 
   (report [_this]
     (str "Page Directory:  \t" (str page-path) "\n"
-         "System Directory:\t" (str system-path) "\n"
-         "Within Git Repo?:\t" (str git-repo?) "\n")))
+         "System Directory:\t" (str system-path) "\n")))
 
 ;; Constructing
 
@@ -118,11 +115,7 @@
         system-dir-path (-> (Paths/get page-dir-as-string (into-array String ["system"]))
                             (.toAbsolutePath)
                             (.normalize))
-        ;; note -- only verifies page-dir-path is a git root
-        ;; todo -- check if within a git repo
-        git-path (.resolve page-dir-path ".git")
-        git-repo? (-> git-path .toFile .exists)
-        page-store (->PageStore page-dir-path system-dir-path git-repo?)]
+        page-store (->PageStore page-dir-path system-dir-path)]
 
     (assert (-> page-dir-path .toFile .exists)
             (str "Given page-store directory " page-dir-as-string " does not exist."))

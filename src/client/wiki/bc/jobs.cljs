@@ -30,16 +30,13 @@
       (< size-bytes 1048576) (str (.toFixed (/ size-bytes 1024) 1) " KB")
       :else (str (.toFixed (/ size-bytes 1048576) 1) " MB"))))
 
-(defn- valid-date? [d]
-  (not (js/isNaN (.getTime d))))
-
 (defn format-relative-time
   "Coarse 'time ago' phrase for an ISO timestamp relative to now;
    nil when the timestamp is missing or unparsable."
   [iso-string now]
   (when-not (str/blank? (str iso-string))
     (let [then (temporal/parse-iso iso-string)]
-      (when (valid-date? then)
+      (when (temporal/valid-date? then)
         (let [seconds (temporal/difference-in-seconds now then)
               minutes (js/Math.trunc (/ seconds 60))
               hours (js/Math.trunc (/ minutes 60))
@@ -57,7 +54,7 @@
   [iso-string now]
   (when-not (str/blank? (str iso-string))
     (let [then (temporal/parse-iso iso-string)]
-      (when (valid-date? then)
+      (when (temporal/valid-date? then)
         (let [seconds (max 0 (temporal/difference-in-seconds now then))
               minutes (js/Math.trunc (/ seconds 60))
               remainder (rem seconds 60)]

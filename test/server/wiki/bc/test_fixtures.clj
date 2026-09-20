@@ -7,7 +7,8 @@
             [wiki.bc.storage.page-store :as pagestore]
             [wiki.bc.storage.reconcile :as reconcile])
   (:import [java.nio.file Files]
-           [java.nio.file.attribute FileAttribute]))
+           [java.nio.file.attribute FileAttribute]
+           [org.eclipse.jgit.api Git]))
 
 (defn temp-wiki-dir
   "A throwaway wiki directory (java.io.File) holding the given
@@ -69,3 +70,48 @@
       (doseq [idx @tracked-indexes]
         (index/close! idx))
       (reset! tracked-indexes []))))
+
+;; Git fixtures: a wiki nested inside a throwaway repository, driven
+;; through JGit so the tests need no git binary either.
+
+(defn temp-git-wiki
+  "A throwaway repository whose work tree holds the given pages under
+  site/wiki (nested, not at the root, so the prefix handling is always
+  exercised). Returns {:root <File> :dir <File>} -- the repository root
+  and the wiki directory -- with nothing committed yet."
+  [pages]
+  (let [root (-> (Files/createTempDirectory "bc-test-repo" (make-array FileAttribute 0))
+                 (.toFile))
+        dir (io/file root "site" "wiki")]
+    (.mkdirs (io/file dir "system"))
+    (spit (io/file dir "system" "recentchanges") "")
+    (doseq [[page-name source] pages]
+      (spit (io/file dir (str page-name ".md")) source))
+    (with-open [git (-> (Git/init) (.setDirectory root) (.call))]
+      git)
+    {:root root
+     :dir  dir}))
+
+(defn write-page!
+  "Writes (or overwrites) page-name's file in the wiki dir; nil source
+  deletes it."
+  [dir page-name source]
+  (let [file (io/file dir (str page-name ".md"))]
+    (if (nil? source)
+      (.delete file)
+      (spit file source))))
+
+(defn commit-all!
+  "Stages every change under root (additions, edits, deletions) and
+  commits it; returns the new commit's full sha."
+  [root message]
+  (with-open [git (Git/open root)]
+    (-> git (.add) (.addFilepattern ".") (.call))
+    (-> git
+        (.commit)
+        (.setAll true)
+        (.setMessage message)
+        (.setAuthor "Tester" "tester@example.com")
+        (.setCommitter "Tester" "tester@example.com")
+        (.call)
+        (.getName))))

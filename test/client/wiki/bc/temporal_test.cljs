@@ -180,3 +180,15 @@
                                        (date-fns/differenceInSeconds \"2025-01-01T17:43:47Z\" \"2025-01-01T17:33:09Z\")")))))
 
 ;; endregion
+
+(deftest valid-date?-distinguishes-real-dates-from-invalid-ones
+  (is (true? (temporal/valid-date? (js/Date. 2026 8 19))))
+  (is (true? (temporal/valid-date? "2026-09-19T16:53:37Z")))
+  (is (false? (temporal/valid-date? "not a date")))
+  (is (false? (temporal/valid-date? nil))))
+
+(deftest format-locale-renders-valid-dates-only
+  (let [d (js/Date. 2026 8 19 12 53 37)]
+    (is (= (.toLocaleString d) (temporal/format-locale d)))
+    (is (= (.toLocaleString d) (temporal/format-locale (.getTime d)))))
+  (is (nil? (temporal/format-locale "not a date"))))

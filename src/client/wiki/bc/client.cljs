@@ -42,6 +42,9 @@
               :wiki-name    "Wiki Name"
               :site-url     "Site URL"
               :initialized? false
+              :git-enabled? false
+              :revision     nil
+              :revisions    nav/default-revisions
               :mode         :viewing
               :theme        (theme/get-initial-theme :light)
               :env-port     4545

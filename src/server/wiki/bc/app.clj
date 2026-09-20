@@ -109,6 +109,7 @@
   ;; after the HTTP server has drained: frees the LMDB env and deletes
   ;; the scratch directory, so no index copy of the wiki outlives the app
   (server/close-page-index!)
+  (server/close-git-repo!)
   (shutdown-agents))
 
 (defn- start-server [application-settings]

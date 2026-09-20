@@ -6,6 +6,7 @@
             [wiki.bc.events.cards :as e-cards]
             [wiki.bc.events.rendering :as e-rendering]
             [wiki.bc.navigation :as nav]
+            [wiki.bc.revision :as revision]
             [wiki.bc.view :as view]
             [wiki.bc.views.autocomplete-input :refer [autocomplete-input]]))
 
@@ -99,44 +100,48 @@
                           :suggestions []
                           :autocomplete-visible? false})]
     (fn [db card]
-      [:div.card-gutter
-       [:div.actions-container
-        [:div {:class    [:material-symbols-sharp :clickable]
-               :on-click (fn [] (<card-reorder! db card "up"))}
-         "expand_less"]
-        [:div {:class    [:material-symbols-sharp :clickable]
-               :on-click (fn [] (<card-reorder! db card "down"))}
-         "expand_more"]
-        [:span.expansion-toggle {:on-click (fn [] (toggle! local-db))}
-         (if (= (-> @local-db :toggle) "none")
-           [:span {:class [:material-symbols-sharp :clickable]} "expand_circle_down"]
-           [:span {:class [:material-symbols-sharp :clickable]} "expand_circle_up"])]]
-       (when-not (= "none" (:toggle @local-db))
-         [:div.card-gutter-inner
-          [:div.details-container
-           [:div.details-pair
-            [:div.details-label "id:"]
-            [:div.details-value (get card "id")]]
-           [:div.details-pair.right
-            [:div.details-label "source:"]
-            [:div.details-value (get card "source_type")]]
-           [:div.details-pair
-            [:div.details-label "hash:"]
-            [:div.details-value.clickable {:on-click (fn [] (clip-hash (-> @db :current-page) card))}
-             (get card "hash")]]
-           [:div.details-pair.right
-            [:div.details-label "render:"]
-            [:div.details-value (get card "render_type")]]
-           (when-let [source-page (get-in card ["transcluded" "source-page"])]
+      (let [snapshot? (revision/snapshot? db)]
+        [:div.card-gutter
+         [:div.actions-container
+          (when-not snapshot?
+            [:div {:class    [:material-symbols-sharp :clickable]
+                   :on-click (fn [] (<card-reorder! db card "up"))}
+             "expand_less"])
+          (when-not snapshot?
+            [:div {:class    [:material-symbols-sharp :clickable]
+                   :on-click (fn [] (<card-reorder! db card "down"))}
+             "expand_more"])
+          [:span.expansion-toggle {:on-click (fn [] (toggle! local-db))}
+           (if (= (-> @local-db :toggle) "none")
+             [:span {:class [:material-symbols-sharp :clickable]} "expand_circle_down"]
+             [:span {:class [:material-symbols-sharp :clickable]} "expand_circle_up"])]]
+         (when-not (= "none" (:toggle @local-db))
+           [:div.card-gutter-inner
+            [:div.details-container
              [:div.details-pair
-              [:div.details-label "page"]
-              [:div.details-value source-page]])]
-          (when (get card "user_authored?")
-            [:div.card-gutter-toolbar
-             [:button.big-btn.reorder-top-button {:class    [:material-symbols-sharp :clickable]
-                                                  :on-click (fn [] (<card-reorder! db card "start"))}
-              "low_priority"]
-             [send-elsewhere-input db local-db card]
-             [:button.big-btn.reorder-bottom-button {:class    [:material-symbols-sharp :clickable]
-                                                     :on-click (fn [] (<card-reorder! db card "end"))}
-              "low_priority"]])])])))
+              [:div.details-label "id:"]
+              [:div.details-value (get card "id")]]
+             [:div.details-pair.right
+              [:div.details-label "source:"]
+              [:div.details-value (get card "source_type")]]
+             [:div.details-pair
+              [:div.details-label "hash:"]
+              [:div.details-value.clickable {:on-click (fn [] (clip-hash (-> @db :current-page) card))}
+               (get card "hash")]]
+             [:div.details-pair.right
+              [:div.details-label "render:"]
+              [:div.details-value (get card "render_type")]]
+             (when-let [source-page (get-in card ["transcluded" "source-page"])]
+               [:div.details-pair
+                [:div.details-label "page"]
+                [:div.details-value source-page]])]
+            (when (and (get card "user_authored?")
+                       (not snapshot?))
+              [:div.card-gutter-toolbar
+               [:button.big-btn.reorder-top-button {:class    [:material-symbols-sharp :clickable]
+                                                    :on-click (fn [] (<card-reorder! db card "start"))}
+                "low_priority"]
+               [send-elsewhere-input db local-db card]
+               [:button.big-btn.reorder-bottom-button {:class    [:material-symbols-sharp :clickable]
+                                                       :on-click (fn [] (<card-reorder! db card "end"))}
+                "low_priority"]])])]))))

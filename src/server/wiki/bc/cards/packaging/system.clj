@@ -60,13 +60,19 @@
         (util/package-card "recentchanges" :system :html src html render-context))
 
       :search
-      (let [query-pattern-str (util/string->pattern-string (:query info))
-            res (search/search server-snapshot query-pattern-str (:query info))
-            html (render/md->html (search/results->markdown res))]
-        (util/package-card "search" :system :html source-data html render-context))
+      ;; search runs over the index, which a revision snapshot lacks
+      (if (nil? (:page-index server-snapshot))
+        (util/package-card "search" :system :markdown source-data
+                           "*Search* is not available for a historical revision."
+                           render-context)
+        (let [query-pattern-str (util/string->pattern-string (:query info))
+              res (search/search server-snapshot query-pattern-str (:query info))
+              html (render/md->html (search/results->markdown res))]
+          (util/package-card "search" :system :html source-data html render-context)))
 
       :about
-      (let [{:keys [page-path git-repo?]} (.as-map page-store)
+      (let [{:keys [page-path]} (.as-map page-store)
+            git-repo? (some? (:git-repo server-snapshot))
             sr (str "### System Information\n
 **Wiki Name**,, " (:wiki-name server-snapshot) "
 **PageStore Directory** (relative to code) ,, " page-path "

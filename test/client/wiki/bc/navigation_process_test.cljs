@@ -9,21 +9,26 @@
    {:page-name .. :response$ .. :aborted? ..}."
   []
   (let [requests (atom [])
-        fetch-page (fn [page-name]
+        fetch-page (fn [page-name rev]
                      (let [response$ (a/promise-chan)
                            aborted? (atom false)]
                        (swap! requests conj {:page-name page-name
+                                             :rev       rev
                                              :response$ response$
                                              :aborted?  aborted?})
                        {:response$ response$
                         :abort!    (fn [] (reset! aborted? true))}))]
     [fetch-page requests]))
 
-(defn- <navigate [navigating$ page-name]
-  (let [out-chan (a/promise-chan)]
-    (a/put! navigating$ {:page-name page-name
-                         :out-chan  out-chan})
-    out-chan))
+(defn- <navigate
+  ([navigating$ page-name]
+   (<navigate navigating$ page-name nil))
+  ([navigating$ page-name rev]
+   (let [out-chan (a/promise-chan)]
+     (a/put! navigating$ {:page-name page-name
+                          :rev       rev
+                          :out-chan  out-chan})
+     out-chan)))
 
 (defn- <confirm-with [response]
   (fn []
@@ -47,6 +52,25 @@
              (let [result (a/<! out-chan)]
                (is (= "page-a-body" (:body result)))
                (is (false? @(:aborted? request))))
+             (done)))))
+
+(deftest navigation-at-a-revision-fetches-that-revision
+  (async done
+         (a/go
+           (let [navigating$ (a/chan)
+                 editing$ (a/chan)
+                 [fetch-page requests] (create-fake-fetch)
+                 _ (nav-process/<create-nav-process navigating$ editing$
+                                                    {:fetch-page fetch-page
+                                                     :<confirm   (<confirm-with :ok)})
+                 out-chan (<navigate navigating$ "PageA" "abc1234")
+                 _ (a/<! (a/timeout 1))
+                 request (first @requests)]
+             (is (= "PageA" (:page-name request)))
+             (is (= "abc1234" (:rev request)))
+             (a/put! (:response$ request) {:isSuccess true
+                                           :body      "page-a-at-rev"})
+             (is (= "page-a-at-rev" (:body (a/<! out-chan))))
              (done)))))
 
 (deftest second-navigation-cancels-the-in-flight-request

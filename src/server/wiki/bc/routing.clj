@@ -31,6 +31,26 @@
     {:source_page          source-page
      :server_prepared_page server-prepared-page}))
 
+(defn- get-revision-page-data [server-snapshot page-name sha]
+  {:source_page          (card-server/resolve-revision-source-page server-snapshot page-name sha)
+   :server_prepared_page (card-server/resolve-revision-page server-snapshot page-name sha)})
+
+(defn- page-data-at
+  "get-page-data for page-name -- at revision rev when rev is given. nil
+  when rev is given but names no commit, or the wiki is not in a git
+  repository (the feature is then not offered, so nothing is found)."
+  [server-snapshot page-name rev]
+  (cond
+    (nil? rev)
+    (get-page-data server-snapshot {:page_name page-name})
+
+    (not (card-server/git-enabled? server-snapshot))
+    nil
+
+    :else
+    (when-let [sha (card-server/resolve-commit server-snapshot rev)]
+      (get-revision-page-data server-snapshot page-name sha))))
+
 (defn handle-api-replace-card [{:keys [card-server] :as request}]
   (let [form-body (-> request :body .bytes slurp edn/read-string)
         page-name (:page form-body)
@@ -74,28 +94,24 @@
       @index-html-content)))
 
 (defn render-page-config
-  ([card-server subject-file-content page-name]
-   (let [file-content subject-file-content]
-     (if page-name
-       (let [server-snapshot @card-server
-             page-config (get-page-data server-snapshot {:page_name page-name})
-             page-config-str (json/write-str page-config)
-             init-loc (render/find-init-loc file-content)
-             init-content-loc (zip/down init-loc)
-             init-content (zip/node init-content-loc)
-             rendered-content (selmer.util/without-escaping
-                               (selmer.parser/render
-                                init-content
-                                {:page-config page-config-str}))
-             updated (zip/replace init-content-loc rendered-content)
-             rendered (render/loc->html-string updated)]
-         rendered)
-       file-content))))
+  "index.html with page-config (a get-page-data map) injected as the
+  client's initial page."
+  [index-content page-config]
+  (let [page-config-str (json/write-str page-config)
+        init-loc (render/find-init-loc index-content)
+        init-content-loc (zip/down init-loc)
+        init-content (zip/node init-content-loc)
+        rendered-content (selmer.util/without-escaping
+                          (selmer.parser/render
+                           init-content
+                           {:page-config page-config-str}))
+        updated (zip/replace init-content-loc rendered-content)]
+    (render/loc->html-string updated)))
 
 (defn handle-root-request [{:keys [card-server] :as _request}]
   (let [server-snapshot @card-server
-        index-content (get-index-content)]
-    (-> (render-page-config card-server index-content (.start-page server-snapshot))
+        page-config (get-page-data server-snapshot {:page_name (.start-page server-snapshot)})]
+    (-> (render-page-config (get-index-content) page-config)
         (util/->html-response))))
 
 (defn handle-api-init [{:keys [card-server] :as _request}]
@@ -116,11 +132,15 @@
 
 (def api-pages-request-pattern #"/api/page/(.+)")
 
-(defn handle-api-page [{:keys [card-server] :as request}]
-  (let [uri (:uri request)
-        match (re-matches api-pages-request-pattern uri)
-        page-name (codec/url-decode (get match 1))]
-    (get-page-response card-server page-name)))
+;; ?rev=<commit> serves the page as committed at that revision
+(defn handle-api-page [{:keys [card-server uri params] :as _request}]
+  (let [match (re-matches api-pages-request-pattern uri)
+        page-name (codec/url-decode (get match 1))
+        server-snapshot @card-server]
+    (if-let [page-data (page-data-at server-snapshot page-name (:rev params))]
+      (-> (json/write-str page-data)
+          (util/->json-response))
+      (util/create-not-found uri))))
 
 (defn handle-api-search [{:keys [card-server] :as request}]
   (let [{{query :q} :params} request
@@ -138,16 +158,25 @@
 
 (def pages-request-pattern #"/pages/(.+)")
 
-(defn handle-pages-request [{:keys [card-server] :as request}]
-  (let [uri (:uri request)
-        match (re-matches pages-request-pattern uri)
+(defn- not-found-page-response [page-name]
+  (-> (resp/not-found (str "Page not found " page-name))
+      (resp/content-type "text")))
+
+;; ?rev=<commit> renders the page at that revision; a page absent at the
+;; commit still renders (as a not-at-this-revision page), only an unknown
+;; commit is not found
+(defn handle-pages-request [{:keys [card-server uri params] :as _request}]
+  (let [match (re-matches pages-request-pattern uri)
         page-name (codec/url-decode (get match 1))
+        rev (:rev params)
         server-snapshot @card-server]
-    (if (wiki.bc.card-server/page-exists? server-snapshot page-name)
-      (-> (render-page-config card-server (get-index-content) page-name)
-          (util/->html-response))
-      (-> (resp/not-found (str "Page not found " page-name))
-          (resp/content-type "text")))))
+    (if (and (nil? rev)
+             (not (card-server/page-exists? server-snapshot page-name)))
+      (not-found-page-response page-name)
+      (if-let [page-data (page-data-at server-snapshot page-name rev)]
+        (-> (render-page-config (get-index-content) page-data)
+            (util/->html-response))
+        (not-found-page-response page-name)))))
 
 (defn handle-api-save [{:keys [card-server] :as request}]
   (let [form-body (-> request :body .bytes slurp edn/read-string)

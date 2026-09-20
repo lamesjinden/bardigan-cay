@@ -10,6 +10,7 @@
             [wiki.bc.ace :as ace]
             [wiki.bc.card :as cards]
             [wiki.bc.keyboard :as keyboard]
+            [wiki.bc.revision :as revision]
             [wiki.bc.stats :as stats]
             [wiki.bc.view :refer [->display]]
             [wiki.bc.views.graph :refer [graph]]
@@ -212,9 +213,11 @@
 (defn- workspace-editor-on-key-s-press [db local-db e]
   (.preventDefault e)
   (format-workspace local-db)
-  (let [card (-> @local-db :card)
-        new-body (->> @local-db :editor (.getValue))]
-    (cards/replace-async! db card new-body)))
+  ;; a snapshot is read-only: ctrl-s formats but does not save
+  (when-not (revision/snapshot? db)
+    (let [card (-> @local-db :card)
+          new-body (->> @local-db :editor (.getValue))]
+      (cards/replace-async! db card new-body))))
 
 (defn- workspace-editor-on-key-down [db local-db e]
   (let [key-code (.-keyCode e)
@@ -311,7 +314,7 @@
                                  [:div.workspace-section-container {:class (if (= :vertical (:layout @local-db))
                                                                              "vertical"
                                                                              "horizontal")}
-                                   ;; visibility controlled by style.display instead of 'when because the editor control needs to be initialized when (re)created
+                                  ;; visibility controlled by style.display instead of 'when because the editor control needs to be initialized when (re)created
                                   [:div.code-section.workspace-padding {:style {:display (->display (-> @local-db :code-toggle))}}
                                    [:div.code-section-header-container
                                     [:h4 "Code"]
@@ -319,9 +322,10 @@
                                      [:button.big-btn.big-btn-left.lambda-button {:on-click (fn [] (eval-from-editor local-db sci-opts))
                                                                                   :on-double-click (fn [e] (.stopPropagation e))}
                                       [:span {:class [:material-symbols-sharp :clickable]} "λ"]]
-                                     [:button.big-btn.big-btn-middle {:on-click (fn [] (on-save-clicked db local-db))
-                                                                      :on-double-click (fn [e] (.stopPropagation e))}
-                                      [:span {:class [:material-symbols-sharp :clickable]} "save"]]
+                                     (when-not (revision/snapshot? db)
+                                       [:button.big-btn.big-btn-middle {:on-click (fn [] (on-save-clicked db local-db))
+                                                                        :on-double-click (fn [e] (.stopPropagation e))}
+                                        [:span {:class [:material-symbols-sharp :clickable]} "save"]])
                                      [:button.big-btn.big-btn-right {:on-click (fn [] (format-workspace local-db))
                                                                      :on-double-click (fn [e] (.stopPropagation e))}
                                       [:span {:class [:material-symbols-sharp :clickable]} "format_align_justify"]]
@@ -335,7 +339,8 @@
                                   (when (:result-toggle @local-db)
                                     [:div.result-section {:on-double-click (fn [e] (.stopPropagation e))}
                                      [:div.result-section-header-container
-                                      (if (:dirty? @local-db)
+                                      (if (and (:dirty? @local-db)
+                                               (not (revision/snapshot? db)))
                                         [:<>
                                          [:h4.dirty "Result"]
                                          [:div.workspace-buttons

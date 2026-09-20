@@ -21,6 +21,11 @@
     (or (number? x) (string? x)) (js/Date. x)
     :else (js/Date. js/NaN)))
 
+(defn valid-date?
+  "Whether x coerces to a real date (not an Invalid Date)."
+  [x]
+  (not (js/isNaN (.getTime (->date x)))))
+
 ;; region comparisons
 
 (defn before? [a b]
@@ -183,6 +188,14 @@
 (defn- pad
   ([n] (pad n 2))
   ([n width] (.padStart (str n) width "0")))
+
+(defn format-locale
+  "Format in the viewer's locale and time zone (js toLocaleString), e.g.
+   9/19/2026, 12:53:37 PM; nil when d is not a valid date."
+  [d]
+  (let [d (->date d)]
+    (when (valid-date? d)
+      (.toLocaleString d))))
 
 (defn format-iso
   "Format as ISO 8601 in local time with numeric offset (or Z when UTC),

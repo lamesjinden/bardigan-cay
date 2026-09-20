@@ -10,6 +10,7 @@
             [wiki.bc.card-server :as card-server]
             [wiki.bc.jobs :as jobs]
             [wiki.bc.routing :as routing]
+            [wiki.bc.storage.git-repo :as git-repo]
             [wiki.bc.storage.index :as index]
             [wiki.bc.storage.page-store :as pagestore])
   (:import (clojure.lang Atom)))
@@ -26,6 +27,7 @@
         "==PageStore Report==\n"
         "\n"
         (-> card-server-state :page-store .report)
+        "Within Git Repo?:\t" (git-repo/report (:git-repo card-server-state)) "\n"
         "\n"
         "-----------------------------------------------------------------------------------------------"
         "\n")))
@@ -51,6 +53,23 @@
   (when-let [current (first (reset-vals! page-index* nil))]
     (index/close! current)))
 
+;; the git repository enclosing the wiki directory, when there is one;
+;; tracked like the index so dev reloads and shutdown release it
+(defonce ^:private git-repo* (atom nil))
+
+(defn- install-git-repo!
+  [git-repo]
+  (when-let [previous (first (reset-vals! git-repo* git-repo))]
+    (git-repo/close! previous))
+
+  git-repo)
+
+(defn close-git-repo!
+  "Releases the live git repository, if any."
+  []
+  (when-let [current (first (reset-vals! git-repo* nil))]
+    (git-repo/close! current)))
+
 (defn- build-page-index
   "Opens and fully builds an index over page-store, closing the fresh
   scratch directory again if the build fails partway."
@@ -68,7 +87,10 @@
   (let [{:keys [directory name site port init nav-links]} application-settings
         page-store (pagestore/make-page-store directory)
         page-index (install-page-index! (build-page-index page-store))
-        card-server-ref (card-server/create-card-server name site port init nav-links page-index page-store)
+        ;; detected once, at startup: a repository created afterwards
+        ;; needs a restart to be seen
+        git-repo (install-git-repo! (git-repo/open-repo directory))
+        card-server-ref (card-server/create-card-server name site port init nav-links page-index page-store git-repo)
         card-server-state @card-server-ref]
     (print-card-server-state card-server-state)
     card-server-ref))

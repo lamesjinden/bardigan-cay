@@ -5,6 +5,7 @@
             [wiki.bc.events.expansion :as e-expansion]
             [wiki.bc.events.rendering :as e-rendering]
             [wiki.bc.navigation :as nav]
+            [wiki.bc.revision :as revision]
             [wiki.bc.view :refer [->display]]
             [wiki.bc.views.card-gutter :refer [card-gutter]]
             [wiki.bc.views.lazy-editor-single :refer [suspended-editor-component]]))
@@ -74,7 +75,8 @@
       (fn [db card component]
         (e-rendering/notify-render (-> @db :current-page) (-> @local-db :hash))
 
-        (let [editable? (:editable? @local-db)
+        (let [editable? (and (:editable? @local-db)
+                             (not (revision/snapshot? db)))
               transcluded-data (cards/->transcluded-data card)
               card-shell-attributes (cond-> {:ref (fn [element] (reset! !root-element element))
                                              :class []}
@@ -82,7 +84,9 @@
                                       editable? (update :class conj "editable"))]
           [:div.card-shell card-shell-attributes
            (if (viewing? local-db)
-             [:article.card-outer {:on-double-click (fn [] (on-card-double-clicked local-db))}
+             [:article.card-outer {:on-double-click (fn []
+                                                      (when-not (revision/snapshot? db)
+                                                        (on-card-double-clicked local-db)))}
               [:div.card-meta-parent
                [:div.card-meta
                 (when transcluded-data

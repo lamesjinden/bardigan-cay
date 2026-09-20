@@ -10,12 +10,15 @@
     (conj editing id)
     (disj editing id)))
 
-(defn- get-page [page-name]
-  (http/http-get* (str "/api/page/" (js/encodeURI page-name))
+(defn- get-page [page-name rev]
+  (http/http-get* (str "/api/page/"
+                       (js/encodeURI page-name)
+                       (when rev
+                         (str "?rev=" (js/encodeURIComponent rev))))
                   :timeout page-request-timeout-ms))
 
-(defn- begin-fetch [fetch-page page-name out-chan]
-  (-> (fetch-page page-name)
+(defn- begin-fetch [fetch-page page-name rev out-chan]
+  (-> (fetch-page page-name rev)
       (assoc :out-chan out-chan)))
 
 (defn- cancel! [{:keys [out-chan abort!]}]
@@ -45,16 +48,16 @@
          (recur (update-edit-sessions editing value) in-flight)
 
          navigating$
-         (let [{:keys [page-name out-chan]} value]
+         (let [{:keys [page-name rev out-chan]} value]
            ;; latest wins: a newer navigation supersedes any in-flight request,
            ;; even if the newer navigation is later declined in the confirm dialog
            (when in-flight
              (cancel! in-flight))
            (if (empty? editing)
-             (recur editing (begin-fetch fetch-page page-name out-chan))
+             (recur editing (begin-fetch fetch-page page-name rev out-chan))
              (let [response (a/<! (<confirm))]
                (if (= response :ok)
-                 (recur #{} (begin-fetch fetch-page page-name out-chan))
+                 (recur #{} (begin-fetch fetch-page page-name rev out-chan))
                  (do
                    ;; declined: resolve the requester instead of leaking a parked chain
                    (a/put! out-chan :canceled)
