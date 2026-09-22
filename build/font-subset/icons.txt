@@ -27,9 +27,10 @@ clear_all
 step_over
 unfold_more
 unfold_less
-# tool_bar.cljs
+# tool_bar.cljs (history also in page_header.cljs snapshot banner)
 save
 edit
+history
 # card_gutter.cljs
 expand_circle_down
 expand_circle_up
