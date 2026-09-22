@@ -79,6 +79,34 @@
       (finally
         (git-repo/close! repo)))))
 
+(deftest revisions-are-cached-per-page-until-head-moves
+  (let [{:keys [root dir]} (temp-git-wiki {"Home" "first draft"
+                                           "Other" "untouched"})
+        first-sha (commit-all! root "first")
+        repo (git-repo/open-repo (str dir))]
+    (try
+      (let [home (git-repo/page-revisions repo "Home")
+            other (git-repo/page-revisions repo "Other")]
+        (testing "a repeat call under the same HEAD returns the cached list"
+          (is (identical? home (git-repo/page-revisions repo "Home")))
+          (is (identical? other (git-repo/page-revisions repo "Other")))
+          (is (= [first-sha] (mapv :sha home))))
+        (testing "a new commit invalidates the cache for every page"
+          (write-page! dir "Home" "second draft")
+          (let [second-sha (commit-all! root "second")
+                home' (git-repo/page-revisions repo "Home")
+                other' (git-repo/page-revisions repo "Other")]
+            (is (= [second-sha first-sha] (mapv :sha home')))
+            (is (not (identical? other other')))
+            (is (= [first-sha] (mapv :sha other')))
+            (testing "the HEAD marker reflects the new HEAD"
+              (is (= [true false] (mapv :head? home')))
+              (is (= [false] (mapv :head? other'))))
+            (testing "and the fresh lists are cached in turn"
+              (is (identical? home' (git-repo/page-revisions repo "Home")))))))
+      (finally
+        (git-repo/close! repo)))))
+
 (deftest history-follows-a-rename
   (let [{:keys [root dir]} (temp-git-wiki {"OldName" "a page with enough content to be recognised as the same file after a rename"})
         first-sha (commit-all! root "add page")

@@ -2,8 +2,9 @@
   "Read-only access to the git repository enclosing the wiki directory,
   through JGit, pure JVM.
 
-  A repo is {:repository org.eclipse.jgit.lib.Repository
-             :page-prefix \"path/within/work/tree/\"}
+  A repo is {:repository     org.eclipse.jgit.lib.Repository
+             :page-prefix    \"path/within/work/tree/\"
+             :revision-cache (atom ...)}
   where page-prefix locates the wiki directory relative to the work
   tree (\"\" when the wiki directory is the repository root, otherwise
   slash-terminated). Every path handed to git is prefix + name, so the
@@ -11,7 +12,13 @@
 
   Nothing here writes to the repository: history is listed and blobs
   are read at a given commit. The Repository is safe to share across
-  request threads; each call opens its own RevWalk/TreeWalk."
+  request threads; each call opens its own RevWalk/TreeWalk.
+
+  Listing a page's revisions walks the repository's entire history (the
+  cost is proportional to the number of commits, not to the page), so
+  the lists are cached per page, keyed by HEAD: a page's committed
+  history can only change when HEAD moves, so the cache is exact and
+  never stale. See page-revisions."
   (:require [clojure.string :as string])
   (:import (java.nio.file Path Paths)
            (java.util Date)
@@ -69,8 +76,9 @@
           (do
             (.close repository)
             nil)
-          {:repository  repository
-           :page-prefix (relative-prefix repository page-dir)})))))
+          {:repository     repository
+           :page-prefix    (relative-prefix repository page-dir)
+           :revision-cache (atom {:head nil :pages {}})})))))
 
 (defn close!
   "Releases the repository's file handles and caches."
@@ -135,20 +143,52 @@
         (.getWhenAsInstant)
         (Date/from))))
 
+(defn- walk-page-revisions
+  "The history walk behind page-revisions: every commit from head that
+  touched page-name's file, newest first, following renames (git log
+  --follow). Visits the whole history, so callers cache the result."
+  [^Repository repository page-prefix ^ObjectId head page-name]
+  (with-open [walk (RevWalk. repository)]
+    (let [diff-config (.get (.getConfig repository) DiffConfig/KEY)
+          follow (FollowFilter/create (page-path page-prefix page-name) diff-config)
+          head-sha (.getName head)]
+      (.markStart walk (.parseCommit walk head))
+      (.setTreeFilter walk follow)
+      (mapv (fn [commit] (commit->info commit head-sha))
+            (iterator-seq (.iterator walk))))))
+
+(defn- cached-revisions
+  "The cached list for page-name computed under head-sha, or nil."
+  [cache head-sha page-name]
+  (when (= head-sha (:head cache))
+    (get (:pages cache) page-name)))
+
+(defn- remember-revisions
+  "cache with revisions recorded for page-name under head-sha; a cache
+  built under a different HEAD is discarded wholesale, since any page's
+  history may have changed."
+  [cache head-sha page-name revisions]
+  (if (= head-sha (:head cache))
+    (assoc-in cache [:pages page-name] revisions)
+    {:head  head-sha
+     :pages {page-name revisions}}))
+
 (defn page-revisions
   "The commits that touched page-name's file, newest first, following
   the file across renames (git log --follow). Empty for a page git has
-  never seen, and for a repository with no commits yet."
-  [{:keys [^Repository repository page-prefix]} page-name]
+  never seen, and for a repository with no commits yet.
+
+  Cached per page under the current HEAD: the walk runs once per page
+  per commit, and every later call under the same HEAD is a lookup.
+  Two threads racing on a cold page both walk and both record the same
+  list, which is harmless."
+  [{:keys [^Repository repository page-prefix revision-cache]} page-name]
   (if-let [head (.resolve repository Constants/HEAD)]
-    (with-open [walk (RevWalk. repository)]
-      (let [diff-config (.get (.getConfig repository) DiffConfig/KEY)
-            follow (FollowFilter/create (page-path page-prefix page-name) diff-config)
-            head-sha (.getName head)]
-        (.markStart walk (.parseCommit walk head))
-        (.setTreeFilter walk follow)
-        (mapv (fn [commit] (commit->info commit head-sha))
-              (iterator-seq (.iterator walk)))))
+    (let [head-sha (.getName head)]
+      (or (cached-revisions @revision-cache head-sha page-name)
+          (let [revisions (walk-page-revisions repository page-prefix head page-name)]
+            (swap! revision-cache remember-revisions head-sha page-name revisions)
+            revisions)))
     []))
 
 ;; Trees
