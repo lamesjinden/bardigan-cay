@@ -204,6 +204,7 @@
        ;; Remove non-essential commands to make editor behave like a simple input
        (doseq [cmd quake-disabled-commands]
          (.removeCommand commands cmd))
+       (ace-core/apply-keymap! ace-instance)
        ;; Override theme background to blend with nav container
        (set! (.. ace-instance -container -style -background) "transparent")
        ace-instance))))

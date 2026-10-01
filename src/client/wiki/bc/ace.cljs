@@ -35,7 +35,17 @@
      (.setTheme ace-instance theme)
      (.setOptions ace-instance (clj->js options))
      (.setShowInvisibles ace-instance false)
-     (.setMode ace-session (new mode)))))
+     (.setMode ace-session (new mode))
+     (ace-core/apply-keymap! ace-instance))))
+
+(defn- disable-list-continuation!
+  "Stops the markdown mode from inserting a list marker on the new line when Enter is pressed inside a list;
+   the new line only keeps the indentation of the previous one."
+  [^js ace-instance]
+  (let [^js mode (.getMode (.getSession ace-instance))]
+    (set! (.-getNextLineIndent mode)
+          (fn [_state line _tab]
+            (.$getIndent mode line)))))
 
 (defn set-theme! [^js ace-instance theme]
   (when ace-instance
@@ -76,7 +86,8 @@
                 ;; configure ace
                        (let [ace-options (assoc default-ace-options :maxLines "Infinity")
                              theme (pick-ace-theme db-theme)]
-                         (configure-ace-instance! ace-instance ace-mode-markdown theme ace-options))
+                         (configure-ace-instance! ace-instance ace-mode-markdown theme ace-options)
+                         (disable-list-continuation! ace-instance))
 
                 ;; watch for the first change; notify app
                        (a/go
