@@ -9,8 +9,10 @@
 ;; region load page
 
 (def default-revisions
-  "The per-page revision list, closed and empty."
+  "The per-page revision list, closed and empty, and whether a snapshot
+   shows its page source in place of the rendered cards."
   {:open?   false
+   :source? false
    :entries []})
 
 (defn load-page!
@@ -19,8 +21,10 @@
    :revision is the commit (string-keyed, as served) the loaded page is
    a read-only snapshot of, nil for the live page; :revisions are the
    page's commits, served with the page so the list opens without a
-   round trip; :git-enabled? is whether the server offers revisions at
-   all."
+   round trip -- an open list stays open while the page stays the same
+   (stepping between its revisions) and closes on leaving the page, and
+   likewise the source view stays on from snapshot to snapshot;
+   :git-enabled? is whether the server offers revisions at all."
   [db body]
   (let [edn (js->clj body)
         source-page (get edn "source_page")
@@ -36,25 +40,47 @@
         revision (get server-prepared-page "revision")
         revisions (vec (get server-prepared-page "revisions"))
         git-enabled? (boolean (get server-prepared-page "git_enabled"))]
-    (swap! db assoc
-           :current-page page-name
-           :site-url site-url
-           :wiki-name wiki-name
-           :start-page-name start-page-name
-           :raw raw
-           :cards cards
-           :system-cards system-cards
-           :nav-links nav-links
-           :revision revision
-           :git-enabled? git-enabled?
-           :revisions (assoc default-revisions :entries revisions)
-           :mode :viewing)))
+    (swap! db (fn [state]
+                (let [same-page? (= page-name (:current-page state))
+                      revisions-open? (and same-page?
+                                           (get-in state [:revisions :open?]))
+                      source? (and same-page?
+                                   (some? revision)
+                                   (get-in state [:revisions :source?]))]
+                  (assoc state
+                         :current-page page-name
+                         :site-url site-url
+                         :wiki-name wiki-name
+                         :start-page-name start-page-name
+                         :raw raw
+                         :cards cards
+                         :system-cards system-cards
+                         :nav-links nav-links
+                         :revision revision
+                         :git-enabled? git-enabled?
+                         :revisions {:open?   (boolean revisions-open?)
+                                     :source? (boolean source?)
+                                     :entries revisions}
+                         :mode :viewing))))))
 
+(defn- revision-change?
+  "Whether going from app-db value before to after moved between
+   revisions of one page (entering or leaving a snapshot included),
+   rather than to another page or a reload of the live one."
+  [before after]
+  (and (= (:current-page before) (:current-page after))
+       (or (some? (:revision before))
+           (some? (:revision after)))))
+
+;; a new page starts at the top; another revision of the same page keeps
+;; the scroll position, so the reader can compare revisions in place
 (defn load-page-response [db response]
   (let [{body-text :body} response
-        body (js/JSON.parse body-text)]
+        body (js/JSON.parse body-text)
+        before @db]
     (load-page! db body)
-    (js/window.scroll 0 0)))
+    (when-not (revision-change? before @db)
+      (js/window.scroll 0 0))))
 
 (defn <get-init []
   (a/go

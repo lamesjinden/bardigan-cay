@@ -26,7 +26,8 @@
         on-clear-clicked (fn [] (reset! value nil))
         rx-git-enabled? (r/cursor db [:git-enabled?])
         rx-revision (r/cursor db [:revision])
-        rx-revisions-open? (r/cursor db [:revisions :open?])]
+        rx-revisions-open? (r/cursor db [:revisions :open?])
+        rx-source? (r/cursor db [:revisions :source?])]
     (fn []
       (let [mode @db-mode]
         [:div.toolbar-container
@@ -64,6 +65,12 @@
                   :title    "Revisions"
                   :on-click (fn [] (revision/toggle-revision-list! db))}
                  [:span {:class [:material-symbols-sharp :clickable]} "history"]])
+              (when snapshot?
+                [:button.big-btn.big-btn-middle
+                 {:class    (when @rx-source? "pressed")
+                  :title    "Page source"
+                  :on-click (fn [] (revision/toggle-source! db))}
+                 [:span {:class [:material-symbols-sharp :clickable]} "code"]])
               (when snapshot?
                 [:button.big-btn.big-btn-right
                  {:title    "Back to the current page"

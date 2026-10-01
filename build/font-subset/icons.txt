@@ -31,6 +31,12 @@ unfold_less
 save
 edit
 history
+# page_header.cljs (snapshot banner steps; navigate_next is listed under nav_bar.cljs)
+navigate_before
+# tool_bar.cljs (snapshot source toggle)
+code
+# page_source.cljs (check is listed under app_menu.cljs)
+content_copy
 # card_gutter.cljs
 expand_circle_down
 expand_circle_up

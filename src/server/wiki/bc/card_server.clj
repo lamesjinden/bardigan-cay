@@ -191,27 +191,41 @@ If you would *like* to create a page with this name, simply click the [Edit] but
 
 This is a read-only view of the wiki as committed on " (:date revision) "."))
 
+(defn- page-name-at
+  "The name page-name had at commit sha (see git-repo/page-name-at),
+  nil when it did not exist there."
+  [server-snapshot page-name sha]
+  (git-repo/page-name-at (:git-repo server-snapshot) sha page-name))
+
 (defn resolve-revision-source-page
-  "resolve-source-page for page-name at commit sha; an empty body for a
-  page absent at that commit."
+  "resolve-source-page for page-name at commit sha, read under the name
+  the page had there; an empty body for a page absent at that commit."
   [server-snapshot page-name sha]
   {:page_name page-name
-   :body      (or (git-repo/page-body (:git-repo server-snapshot) sha page-name) "")})
+   :body      (or (some->> (page-name-at server-snapshot page-name sha)
+                           (git-repo/page-body (:git-repo server-snapshot) sha))
+                  "")})
 
 (defn resolve-revision-page
   "resolve-page for page-name as committed at sha (a full sha, see
   resolve-commit). The result carries the commit under :revision and no
-  system cards: backlinks describe the present, not the commit."
+  system cards: backlinks describe the present, not the commit.
+
+  A page renamed since the commit is rendered from the file it was
+  then: :page_name stays the name asked for (the page's identity in the
+  client), while the revision's :page_name is the name it had at the
+  commit, nil when it did not exist there."
   [server-snapshot page-name sha]
   (let [snapshot (revision-snapshot server-snapshot sha)
-        ps (:page-store snapshot)
-        revision (git-repo/commit-info (:git-repo server-snapshot) sha)]
+        name-at (page-name-at server-snapshot page-name sha)
+        revision (assoc (git-repo/commit-info (:git-repo server-snapshot) sha)
+                        :page_name name-at)]
     (merge (page-config server-snapshot)
            {:page_name    page-name
             :revision     revision
             :revisions    (page-revisions server-snapshot page-name)
-            :cards        (if (.page-exists? ps page-name)
-                            (load->cards snapshot page-name)
+            :cards        (if name-at
+                            (load->cards snapshot name-at)
                             (packaging/raw->cards snapshot (missing-page-at-revision page-name revision) not-user-authored))
             :system_cards []})))
 

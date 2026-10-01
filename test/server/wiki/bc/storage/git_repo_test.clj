@@ -107,14 +107,40 @@
       (finally
         (git-repo/close! repo)))))
 
+(def ^:private renamed-content
+  "a page with enough content to be recognised as the same file after a rename")
+
 (deftest history-follows-a-rename
-  (let [{:keys [root dir]} (temp-git-wiki {"OldName" "a page with enough content to be recognised as the same file after a rename"})
+  (let [{:keys [root dir]} (temp-git-wiki {"OldName" renamed-content
+                                           "Other"   "untouched"})
         first-sha (commit-all! root "add page")
+        _ (write-page! dir "OldName" (str renamed-content "\nedited"))
+        second-sha (commit-all! root "edit under the old name")
+        _ (write-page! dir "Other" "other edited")
+        between-sha (commit-all! root "edit other, before the rename")
         _ (write-page! dir "OldName" nil)
-        _ (write-page! dir "NewName" "a page with enough content to be recognised as the same file after a rename")
-        second-sha (commit-all! root "rename page")
+        _ (write-page! dir "NewName" (str renamed-content "\nedited"))
+        third-sha (commit-all! root "rename page")
+        _ (write-page! dir "NewName" (str renamed-content "\nedited again"))
+        fourth-sha (commit-all! root "edit under the new name")
+        _ (write-page! dir "Other" "other edited again")
+        after-sha (commit-all! root "edit other, after the rename")
         repo (git-repo/open-repo (str dir))]
     (try
-      (is (= [second-sha first-sha] (mapv :sha (git-repo/page-revisions repo "NewName"))))
+      (let [revisions (git-repo/page-revisions repo "NewName")]
+        (testing "the history crosses the rename"
+          (is (= [fourth-sha third-sha second-sha first-sha] (mapv :sha revisions))))
+        (testing "each revision carries the name the page had at that commit"
+          (is (= ["NewName" "NewName" "OldName" "OldName"] (mapv :page_name revisions)))))
+      (testing "a page never renamed keeps its name throughout"
+        (is (= #{"Other"} (set (map :page_name (git-repo/page-revisions repo "Other"))))))
+      (testing "the name at a commit in the page's history"
+        (is (= "OldName" (git-repo/page-name-at repo first-sha "NewName")))
+        (is (= "NewName" (git-repo/page-name-at repo third-sha "NewName"))))
+      (testing "the name at a commit that did not touch the page"
+        (is (= "OldName" (git-repo/page-name-at repo between-sha "NewName")))
+        (is (= "NewName" (git-repo/page-name-at repo after-sha "NewName"))))
+      (testing "a page that never existed has no name anywhere"
+        (is (nil? (git-repo/page-name-at repo first-sha "Nope"))))
       (finally
         (git-repo/close! repo)))))

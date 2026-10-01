@@ -18,13 +18,18 @@
   cost is proportional to the number of commits, not to the page), so
   the lists are cached per page, keyed by HEAD: a page's committed
   history can only change when HEAD moves, so the cache is exact and
-  never stale. See page-revisions."
+  never stale. See page-revisions.
+
+  A page's history follows its file across renames, so each revision
+  records the name the page went by at that commit (:page_name) -- the
+  name its content has to be read under there. See page-name-at."
   (:require [clojure.string :as string])
   (:import (java.nio.file Path Paths)
            (java.util Date)
            (org.eclipse.jgit.diff DiffConfig)
            (org.eclipse.jgit.lib Constants ObjectId Repository)
-           (org.eclipse.jgit.revwalk FollowFilter RevCommit RevTree RevWalk)
+           (org.eclipse.jgit.diff DiffEntry)
+           (org.eclipse.jgit.revwalk FollowFilter RenameCallback RevCommit RevTree RevWalk)
            (org.eclipse.jgit.storage.file FileRepositoryBuilder)
            (org.eclipse.jgit.treewalk TreeWalk)
            (org.eclipse.jgit.treewalk.filter PathFilter)))
@@ -38,6 +43,17 @@
 
 (defn- system-path [page-prefix name]
   (str page-prefix "system/" name))
+
+(defn- path->page-name
+  "The page name of a repository path that is a page file directly in
+  the wiki directory; nil for anything else (paths outside it, nested
+  paths, non-page files)."
+  [page-prefix path]
+  (when (string/starts-with? path page-prefix)
+    (let [relative (subs path (count page-prefix))]
+      (when (and (string/ends-with? relative page-extension)
+                 (not (string/includes? relative "/")))
+        (subs relative 0 (- (count relative) (count page-extension)))))))
 
 (defn- prefix->tree-path
   "A slash-terminated prefix as the path git addresses the directory by
@@ -143,19 +159,56 @@
         (.getWhenAsInstant)
         (Date/from))))
 
+(defn- rename-callback
+  "A RenameCallback that records in !renames, per commit that renamed
+  the followed file, the path the file had before that commit."
+  ^RenameCallback [!renames]
+  (proxy [RenameCallback] []
+    (renamed
+      ([_entry]
+       nil)
+      ([^DiffEntry entry ^RevCommit commit]
+       (swap! !renames assoc (.getName commit) (.getOldPath entry))))))
+
+(defn- with-page-names
+  "revisions (newest first, as walked from path) with each one's
+  :page_name -- the name the page had at that commit, nil when its file
+  was then not a page of the wiki (outside the wiki directory, or not a
+  page file). renames is {sha old-path}: the commit at sha has the path
+  followed up to it, every older commit has old-path."
+  [revisions page-prefix path renames]
+  (loop [remaining revisions
+         path path
+         named []]
+    (if-let [revision (first remaining)]
+      (recur (rest remaining)
+             (get renames (:sha revision) path)
+             (conj named (assoc revision :page_name (path->page-name page-prefix path))))
+      named)))
+
 (defn- walk-page-revisions
   "The history walk behind page-revisions: every commit from head that
   touched page-name's file, newest first, following renames (git log
-  --follow). Visits the whole history, so callers cache the result."
+  --follow), each with the name the page had there (see
+  with-page-names). Visits the whole history, so callers cache the
+  result.
+
+  The names are assigned once the walk is over: the walk looks ahead of
+  the commit it hands out, so a rename is reported before the commits
+  around it are."
   [^Repository repository page-prefix ^ObjectId head page-name]
   (with-open [walk (RevWalk. repository)]
     (let [diff-config (.get (.getConfig repository) DiffConfig/KEY)
-          follow (FollowFilter/create (page-path page-prefix page-name) diff-config)
+          path (page-path page-prefix page-name)
+          !renames (atom {})
+          follow (FollowFilter/create path diff-config)
           head-sha (.getName head)]
+      (.setRenameCallback follow (rename-callback !renames))
       (.markStart walk (.parseCommit walk head))
       (.setTreeFilter walk follow)
-      (mapv (fn [commit] (commit->info commit head-sha))
-            (iterator-seq (.iterator walk))))))
+      (let [revisions (mapv (fn [commit] (commit->info commit head-sha))
+                            (iterator-seq (.iterator walk)))]
+        (with-page-names revisions page-prefix path @!renames)))))
 
 (defn- cached-revisions
   "The cached list for page-name computed under head-sha, or nil."
@@ -226,15 +279,6 @@
   (with-open [walk (RevWalk. repository)]
     (read-blob repository (commit-tree walk sha) (system-path page-prefix name))))
 
-(defn- entry->page-name
-  "The page name of a tree entry directly under page-prefix that is a
-  page file; nil for anything else (nested paths, non-page files)."
-  [page-prefix entry-path]
-  (let [relative (subs entry-path (count page-prefix))]
-    (when (and (string/ends-with? relative page-extension)
-               (not (string/includes? relative "/")))
-      (subs relative 0 (- (count relative) (count page-extension))))))
-
 (defn page-names
   "The sorted names of the pages in the wiki directory at commit sha."
   [{:keys [^Repository repository page-prefix]} sha]
@@ -246,7 +290,25 @@
       (.setFilter tree-walk (PathFilter/create tree-path)))
     (loop [names (transient [])]
       (if (.next tree-walk)
-        (recur (if-let [page-name (entry->page-name page-prefix (.getPathString tree-walk))]
+        (recur (if-let [page-name (path->page-name page-prefix (.getPathString tree-walk))]
                  (conj! names page-name)
                  names))
         (vec (sort (persistent! names)))))))
+
+(defn page-name-at
+  "The name page-name went by at commit sha -- its own unless the page
+  has since been renamed -- or nil when the page did not exist there.
+
+  A commit in the page's history answers from the history. Any other
+  commit (one that did not touch the page) lies somewhere between two
+  of them, so the names the page has had are tried from the present one
+  back, and the first that exists at the commit is taken."
+  [repo sha page-name]
+  (let [revisions (page-revisions repo page-name)
+        revision (first (filter #(= sha (:sha %)) revisions))
+        candidates (if revision
+                     [(:page_name revision)]
+                     (distinct (cons page-name (map :page_name revisions))))]
+    (first (filter #(and (some? %)
+                         (page-exists? repo sha %))
+                   candidates))))

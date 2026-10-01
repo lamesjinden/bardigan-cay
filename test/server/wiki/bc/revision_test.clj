@@ -68,6 +68,33 @@
       (finally
         (git-repo/close! repo)))))
 
+(deftest revision-page-renders-a-renamed-page-under-its-old-name
+  (let [content "a page with enough content to be recognised as the same file after a rename"
+        {:keys [root dir]} (temp-git-wiki {"OldName" content})
+        first-sha (commit-all! root "add page")
+        _ (write-page! dir "OldName" nil)
+        _ (write-page! dir "NewName" content)
+        second-sha (commit-all! root "rename page")
+        repo (git-repo/open-repo (str dir))
+        server (make-server dir repo)]
+    (try
+      (testing "before the rename the page renders from its old file"
+        (let [page (card-server/resolve-revision-page server "NewName" first-sha)]
+          (is (string/includes? (first (card-texts page)) "enough content"))
+          (is (= "NewName" (:page_name page)))
+          (is (= "OldName" (-> page :revision :page_name)))
+          (is (= content (:body (card-server/resolve-revision-source-page server "NewName" first-sha))))))
+      (testing "from the rename on it renders under its present name"
+        (let [page (card-server/resolve-revision-page server "NewName" second-sha)]
+          (is (= "NewName" (-> page :revision :page_name)))))
+      (testing "the revision list names the page as it was at each commit"
+        (is (= ["NewName" "OldName"]
+               (mapv :page_name (:revisions (card-server/resolve-page server nil {:page_name "NewName"} nil))))))
+      (testing "a page absent at the revision has no name there"
+        (is (nil? (-> (card-server/resolve-revision-page server "Nope" first-sha) :revision :page_name))))
+      (finally
+        (git-repo/close! repo)))))
+
 (deftest outside-a-repository-the-feature-is-absent
   (let [dir (temp-wiki-dir {"Home" "hello"})
         server (make-server dir nil)]

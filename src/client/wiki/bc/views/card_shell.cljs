@@ -39,12 +39,14 @@
 (defn- on-transclude-link-clicked [db e {:strs [source-page] :as _transcluded}]
   (nav/<on-link-clicked db e source-page false))
 
-(defn- on-card-double-clicked [local-db]
+;; expanding is always allowed; editing only when the card is editable?
+;; (never in a read-only snapshot)
+(defn- on-card-double-clicked [local-db editable?]
   (cond
     (collapsed? local-db)
     (swap! local-db assoc :expanded-state :expanded)
 
-    (boolean (:editable? @local-db))
+    editable?
     (enter-edit-mode! local-db)))
 
 (defn- ->initial-expanded-state [card-configuration]
@@ -84,9 +86,7 @@
                                       editable? (update :class conj "editable"))]
           [:div.card-shell card-shell-attributes
            (if (viewing? local-db)
-             [:article.card-outer {:on-double-click (fn []
-                                                      (when-not (revision/snapshot? db)
-                                                        (on-card-double-clicked local-db)))}
+             [:article.card-outer {:on-double-click (fn [] (on-card-double-clicked local-db editable?))}
               [:div.card-meta-parent
                [:div.card-meta
                 (when transcluded-data

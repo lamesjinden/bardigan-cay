@@ -13,5 +13,11 @@
 (defn highlight-all []
   (.highlightAll hljs))
 
+(defn highlight-markdown
+  "text as markdown-highlighted html (text is escaped, so the result is
+   safe to set as inner html)."
+  [text]
+  (.-value (.highlight hljs text #js {:language "markdown"})))
+
 (defn highlight-element [element]
   (.highlightElement hljs element))
