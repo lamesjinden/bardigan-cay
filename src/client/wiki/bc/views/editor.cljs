@@ -8,15 +8,20 @@
             [wiki.bc.page :as page]
             [wiki.bc.views.paste-bar :refer [paste-bar]]))
 
-(defn- editor-on-key-s-press [db e]
+(defn- editor-on-key-s-press [db saved$ e]
   (.preventDefault e)
-  (page/<save-page! db identity))
+  (let [^js editor (:editor @db)
+        saved-data (.getValue editor)]
+    (page/<save-page! db (fn [{:keys [isSuccess]}]
+                           ;; the editor stays open: tell it which content is now saved
+                           (when isSuccess
+                             (a/put! saved$ saved-data))))))
 
 (defn- editor-on-ctrl-shift-s-press [db e]
   (.preventDefault e)
   (page/<save-page! db))
 
-(defn editor-on-key-down [db e]
+(defn editor-on-key-down [db saved$ e]
   (when (= (-> @db :mode) :editing)
     (let [key-code (.-keyCode e)
           control? (.-ctrlKey e)
@@ -29,7 +34,7 @@
 
         (and (= key-code keyboard/key-s-code)
              control?)
-        (editor-on-key-s-press db e)))))
+        (editor-on-key-s-press db saved$ e)))))
 
 (defn- editor-on-escape-press [db]
   (a/go
@@ -56,13 +61,14 @@
   (let [!editor-element (clojure.core/atom nil)
         !edit-box-container (clojure.core/atom nil)
         track-theme (r/track! (partial theme-tracker db))
-        local-db (r/atom {:editor-configured? false})]
+        local-db (r/atom {:editor-configured? false})
+        saved$ (a/chan (a/sliding-buffer 1))]
     (reagent.core/create-class
      {:component-did-mount    (fn []
                                 (a/go
                                   (let [db-theme (:theme @db)
                                         source-data @db-raw
-                                        setup-editor-chan (ace/<setup-global-editor db-theme source-data @!editor-element @!edit-box-container)
+                                        setup-editor-chan (ace/<setup-global-editor db-theme source-data saved$ @!editor-element @!edit-box-container)
                                         ace-instance (a/<! setup-editor-chan)]
                                     (swap! db assoc :editor ace-instance)
                                     (theme-tracker db)
@@ -70,13 +76,14 @@
       :component-will-unmount (fn []
                                 (destroy-editor db)
                                 (r/dispose! track-theme)
+                                (a/close! saved$)
                                 (editing-events/notify-global-editing-end))
       :reagent-render         (fn [] [:div.edit-box-container {:ref   (fn [element] (reset! !edit-box-container element))
                                                                :class (when (:editor-configured? @local-db) "configured")}
                                       [paste-bar db]
                                       [:div.edit-box
                                        {:ref         (fn [element] (reset! !editor-element element))
-                                        :on-key-down (fn [e] (editor-on-key-down db e))
+                                        :on-key-down (fn [e] (editor-on-key-down db saved$ e))
                                         :on-key-up   (fn [e] (editor-on-key-up db e))}
                                        @db-raw]])})))
 

@@ -46,19 +46,21 @@
   (let [local-db (r/atom {:editor nil
                           :editor-configured? false})
         !edit-box-container (clojure.core/atom nil)
-        track-theme (r/track! (partial theme-tracker db-theme local-db))]
+        track-theme (r/track! (partial theme-tracker db-theme local-db))
+        saved$ (a/chan)]
     (r/create-class
      {:component-did-mount    (fn []
                                 (a/go
                                   (let [theme             @db-theme
                                         source-data       (get-in @parent-db [:card "source_data"])
                                         hash              (:hash @parent-db)
-                                        setup-editor-chan (ace/<setup-card-editor theme source-data hash @!editor-element @!edit-box-container)
+                                        setup-editor-chan (ace/<setup-card-editor theme source-data hash saved$ @!editor-element @!edit-box-container)
                                         ace-instance      (a/<! setup-editor-chan)]
                                     (swap! local-db assoc :editor ace-instance :editor-configured? true))))
       :component-will-unmount (fn []
                                 (destroy-editor local-db)
                                 (r/dispose! track-theme)
+                                (a/close! saved$)
                                 (e-editing/notify-editing-end (:hash @parent-db)))
       :reagent-render         (fn []
                                 [:div.editor-container {:ref   (fn [element] (reset! !edit-box-container element))

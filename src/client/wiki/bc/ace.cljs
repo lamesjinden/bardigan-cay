@@ -51,13 +51,44 @@
   (when ace-instance
     (.setTheme ace-instance theme)))
 
-(defn- <editor-dirty$ [ace-instance original-state]
-  (let [chan (a/promise-chan)]
-    (.on ace-instance "change" (fn when-changed [delta]
-                                 (when (not (= original-state (.getValue ace-instance)))
-                                   (a/put! chan delta)
-                                   (.off ace-instance "change" when-changed))))
+(defn- <change$ [^js ace-instance]
+  (let [chan (a/chan (a/sliding-buffer 1))]
+    (.on ace-instance "change" (fn [delta]
+                                 (a/put! chan delta)))
     chan))
+
+(defn- watch-dirty!
+  "Tracks whether the editor differs from its last saved state. Calls on-edit-begin when the content
+   first differs from the baseline (initially source-data). Each value on saved$ is the content that
+   was just saved: it becomes the new baseline and on-edit-saved is called if the editor was dirty
+   (on-edit-begin follows at once if the content has already moved on). Ends when saved$ closes."
+  [^js ace-instance source-data saved$ on-edit-begin on-edit-saved]
+  (let [changes$ (<change$ ace-instance)
+        dirty? (fn [baseline]
+                 (not (= baseline (.getValue ace-instance))))]
+    (a/go-loop [baseline source-data
+                dirty false]
+      (let [[value channel] (a/alts! [saved$ changes$])]
+        (cond
+          (and (= channel saved$) (nil? value))
+          nil
+
+          (= channel saved$)
+          (let [still-dirty (dirty? value)]
+            (when dirty
+              (on-edit-saved))
+            (when still-dirty
+              (on-edit-begin))
+            (recur value still-dirty))
+
+          dirty
+          (recur baseline dirty)
+
+          :else
+          (let [now-dirty (dirty? baseline)]
+            (when now-dirty
+              (on-edit-begin))
+            (recur baseline now-dirty)))))))
 
 (defn- <css-class-change$ [target-node]
   (let [chan (a/chan)
@@ -79,7 +110,7 @@
         (.scrollIntoView edit-box-container)
         (.disconnect observer)))))
 
-(defn- <setup-editor [db-theme source-data editor-element edit-box-container on-edit-begin]
+(defn- <setup-editor [db-theme source-data editor-element edit-box-container saved$ on-edit-begin on-edit-saved]
   (ace-core/<defer (fn []
                      (let [ace-instance (create-edit editor-element)]
 
@@ -89,10 +120,8 @@
                          (configure-ace-instance! ace-instance ace-mode-markdown theme ace-options)
                          (disable-list-continuation! ace-instance))
 
-                ;; watch for the first change; notify app
-                       (a/go
-                         (when-some [_delta (a/<! (<editor-dirty$ ace-instance source-data))]
-                           (on-edit-begin)))
+                ;; watch for unsaved changes; notify app
+                       (watch-dirty! ace-instance source-data saved$ on-edit-begin on-edit-saved)
 
                 ;; after ace is visible
                        (a/go
@@ -101,8 +130,19 @@
 
                        ace-instance))))
 
-(defn <setup-global-editor [db-theme source-data editor-element edit-box-container]
-  (<setup-editor db-theme source-data editor-element edit-box-container editing-events/notify-global-editing-start))
+(defn <setup-global-editor
+  "saved$ carries the saved content each time the page is saved while the editor stays open;
+   close it when the editor goes away."
+  [db-theme source-data saved$ editor-element edit-box-container]
+  (<setup-editor db-theme source-data editor-element edit-box-container
+                 saved$
+                 editing-events/notify-global-editing-start
+                 editing-events/notify-global-editing-end))
 
-(defn <setup-card-editor [db-theme source-data hash editor-element edit-box-container]
-  (<setup-editor db-theme source-data editor-element edit-box-container (partial editing-events/notify-editing-begin hash)))
+(defn <setup-card-editor
+  "A card editor closes on save, so nothing is put on saved$; close it when the editor goes away."
+  [db-theme source-data hash saved$ editor-element edit-box-container]
+  (<setup-editor db-theme source-data editor-element edit-box-container
+                 saved$
+                 (partial editing-events/notify-editing-begin hash)
+                 identity))
