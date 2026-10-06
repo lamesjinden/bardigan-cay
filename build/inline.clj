@@ -106,6 +106,38 @@
           (zip/root)
           (hickoryr/hiccup-to-html)))))
 
+(defn inline-highlight-styles
+  "Embed the installed highlight.js themes in the production HTML's link
+  elements, preserving the existing theme-switching behavior."
+  [html]
+  (let [html-zipper (-> html
+                        (hickory/parse)
+                        (hickory/as-hiccup)
+                        (hickoryz/hiccup-zip))
+        themes [["light" "idea"] ["dark" "vs2015"]]]
+    (-> (reduce
+         (fn [zipper [title theme]]
+           (let [loc (->> zipper
+                          (zip/root)
+                          (hickoryz/hiccup-zip)
+                          (iter-zip)
+                          (find-first (fn [loc]
+                                        (let [node (zip/node loc)]
+                                          (and (vector? node)
+                                               (= :link (first node))
+                                               (= title (:title (second node))))))))
+                 css-path (format "node_modules/highlight.js/styles/%s.min.css" theme)
+                 href (str "data:text/css;base64," (base64-encode-file css-path))]
+             (when-not loc
+               (throw (Exception. (str "Stylesheet inline failed: " title))))
+             (zip/edit loc update 1
+                       #(-> %
+                            (dissoc :integrity :crossorigin :referrerpolicy)
+                            (assoc :href href)))))
+         html-zipper themes)
+        (zip/root)
+        (hickoryr/hiccup-to-html))))
+
 (def main-js-id "main-js")
 
 (defn main-js-node? [loc]
@@ -138,5 +170,6 @@
         html (slurp index-html-path)
         _ (subset-material-symbols-font css-directory-path)
         html (inline-styles html css-directory-path)
+        html (inline-highlight-styles html)
         html (inline-javascript main-js-path html)]
     (spit index-html-path html)))
