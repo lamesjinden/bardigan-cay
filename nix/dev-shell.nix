@@ -10,6 +10,7 @@ pkgs.mkShell {
   packages = toolchain.core ++ (with pkgs; [
     # AI tooling
     pkgs-unstable.claude-code
+    pkgs-unstable.codex
 
     # OCI image publishing (`bb image-publish` — the off-CI genesis push)
     skopeo
