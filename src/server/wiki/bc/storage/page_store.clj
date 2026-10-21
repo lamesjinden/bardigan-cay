@@ -127,6 +127,9 @@
     (assert (-> system-dir-path .toFile .isDirectory)
             (str "There is a file called 'system' under " page-dir-as-string
                  " but it is not a directory. Please remove that file and create a directory with that name"))
+    (-> (system-name->path system-dir-path "recentchanges")
+        .toFile 
+        .createNewFile)
     page-store))
 
 ;; RecentChanges
