@@ -305,6 +305,16 @@
       ;; Override theme background to blend with nav container
       (set! (.. editor -container -style -background) "transparent"))))
 
+(defn- focus-search-input! [local-db]
+  (when-let [el (:input-element @local-db)]
+    (.focus el)
+    (.select el)))
+
+(defn- focus-quake-editor! [local-db]
+  (when-let [editor (:quake-editor @local-db)]
+    (.focus editor)
+    (.selectAll editor)))
+
 (defn- quake-editor-component [db local-db]
   (let [!editor (clojure.core/atom nil)
         !element (clojure.core/atom nil)
@@ -335,9 +345,15 @@
                                     :exec (fn [_] (quake-history-next! local-db))}))
                 ;; Populate with input from normal mode if present
                 (when-let [input-value (:input-value @local-db)]
-                  (.setValue ace-instance input-value -1)
-                  (.navigateLineEnd ace-instance))
-                (.focus ace-instance)
+                  (.setValue ace-instance input-value -1))
+                ;; Keep the nav input's value in sync so it mounts with current content on exit
+                (.on ace-instance "change"
+                     (fn [_]
+                       (let [text (.getValue ace-instance)]
+                         (swap! local-db assoc :input-value (if (str/blank? text)
+                                                              nil
+                                                              text)))))
+                (focus-quake-editor! local-db)
                 ;; Scroll results to bottom when entering quake mode
                 (scroll-quake-results-to-bottom! local-db))))))
       :component-will-unmount
@@ -345,12 +361,9 @@
         (swap! local-db assoc :quake-editor nil)
         (r/dispose! track-theme)
         (when-let [editor @!editor]
-          ;; Carry the editor's content back into the nav input
-          (let [text (.getValue editor)]
-            (swap! local-db assoc :input-value (if (str/blank? text)
-                                                 nil
-                                                 text)))
-          (.destroy editor)))
+          (.destroy editor)
+          ;; Focus the nav input once it has mounted
+          (r/after-render #(focus-search-input! local-db))))
       :reagent-render
       (fn [_db _local-db]
         [:div.quake-input-container {:ref (fn [el] (reset! !element el))}])})))
@@ -369,15 +382,6 @@
           (= tag "SELECT")
           (.-isContentEditable target)
           (and (.-closest target) (.closest target ".ace_editor"))))))
-
-(defn- focus-search-input! [local-db]
-  (when-let [el (:input-element @local-db)]
-    (.focus el)))
-
-(defn- focus-quake-editor! [local-db]
-  (when-let [editor (:quake-editor @local-db)]
-    (.focus editor)
-    (.selectAll editor)))
 
 (defn- quake-active? [!quake-mode-cursor]
   (when-let [cursor @!quake-mode-cursor]
